@@ -12,7 +12,6 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.content.Intent
 import android.net.Uri
-import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Geocoder
 import androidx.core.content.ContextCompat

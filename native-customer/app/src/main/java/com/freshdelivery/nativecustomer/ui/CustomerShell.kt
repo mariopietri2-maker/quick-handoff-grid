@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.WindowInsets
@@ -76,8 +77,6 @@ import androidx.compose.material.icons.outlined.Store
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Wallet
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -88,8 +87,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.material3.AlertDialog
@@ -267,16 +264,15 @@ fun CustomerShell(
             state.tab != CustomerTab.Home -> onTab(CustomerTab.Home)
         }
     }
-    // Double-back on Home root to exit app
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val exitCtx = androidx.compose.ui.platform.LocalContext.current
     var lastBackPress by remember { mutableStateOf(0L) }
     BackHandler(enabled = !onNonRootScreen) {
         val now = System.currentTimeMillis()
-        if (now - lastBackPress < 2000) {
-            (context as? android.app.Activity)?.finish()
+        if (now - lastBackPress < 2000L) {
+            (exitCtx as? android.app.Activity)?.finish()
         } else {
             lastBackPress = now
-            android.widget.Toast.makeText(context, "Πάτα ξανά για έξοδο", android.widget.Toast.LENGTH_SHORT).show()
+            android.widget.Toast.makeText(exitCtx, "Πάτα ξανά για έξοδο", android.widget.Toast.LENGTH_SHORT).show()
         }
     }
     if (addressOpen) {
@@ -389,35 +385,32 @@ fun CustomerShell(
                 ) {
                     tabs.forEach { (tab, label, icon) ->
                         val selected = state.tab == tab
-                        val activeOrders = state.activeOrders.size
                         NavigationBarItem(
                             selected = selected,
                             onClick = { onTab(tab) },
                             icon = {
-                                if (tab == CustomerTab.Orders && activeOrders > 0) {
-                                    BadgedBox(
-                                        badge = {
-                                            Badge(containerColor = FreshGreen) {
-                                                Text(
-                                                    if (activeOrders > 9) "9+" else "$activeOrders",
-                                                    color = Color.White,
-                                                    fontSize = 10.sp,
-                                                )
-                                            }
-                                        },
-                                    ) {
-                                        Icon(
-                                            icon as ImageVector,
-                                            contentDescription = label,
-                                            modifier = Modifier.size(24.dp),
-                                        )
-                                    }
-                                } else {
+                                val activeOrders = state.activeOrders.size
+                                Box {
                                     Icon(
                                         icon as ImageVector,
                                         contentDescription = label,
-                                        modifier = Modifier.sizeSize(24.dp),
+                                        modifier = Modifier.size(24.dp),
                                     )
+                                    if (tab == CustomerTab.Orders && activeOrders > 0) {
+                                        Surface(
+                                            color = FreshGreen,
+                                            shape = CircleShape,
+                                            modifier = Modifier.align(Alignment.TopEnd).offset(x = 6.dp, y = (-4).dp),
+                                        ) {
+                                            Text(
+                                                if (activeOrders > 9) "9+" else "$activeOrders",
+                                                color = Color.White,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
+                                            )
+                                        }
+                                    }
                                 }
                             },
                             label = {
@@ -444,7 +437,6 @@ fun CustomerShell(
             when (state.tab) {
                 CustomerTab.Home -> HomeTab(
                     state, onOpenStore, onSearch,
-                    onRefresh = onRefresh,
                     browseMode = false,
                     onSpinWheel = onSpinWheel,
                     onOpenCard = onOpenCard,
@@ -462,7 +454,6 @@ fun CustomerShell(
                     onBackToHome = { onTab(CustomerTab.Home) },
                     onOpenCart = { onToggleCart(true) },
                     onToggleFavorite = onToggleFavorite,
-                    onRefresh = onRefresh,
                 )
                 CustomerTab.Orders -> OrdersTab(
                     state, onTrack, onRefresh, onSubmitReview,
@@ -471,7 +462,7 @@ fun CustomerShell(
                         state.stores.firstOrNull { it.id == storeId }?.let { onOpenStore(it) }
                     },
                 )
-                CustomerTab.Track -> TrackTab(state, onRefresh = onRefresh)
+                CustomerTab.Track -> TrackTab(state)
                 CustomerTab.Profile -> ProfileTab(state, onSaveProfile, onSignOut, onOpenSupport, onBackToHome = { onTab(CustomerTab.Home) })
             }
         }
@@ -487,7 +478,6 @@ private fun HomeTab(
     state: CustomerUiState,
     onOpenStore: (StoreRow) -> Unit,
     onSearch: (String) -> Unit,
-    onRefresh: () -> Unit = {},
     browseMode: Boolean = false,
     onSpinWheel: () -> Unit = {},
     onOpenCard: (Int) -> Unit = {},
@@ -543,22 +533,6 @@ private fun HomeTab(
         }
     }
 
-    var refreshing by remember { mutableStateOf(false) }
-    LaunchedEffect(state.busy, state.stores.size) {
-        if (refreshing && !state.busy) refreshing = false
-    }
-    val pullState = rememberPullToRefreshState()
-    val showScrollTop = listState.firstVisibleItemIndex > 3
-    Box(Modifier.fillMaxSize()) {
-    PullToRefreshBox(
-        isRefreshing = refreshing,
-        onRefresh = {
-            refreshing = true
-            onRefresh()
-        },
-        state = pullState,
-        modifier = Modifier.fillMaxSize().background(FreshBg),
-    ) {
     LazyColumn(
         state = listState,
         modifier = Modifier
@@ -741,10 +715,7 @@ private fun HomeTab(
             ) {
                 FreshFilterChip("Όλα", selected = filter == HomeFilter.All) { applyFilter(HomeFilter.All) }
                 FreshFilterChip("Προσφορές", selected = filter == HomeFilter.Deals) { applyFilter(HomeFilter.Deals) }
-                FreshFilterChip(
-                    "Ανοιχτά (${base.count { isStoreOpenNow(it) }})",
-                    selected = filter == HomeFilter.Open,
-                ) { applyFilter(HomeFilter.Open) }
+                FreshFilterChip("Ανοιχτά (${state.visibleStores.count { isStoreOpenNow(it) }})", selected = filter == HomeFilter.Open) { applyFilter(HomeFilter.Open) }
                 FreshFilterChip("Κοντά μου", selected = filter == HomeFilter.Near) { applyFilter(HomeFilter.Near) }
                 FreshFilterChip("Αγαπημένα", selected = filter == HomeFilter.Fav) { applyFilter(HomeFilter.Fav) }
             }
@@ -1020,8 +991,6 @@ private fun HomeTab(
                                 "Δεν έχεις αγαπημένα ακόμα."
                             state.searchQuery.isNotBlank() ->
                                 "Κανένα αποτέλεσμα για «${state.searchQuery.trim()}»"
-                            state.busy ->
-                                "Φόρτωση καταστημάτων…"
                             else ->
                                 "Δεν βρέθηκαν καταστήματα."
                         },
@@ -1055,22 +1024,7 @@ private fun HomeTab(
                 onToggleFavorite = { onToggleFavorite(store.id) },
             )
         }
-    } // LazyColumn
-    } // PullToRefreshBox
-        if (showScrollTop) {
-            FloatingActionButton(
-                onClick = { scope.launch { listState.animateScrollToItem(0) } },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp)
-                    .navigationBarsPadding(),
-                containerColor = FreshGreen,
-                contentColor = Color.White,
-            ) {
-                Icon(Icons.Outlined.KeyboardArrowUp, contentDescription = "Επάνω")
-            }
-        }
-    } // Box
+    }
 }
 
 // FreshFilterChip extracted
@@ -1948,15 +1902,9 @@ private fun CartCheckoutScreen(
                 }
             } else {
             item {
-                Row(
-                    Modifier.fillMaxWidth().padding(top = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+                Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text("Τα αντικείμενά σου", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                    TextButton(onClick = onClearCart) {
-                        Text("Άδειασμα", color = FreshMuted, style = MaterialTheme.typography.labelLarge)
-                    }
+                    TextButton(onClick = onClearCart) { Text("Άδειασμα", color = FreshMuted) }
                 }
             }
             items(state.cart, key = { it.menuItemId }) { line ->
@@ -2663,7 +2611,6 @@ private fun BrowseTab(
     onBackToHome: () -> Unit,
     onOpenCart: () -> Unit,
     onToggleFavorite: (String) -> Unit = {},
-    onRefresh: () -> Unit = {},
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val prefs = remember {
@@ -2707,15 +2654,6 @@ private fun BrowseTab(
         }
     }
 
-    var refreshing by remember { mutableStateOf(false) }
-    LaunchedEffect(state.busy) { if (refreshing && !state.busy) refreshing = false }
-    val pullState = rememberPullToRefreshState()
-    PullToRefreshBox(
-        isRefreshing = refreshing,
-        onRefresh = { refreshing = true; onRefresh() },
-        state = pullState,
-        modifier = Modifier.fillMaxSize().background(FreshBg),
-    ) {
     LazyColumn(
         Modifier
             .fillMaxSize()
@@ -2975,6 +2913,7 @@ Text(
     }
 }
 
+@Composable
 private fun OrdersTab(
     state: CustomerUiState,
     onTrack: (OrderUi?) -> Unit,
@@ -2983,15 +2922,6 @@ private fun OrdersTab(
     onBackToHome: () -> Unit = {},
     onReorderStore: (String) -> Unit = {},
 ) {
-    var refreshing by remember { mutableStateOf(false) }
-    LaunchedEffect(state.busy) { if (refreshing && !state.busy) refreshing = false }
-    val pullState = rememberPullToRefreshState()
-    PullToRefreshBox(
-        isRefreshing = refreshing,
-        onRefresh = { refreshing = true; onRefresh() },
-        state = pullState,
-        modifier = Modifier.fillMaxSize().background(FreshBg),
-    ) {
     LazyColumn(
         Modifier
             .fillMaxSize()
@@ -3166,10 +3096,10 @@ private fun OrdersTab(
             }
         }
     }
-    }
 }
 
-private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
+@Composable
+private fun TrackTab(state: CustomerUiState) {
     val order = state.trackingOrder
 
     // Live driver pin + store + delivery pin. Order in the list also picks
@@ -3195,19 +3125,6 @@ private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
     val centerLat = deliveryPinLat ?: storePinLat ?: markers.firstOrNull()?.lat ?: 39.6650
     val centerLng = deliveryPinLng ?: storePinLng ?: markers.firstOrNull()?.lng ?: 20.8537
     Column(Modifier.fillMaxSize().background(FreshBg)) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text("Παρακολούθηση", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-            TextButton(onClick = onRefresh) {
-                Text("Ανανέωση", color = FreshGreen, fontWeight = FontWeight.Bold)
-            }
-        }
         Box(
             Modifier
                 .fillMaxWidth()
