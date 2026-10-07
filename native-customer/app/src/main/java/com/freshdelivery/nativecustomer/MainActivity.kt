@@ -121,6 +121,7 @@ class MainActivity : ComponentActivity() {
                         CustomerShell(
                             state = state,
                             onTab = vm::selectTab,
+                            onOpenStoreHighlight = { sid, mid -> vm.openStoreHighlightingItem(sid, mid) },
                             onOpenStore = vm::openStore,
                             onCloseStore = vm::closeStore,
                             onToggleFavorite = vm::toggleFavorite,

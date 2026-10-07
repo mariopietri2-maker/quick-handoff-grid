@@ -193,6 +193,7 @@ fun CustomerShell(
     state: CustomerUiState,
     onTab: (CustomerTab) -> Unit,
     onOpenStore: (StoreRow) -> Unit,
+    onOpenStoreHighlight: (String, String?) -> Unit = { _, _ -> },
     onCloseStore: () -> Unit,
     onToggleFavorite: (String) -> Unit = {},
     onAddToCart: (MenuItemRow) -> Unit,
@@ -442,7 +443,7 @@ fun CustomerShell(
         Box(Modifier.padding(padding).fillMaxSize()) {
             when (state.tab) {
                 CustomerTab.Home -> HomeTab(
-                    state, onOpenStore, onSearch,
+                    state, onOpenStore, onOpenStoreHighlight, onSearch,
                     onRefresh = onRefresh,
                     browseMode = false,
                     onSpinWheel = onSpinWheel,
@@ -485,6 +486,7 @@ fun CustomerShell(
 private fun HomeTab(
     state: CustomerUiState,
     onOpenStore: (StoreRow) -> Unit,
+    onOpenStoreHighlight: (String, String?) -> Unit = { _, _ -> },
     onSearch: (String) -> Unit,
     onRefresh: () -> Unit = {},
     browseMode: Boolean = false,
@@ -772,8 +774,7 @@ private fun HomeTab(
             items(state.dishHits.take(12), key = { "d-${it.id}" }) { dish ->
                 Surface(
                     onClick = {
-                        state.stores.firstOrNull { it.id == dish.store_id }?.let { onOpenStore(it) }
-                            ?: state.visibleStores.firstOrNull { it.id == dish.store_id }?.let { onOpenStore(it) }
+                        onOpenStoreHighlight(dish.store_id, dish.id)
                     },
                     color = Color.White,
                     shape = RoundedCornerShape(14.dp),
@@ -1873,6 +1874,7 @@ private fun MenuScreen(
                         FreshMenuRow(
                             item = item,
                             highlightOffer = category == "Προσφορές" || category.lowercase().contains("προσφορ") || category.lowercase().contains("offer"),
+                            highlighted = item.id == state.highlightMenuItemId,
                             onAdd = {
                                 if (item.is_available != false) { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onAdd(item) }
                             },
@@ -3358,6 +3360,14 @@ private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
                             order.storeName ?: "Παραγγελία",
                             style = MaterialTheme.typography.titleLarge,
                         )
+                        if (state.driverLocation != null) {
+                            Text(
+                                "Οδηγός καθ' οδόν · ζωντανή θέση στον χάρτη",
+                                color = FreshGreenDark,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
                         order.order.delivery_address?.let {
                             Text(it, color = FreshMuted, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }

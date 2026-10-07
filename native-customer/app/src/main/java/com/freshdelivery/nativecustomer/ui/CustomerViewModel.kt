@@ -137,6 +137,7 @@ data class CustomerUiState(
     val savingProfile: Boolean = false,
     val searchQuery: String = "",
     val dishHits: List<com.freshdelivery.nativecustomer.data.DishSearchHit> = emptyList(),
+    val highlightMenuItemId: String? = null,
     val signupMode: Boolean = false,
     val addressSuggestions: List<AddressSuggestion> = emptyList(),
     val cachedSuggestions: List<CachedSuggestionRow> = emptyList(),
@@ -856,11 +857,12 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                         )
                     }
                 }
+                val skipped = items.size - lines.size
                 if (lines.isEmpty()) {
                     _state.value = _state.value.copy(
                         selectedStore = store,
                         menu = menu,
-                        info = "Άνοιξε το μενού — τα παλιά είδη δεν είναι διαθέσιμα",
+                        info = "Κανένα είδος διαθέσιμο από την παλιά παραγγελία (${items.size} μη διαθέσιμα)",
                         tab = com.freshdelivery.nativecustomer.data.CustomerTab.Home,
                     )
                     scheduleBannerClear()
@@ -873,7 +875,10 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     cartStoreId = storeId,
                     cartStoreName = store.name,
                     showCart = true,
-                    info = "Προστέθηκαν ${lines.sumOf { it.quantity }} είδη από την προηγούμενη παραγγελία",
+                    info = buildString {
+                        append("Προστέθηκαν ${lines.sumOf { it.quantity }} είδη")
+                        if (skipped > 0) append(" · $skipped μη διαθέσιμα παραλείφθηκαν")
+                    },
                 )
                 scheduleBannerClear()
             }.onFailure { e ->
@@ -881,6 +886,28 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 scheduleBannerClear()
             }
         }
+    }
+
+    fun openStoreHighlightingItem(storeId: String, menuItemId: String?) {
+        viewModelScope.launch {
+            runCatching {
+                val store = _state.value.stores.firstOrNull { it.id == storeId }
+                    ?: allStoresCache.firstOrNull { it.id == storeId }
+                    ?: return@runCatching
+                val menu = repo.fetchMenu(storeId)
+                _state.value = _state.value.copy(
+                    selectedStore = store,
+                    menu = menu,
+                    highlightMenuItemId = menuItemId,
+                    showCart = false,
+                    tab = com.freshdelivery.nativecustomer.data.CustomerTab.Home,
+                )
+            }
+        }
+    }
+
+    fun clearMenuHighlight() {
+        _state.value = _state.value.copy(highlightMenuItemId = null)
     }
 
     fun clearCart() {

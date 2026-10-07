@@ -1,6 +1,7 @@
 package com.freshdelivery.nativecustomer.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,12 +45,13 @@ import com.freshdelivery.nativecustomer.ui.theme.FreshViolet
 private val MenuAddGradient = Brush.horizontalGradient(listOf(FreshGreen, FreshViolet))
 
 @Composable
-internal fun FreshMenuRow(item: MenuItemRow, highlightOffer: Boolean = false, onAdd: () -> Unit) {
+internal fun FreshMenuRow(item: MenuItemRow, highlightOffer: Boolean = false, highlighted: Boolean = false, onAdd: () -> Unit) {
     val available = item.is_available != false
     Row(
         Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
+            .then(if (highlighted) Modifier.border(2.dp, Color(0xFFEA580C), RoundedCornerShape(20.dp)) else Modifier)
             .shadow(3.dp, RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp))
             .background(Color.White)
