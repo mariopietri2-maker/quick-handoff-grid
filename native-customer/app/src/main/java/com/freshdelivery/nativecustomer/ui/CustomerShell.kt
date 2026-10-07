@@ -508,11 +508,29 @@ private fun HomeTab(
             .background(FreshBg),
         contentPadding = PaddingValues(bottom = 24.dp),
     ) {
+        if (state.isOffline) {
+            item {
+                Surface(
+                    color = Color(0xFFFFF3E0),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding(),
+                ) {
+                    Text(
+                        "Χωρίς σύνδεση — τα δεδομένα μπορεί να μην είναι ενημερωμένα.",
+                        color = Color(0xFFE65100),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    )
+                }
+            }
+        }
         item {
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .statusBarsPadding()
+                    .then(if (!state.isOffline) Modifier.statusBarsPadding() else Modifier)
                     .padding(horizontal = 16.dp)
                     .padding(top = 2.dp, bottom = 4.dp),
             ) {

@@ -1,6 +1,9 @@
 package com.freshdelivery.nativecustomer.ui
 
 import android.app.Application
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.content.Intent
 import android.net.Uri
 import android.content.Context
@@ -136,6 +139,8 @@ data class CustomerUiState(
     val feeBase: Double = 0.99,
     val feePerKm: Double = 0.0,
     val error: String? = null,
+    /** True when device has no validated network (soft banner). */
+    val isOffline: Boolean = false,
     val info: String? = null,
     val appConfig: com.freshdelivery.nativecustomer.data.CustomerAppConfig = com.freshdelivery.nativecustomer.data.CustomerAppConfig(),
     // Emerald v2 games — lucky wheel / mystery cards (mirrors the web prototype)
@@ -232,6 +237,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     init {
         _state.value = _state.value.copy(gameShow = rollDailyGameShow())
         loadAdminState()
+        refreshNetworkStatus()
         PushTokenHolder.listener = { token ->
             val uid = _state.value.userId
             if (uid != null) {
@@ -682,6 +688,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun selectTab(tab: CustomerTab) {
+        refreshNetworkStatus()
         _state.value = _state.value.copy(tab = tab, showCart = false, selectedStore = null, menu = emptyList())
         when (tab) {
             CustomerTab.Orders, CustomerTab.Track -> refreshOrders()
@@ -955,6 +962,19 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     )
                 }
         }
+    }
+
+    fun refreshNetworkStatus() {
+        val cm = getApplication<Application>().getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        val online = cm?.activeNetwork?.let { net ->
+            val caps = cm.getNetworkCapabilities(net)
+            caps != null && (
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                    caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                    caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+                )
+        } ?: false
+        _state.value = _state.value.copy(isOffline = !online)
     }
 
     fun placeOrder() {
