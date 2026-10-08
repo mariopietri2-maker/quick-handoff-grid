@@ -231,7 +231,14 @@ fun SupportScreen(
 
         when (view) {
             SupportView.Topics -> TopicsView(
+                activeSession = state.activeLiveSession,
+                openTickets = state.tickets.filter {
+                    val st = it.status?.lowercase()
+                    st == null || st == "open" || st == "pending" || st == "in_progress"
+                },
                 onSelectTopic = onSelectTopic,
+                onResumeLive = onResumeLive,
+                onOpenTicket = onOpenTicket,
             )
 
             SupportView.Compose -> ComposeView(
@@ -305,8 +312,17 @@ private fun BotFaqSection() {
 
 @Composable
 private fun ColumnScope.TopicsView(
+    activeSession: com.freshdelivery.nativecustomer.data.LiveChatSessionRow?,
+    openTickets: List<SupportTicketRow>,
     onSelectTopic: (String) -> Unit,
+    onResumeLive: () -> Unit = {},
+    onOpenTicket: (SupportTicketRow) -> Unit = {},
 ) {
+    fun topicLabel(key: String?): String {
+        if (key.isNullOrBlank()) return "Ζωντανή συνομιλία"
+        return SUPPORT_TOPICS.firstOrNull { it.key == key }?.label
+            ?: key.replace('_', ' ').replaceFirstChar { it.uppercase() }
+    }
     // Scrollable so all topics are reachable (FAQ no longer blocks the list)
     Column(
         Modifier
@@ -321,6 +337,95 @@ private fun ColumnScope.TopicsView(
             style = MaterialTheme.typography.bodySmall,
             color = FreshMuted,
         )
+
+        // Active chats (open live session + open tickets)
+        val hasActive = (activeSession?.id != null && activeSession.status != "closed") || openTickets.isNotEmpty()
+        if (hasActive) {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Ενεργές συνομιλίες",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                "Πάτα για να συνεχίσεις",
+                style = MaterialTheme.typography.labelSmall,
+                color = FreshMuted,
+            )
+            if (activeSession?.id != null && activeSession.status != "closed") {
+                Surface(
+                    onClick = onResumeLive,
+                    color = Color(0xFFFFF3E0),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            Modifier
+                                .size(40.dp)
+                                .background(Color(0xFFFF8A3D), RoundedCornerShape(12.dp)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(Icons.Outlined.SupportAgent, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Ζωντανή συνομιλία", fontWeight = FontWeight.Bold)
+                            Text(
+                                topicLabel(activeSession.topic),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = FreshMuted,
+                            )
+                        }
+                        Text(
+                            "Ανοιχτή",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFEA580C),
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Icon(Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = null, tint = FreshGreen)
+                    }
+                }
+            }
+            openTickets.take(5).forEach { ticket ->
+                Surface(
+                    onClick = { onOpenTicket(ticket) },
+                    color = FreshSurface,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            Modifier
+                                .size(40.dp)
+                                .background(Color(0xFF546E7A), RoundedCornerShape(12.dp)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(Icons.Outlined.Description, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(topicLabel(ticket.category), fontWeight = FontWeight.Bold)
+                            Text(
+                                ticket.description?.take(60) ?: (ticket.status ?: "open"),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = FreshMuted,
+                                maxLines = 1,
+                            )
+                        }
+                        Icon(Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = null, tint = FreshMuted)
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Ή διάλεξε νέο θέμα",
+                style = MaterialTheme.typography.labelMedium,
+                color = FreshMuted,
+            )
+        }
+
         Spacer(Modifier.height(6.dp))
         // Topics first — main action
         SUPPORT_TOPICS.forEach { topic ->

@@ -182,6 +182,8 @@ data class CustomerUiState(
     val liveChatLoading: Boolean = false,
     val liveChatSubscribed: Boolean = false,
     val liveChatError: String? = null,
+    /** Open live session shown on Topics as "active chat" (may not be the open Live view). */
+    val activeLiveSession: com.freshdelivery.nativecustomer.data.LiveChatSessionRow? = null,
     // Async support tickets (support_tickets, ticket_messages)
     val ticketTopic: String? = null,
     val tickets: List<SupportTicketRow> = emptyList(),
@@ -1740,32 +1742,29 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun openSupport() {
         if (_state.value.supportOpen) return
-        // Always land on Topics so a previously closed chat does not block a new request.
+        // Always land on Topics — active open chats appear in the list under the intro.
         _state.value = _state.value.copy(
             supportOpen = true,
             supportView = SupportView.Topics,
             liveChatClosed = false,
-            liveChatSessionId = null,
-            liveChatTopic = null,
             liveChatError = null,
+            activeLiveSession = null,
         )
         viewModelScope.launch {
             val uid = _state.value.userId ?: return@launch
             runCatching { repo.fetchMyTickets(uid) }
                 .onSuccess { list -> _state.value = _state.value.copy(tickets = list) }
-            // Resume only an OPEN session; closed ones stay history — user picks a new topic.
             val session = repo.getMyLiveChatSession()
             if (session != null && session.id != null && session.status != "closed") {
                 _state.value = _state.value.copy(
-                    supportView = SupportView.Live,
+                    activeLiveSession = session,
                     liveChatSessionId = session.id,
-                    liveChatClosed = false,
                     liveChatTopic = session.topic?.takeIf { it.isNotBlank() } ?: "Γενικό",
-                    liveChatLoading = true,
+                    liveChatClosed = false,
                 )
-                openLiveChat(loadHistory = true)
+            } else {
+                _state.value = _state.value.copy(activeLiveSession = null)
             }
-            // Closed session: stay on Topics so user can start a new request
         }
     }
 
@@ -1829,15 +1828,62 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 liveChatError = null,
                 liveChatMessages = emptyList(),
                 liveChatLoading = false,
+                activeLiveSession = com.freshdelivery.nativecustomer.data.LiveChatSessionRow(
+                    id = sessionId,
+                    status = "open",
+                    topic = topic,
+                ),
             )
             // New request: empty thread. Do NOT reload old closed-chat history.
             openLiveChat(loadHistory = false)
         }
     }
 
-    /** Back to the topic picker (closes the active chat/ticket, keeps the support screen open). */
+    /** Back to the topic picker — keep open session visible under "Ενεργές συνομιλίες". */
     fun clearSupportTopic() {
-        startNewLiveConversation()
+        liveChatJob?.cancel()
+        liveChatJob = null
+        liveChatSessionJob?.cancel()
+        liveChatSessionJob = null
+        cancelTicketSubscriptions()
+        val s = _state.value
+        val active = if (!s.liveChatClosed && !s.liveChatSessionId.isNullOrBlank()) {
+            com.freshdelivery.nativecustomer.data.LiveChatSessionRow(
+                id = s.liveChatSessionId,
+                status = "open",
+                topic = s.liveChatTopic,
+            )
+        } else {
+            s.activeLiveSession?.takeIf { it.status != "closed" }
+        }
+        _state.value = s.copy(
+            supportView = SupportView.Topics,
+            liveChatMessages = emptyList(),
+            liveChatLoading = false,
+            liveChatSubscribed = false,
+            liveChatError = null,
+            activeLiveSession = active,
+            activeTicket = null,
+            ticketMessages = emptyList(),
+            ticketError = null,
+        )
+    }
+
+    /** Resume an open live chat from the active-chats list on Topics. */
+    fun resumeActiveLiveChat() {
+        val session = _state.value.activeLiveSession
+        val sid = session?.id ?: _state.value.liveChatSessionId
+        if (sid.isNullOrBlank()) return
+        if (session?.status == "closed" || _state.value.liveChatClosed) return
+        _state.value = _state.value.copy(
+            supportView = SupportView.Live,
+            liveChatSessionId = sid,
+            liveChatTopic = session?.topic?.takeIf { it.isNotBlank() } ?: _state.value.liveChatTopic ?: "Γενικό",
+            liveChatClosed = false,
+            liveChatLoading = true,
+            liveChatError = null,
+        )
+        openLiveChat(loadHistory = true)
     }
 
     /**
@@ -1860,6 +1906,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             liveChatLoading = false,
             liveChatSubscribed = false,
             liveChatError = null,
+            activeLiveSession = null,
             ticketTopic = null,
             activeTicket = null,
             ticketMessages = emptyList(),

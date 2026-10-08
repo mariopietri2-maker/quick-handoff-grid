@@ -167,6 +167,7 @@ class MainActivity : ComponentActivity() {
                             onCloseSupport = vm::closeSupport,
                             onSelectSupportTopic = vm::selectSupportTopic,
                             onClearSupportTopic = vm::clearSupportTopic,
+                            onResumeLive = vm::resumeActiveLiveChat,
                             onSendLiveChat = vm::sendLiveChatMessage,
                             onShowMyTickets = vm::openMyTickets,
                             onOpenTicket = vm::openTicket,
