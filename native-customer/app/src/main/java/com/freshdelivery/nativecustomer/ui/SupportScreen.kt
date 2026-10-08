@@ -171,9 +171,10 @@ fun SupportScreen(
         SupportView.MyTickets -> "Ιστορικό αιτημάτων"
         SupportView.Topics -> "Ομάδα διαθέσιμη 24/7"
     }
+    // Live chat back → topic picker (Υποστήριξη), not full close
     val headerBack: () -> Unit = when (view) {
         SupportView.Topics -> onBack
-        SupportView.Live -> onBack
+        SupportView.Live -> onClearTopic
         else -> onClearTopic
     }
 
