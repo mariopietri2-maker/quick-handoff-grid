@@ -32,6 +32,31 @@ export function Logo({ variant = 'core', size = 28, withWordmark = false, withTl
   const id = useId().replace(/:/g, '');
   const cfg = CONFIG[variant];
 
+  // Customer / core mark = merch stamp (bag + food)
+  if (variant === 'core') {
+    return (
+      <span className={className} style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+        <img
+          src="/brand/fresh2go-mark.png"
+          alt={BRAND.name}
+          width={size}
+          height={size}
+          style={{ flexShrink: 0, borderRadius: size * 0.22, objectFit: 'cover' }}
+        />
+        {withWordmark && (
+          <span style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif', fontWeight: 800, fontSize: size * 0.55, letterSpacing: '-0.02em', lineHeight: 1 }}>
+            <span style={{ color: cfg.dark ? '#fff' : '#111' }}>Fresh</span>
+            <span style={{ color: '#FF6B00' }}>2</span>
+            <span style={{ color: '#F4A125' }}>GO</span>
+            {withTld && (
+              <span style={{ marginLeft: 6, background: '#FF8A3D', color: '#fff', borderRadius: 6, padding: '2px 6px', fontSize: size * 0.32, verticalAlign: 'middle' }}>.GR</span>
+            )}
+          </span>
+        )}
+      </span>
+    );
+  }
+
   return (
     <span className={className} style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
       <svg width={size} height={size} viewBox="0 0 64 64" role="img" aria-label={BRAND.name} style={{ flexShrink: 0 }}>

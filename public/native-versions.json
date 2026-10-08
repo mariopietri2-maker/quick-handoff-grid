@@ -1,11 +1,11 @@
 {
   "customerNative": {
-    "version": "2.9.65-fresh2go",
+    "version": "2.9.66-fresh2go",
     "url": "https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-customer-native-debug.apk",
     "sha256": ""
   },
   "driverNative": {
-    "version": "2.6.41-fresh2go",
+    "version": "2.6.42-fresh2go",
     "url": "https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-driver-native-debug.apk",
     "sha256": ""
   },
