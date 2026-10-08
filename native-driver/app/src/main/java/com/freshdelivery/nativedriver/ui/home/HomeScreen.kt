@@ -310,6 +310,7 @@ fun HomeScreen(
     var navSteps by remember { mutableStateOf<List<ManeuverStep>>(emptyList()) }
     var navStepIndex by remember { mutableIntStateOf(0) }
     var pendingCashDelivery by remember { mutableStateOf<ActiveTripUi?>(null) }
+    var declineOfferId by remember { mutableStateOf<String?>(null) }
     var recenterKey by remember { mutableIntStateOf(0) }
     val markers = buildList {
         primary?.storeLat?.let { lat ->
@@ -738,6 +739,34 @@ fun HomeScreen(
             }
 
             Spacer(Modifier.height(10.dp))
+        }
+
+        declineOfferId?.let { oid ->
+            AlertDialog(
+                onDismissRequest = { declineOfferId = null },
+                title = { Text("Λόγος απόρριψης", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column {
+                        listOf("Απασχολημένος", "Μακριά", "Τέλος βάρδιας", "Άλλο").forEach { reason ->
+                            TextButton(onClick = {
+                                onDecline(oid, reason)
+                                declineOfferId = null
+                            }) {
+                                Text(reason, modifier = Modifier.fillMaxWidth())
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        onDecline(oid, null)
+                        declineOfferId = null
+                    }) { Text("Χωρίς λόγο") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { declineOfferId = null }) { Text("Άκυρο") }
+                },
+            )
         }
 
         pendingCashDelivery?.let { trip ->
