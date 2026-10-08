@@ -40,10 +40,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.sin
 
 /**
- * Launch splash — Fresh2GO logo (animated basket brand mark):
- * lid opens, burger / souvlaki / crepe pop up, soft loading dots (no scan bar).
+ * Launch splash — Fresh2GO stamp: orange app icon, white delivery bag,
+ * souvlaki / crepe / pizza slice animate out of the bag (matches merch mark).
  */
 @Composable
 fun SplashScreen(
@@ -52,300 +53,242 @@ fun SplashScreen(
 ) {
     val infinite = rememberInfiniteTransition(label = "splash")
 
-    // 0 → 1 loop over 3.5s (matches web AnimatedBasketLogo timing)
+    // Full loop ~3.2s: food rises out, holds, settles
     val t by infinite.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(3_500, easing = LinearEasing),
+            animation = tween(3200, easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
-        label = "cycle",
+        label = "progress",
     )
 
-    // Soft enter for mark + copy
-    val enter by infinite.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
+    // Soft pulse on the icon
+    val pulse by infinite.animateFloat(
+        initialValue = 0.98f,
+        targetValue = 1.02f,
         animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Restart,
+            animation = tween(1400, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
         ),
-        label = "enterUnused",
+        label = "pulse",
     )
-    // One-shot style opacity via clamped first-cycle feel — keep mark fully visible
-    val markAlpha = 1f
-    val markScale = 1f
 
+    // Loading dots
     val dotPhase by infinite.animateFloat(
         initialValue = 0f,
-        targetValue = 1f,
+        targetValue = 3f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1_200, easing = FastOutSlowInEasing),
+            animation = tween(900, easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "dots",
     )
 
-    Box(
-        Modifier
+    Column(
+        modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0A0C10)),
-        contentAlignment = Alignment.Center,
+            .background(Color.White),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
     ) {
-        // Soft orange ambient glow
         Box(
-            Modifier
-                .size(240.dp)
-                .graphicsLayer { alpha = 0.55f }
+            modifier = Modifier
+                .size(168.dp)
+                .graphicsLayer {
+                    scaleX = pulse
+                    scaleY = pulse
+                }
+                .shadow(16.dp, RoundedCornerShape(40.dp))
+                .clip(RoundedCornerShape(40.dp))
                 .background(
-                    Brush.radialGradient(
+                    Brush.linearGradient(
                         colors = listOf(
-                            Color(0xFFEA580C).copy(alpha = 0.22f),
-                            Color.Transparent,
+                            Color(0xFFF4A125),
+                            Color(0xFFFF8A3D),
+                            Color(0xFFEA580C),
                         ),
                     ),
-                    shape = CircleShape,
                 ),
-        )
+            contentAlignment = Alignment.Center,
+        ) {
+            // Animated bag + food (design-space 64×64)
+            Canvas(Modifier.size(140.dp)) {
+                val s = size.minDimension / 64f
+                val progress = t
 
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(
-                Modifier
-                    .size(132.dp)
-                    .shadow(28.dp, RoundedCornerShape(32.dp))
-                    .clip(RoundedCornerShape(32.dp)),
-                contentAlignment = Alignment.Center,
-            ) {
-                AnimatedBasketMark(progress = t, modifier = Modifier.fillMaxSize())
-            }
+                // Rise curve: 0→0.35 pop up, 0.35→0.7 hold, 0.7→1 settle slightly
+                fun rise(delay: Float, amount: Float): Float {
+                    val p = ((progress - delay) / 0.35f).coerceIn(0f, 1f)
+                    val eased = FastOutSlowInEasing.transform(p)
+                    val settle = if (progress > 0.7f) {
+                        1f - 0.08f * ((progress - 0.7f) / 0.3f).coerceIn(0f, 1f)
+                    } else 1f
+                    return -amount * s * eased * settle
+                }
 
-            Spacer(Modifier.height(32.dp))
+                fun alphaIn(delay: Float): Float {
+                    return ((progress - delay) / 0.2f).coerceIn(0f, 1f)
+                }
 
-            Text(
-                appName.ifBlank { "Fresh2GO" },
-                color = Color.White,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = (-0.5).sp,
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                tagline.ifBlank { "Fresh Meals. Fast Delivery." },
-                color = Color(0xFF64748B),
-                fontSize = 13.sp,
-            )
-
-            Spacer(Modifier.height(28.dp))
-
-            // Soft dots — not a scanning bar
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                repeat(3) { i ->
-                    val phase = (dotPhase + i * 0.22f) % 1f
-                    val a = 0.25f + 0.75f * (1f - kotlin.math.abs(phase - 0.5f) * 2f).coerceIn(0f, 1f)
-                    val s = 0.85f + 0.2f * a
-                    Box(
-                        Modifier
-                            .size((6 * s).dp)
-                            .graphicsLayer { alpha = a }
-                            .background(Color(0xFFEA580C), CircleShape),
+                // --- Food BEHIND bag rim (drawn first) ---
+                // Souvlaki (left)
+                translate(left = 0f, top = rise(0.05f, 18f)) {
+                    val a = alphaIn(0.05f)
+                    // stick
+                    drawLine(
+                        color = Color(0xFFB8956A).copy(alpha = a),
+                        start = Offset(18f * s, 22f * s),
+                        end = Offset(22f * s, 8f * s),
+                        strokeWidth = 1.4f * s,
+                        cap = StrokeCap.Round,
+                    )
+                    // meat cubes
+                    val meat = Color(0xFF8B4513).copy(alpha = a)
+                    val meatHi = Color(0xFFA0522D).copy(alpha = a)
+                    for (i in 0..2) {
+                        val y = (18f - i * 4.2f) * s
+                        drawRoundRect(
+                            color = if (i % 2 == 0) meat else meatHi,
+                            topLeft = Offset(16.5f * s, y),
+                            size = Size(5.5f * s, 3.8f * s),
+                            cornerRadius = CornerRadius(1.2f * s),
+                        )
+                    }
+                    // pita disc
+                    drawCircle(
+                        color = Color(0xFFE8C99B).copy(alpha = a * 0.95f),
+                        radius = 5.5f * s,
+                        center = Offset(16f * s, 24f * s),
+                    )
+                    drawCircle(
+                        color = Color(0xFFD4B483).copy(alpha = a * 0.5f),
+                        radius = 5.5f * s,
+                        center = Offset(16f * s, 24f * s),
+                        style = Stroke(width = 0.8f * s),
                     )
                 }
-            }
-        }
-    }
-}
 
-/**
- * Canvas recreation of website AnimatedBasketLogo (lid + foods).
- * [progress] is 0f..1f over one 3.5s cycle.
- */
-@Composable
-private fun AnimatedBasketMark(
-    progress: Float,
-    modifier: Modifier = Modifier,
-) {
-    // Lid: open to -55° by 0.3, hold to 0.75, close by 1.0
-    val lidAngle = when {
-        progress < 0.3f -> -55f * (progress / 0.3f)
-        progress < 0.75f -> -55f
-        else -> -55f * (1f - (progress - 0.75f) / 0.25f)
-    }
+                // Crepe (center)
+                translate(left = 0f, top = rise(0.12f, 20f)) {
+                    val a = alphaIn(0.12f)
+                    rotate(degrees = -8f, pivot = Offset(32f * s, 18f * s)) {
+                        // cone
+                        val cone = Path().apply {
+                            moveTo(32f * s, 6f * s)
+                            lineTo(24f * s, 26f * s)
+                            lineTo(40f * s, 26f * s)
+                            close()
+                        }
+                        drawPath(cone, Color(0xFFE8C070).copy(alpha = a))
+                        // filling
+                        drawCircle(Color(0xFF7CB342).copy(alpha = a), 2f * s, Offset(30f * s, 12f * s))
+                        drawCircle(Color(0xFFE57373).copy(alpha = a), 1.6f * s, Offset(34f * s, 13f * s))
+                        drawCircle(Color.White.copy(alpha = a), 1.4f * s, Offset(32f * s, 10f * s))
+                    }
+                }
 
-    fun foodY(start: Float, peak: Float, holdEnd: Float, rise: Float): Float {
-        return when {
-            progress < start -> 0f
-            progress < peak -> -rise * ((progress - start) / (peak - start))
-            progress < holdEnd -> -rise
-            else -> -rise * (1f - (progress - holdEnd) / (1f - holdEnd).coerceAtLeast(0.01f))
-        }
-    }
+                // Pizza (right)
+                translate(left = 0f, top = rise(0.08f, 17f)) {
+                    val a = alphaIn(0.08f)
+                    rotate(degrees = 18f, pivot = Offset(48f * s, 20f * s)) {
+                        val slice = Path().apply {
+                            moveTo(48f * s, 8f * s)
+                            lineTo(40f * s, 26f * s)
+                            lineTo(56f * s, 26f * s)
+                            close()
+                        }
+                        drawPath(slice, Color(0xFFF5D08A).copy(alpha = a))
+                        // cheese layer
+                        val cheese = Path().apply {
+                            moveTo(48f * s, 11f * s)
+                            lineTo(42f * s, 24f * s)
+                            lineTo(54f * s, 24f * s)
+                            close()
+                        }
+                        drawPath(cheese, Color(0xFFFFE082).copy(alpha = a * 0.9f))
+                        // pepperoni
+                        drawCircle(Color(0xFFC62828).copy(alpha = a), 1.8f * s, Offset(46f * s, 16f * s))
+                        drawCircle(Color(0xFFC62828).copy(alpha = a), 1.5f * s, Offset(50f * s, 18f * s))
+                        drawCircle(Color(0xFFC62828).copy(alpha = a), 1.3f * s, Offset(47.5f * s, 21f * s))
+                    }
+                }
 
-    fun foodAlpha(appear: Float, holdEnd: Float, gone: Float): Float {
-        return when {
-            progress < appear -> 0f
-            progress < appear + 0.08f -> (progress - appear) / 0.08f
-            progress < holdEnd -> 1f
-            progress < gone -> 1f - (progress - holdEnd) / (gone - holdEnd).coerceAtLeast(0.01f)
-            else -> 0f
-        }.coerceIn(0f, 1f)
-    }
+                // Soft steam
+                if (progress > 0.2f) {
+                    val sa = ((sin((progress * 6f).toDouble()).toFloat() + 1f) / 2f) * 0.45f
+                    drawCircle(Color.White.copy(alpha = sa), 1.2f * s, Offset(28f * s, 6f * s))
+                    drawCircle(Color.White.copy(alpha = sa * 0.7f), 1f * s, Offset(36f * s, 4f * s))
+                }
 
-    val burgerY = foodY(0.05f, 0.25f, 0.7f, 16f)
-    val burgerA = foodAlpha(0.12f, 0.72f, 0.95f)
-    val souvY = foodY(0.08f, 0.28f, 0.68f, 18f)
-    val souvA = foodAlpha(0.15f, 0.7f, 0.93f)
-    val crepeY = foodY(0.1f, 0.3f, 0.66f, 14f)
-    val crepeA = foodAlpha(0.18f, 0.68f, 0.91f)
-
-    Canvas(modifier = modifier) {
-        val w = size.width
-        val h = size.height
-        val s = w / 64f // scale from 64x64 design space
-
-        // Brand gradient background
-        drawRoundRect(
-            brush = Brush.linearGradient(
-                colors = listOf(
-                    Color(0xFFF4A125),
-                    Color(0xFFFF8A3D),
-                    Color(0xFFEA580C),
-                ),
-                start = Offset.Zero,
-                end = Offset(w, h),
-            ),
-            cornerRadius = CornerRadius(16f * s, 16f * s),
-        )
-
-        // Basket body
-        drawRoundRect(
-            color = Color(0xFFF8F5F0),
-            topLeft = Offset(16f * s, 30f * s),
-            size = Size(32f * s, 20f * s),
-            cornerRadius = CornerRadius(5f * s, 5f * s),
-        )
-        // Weave lines
-        listOf(34f, 38f, 42f, 46f).forEach { y ->
-            drawLine(
-                color = Color(0xFFE8D5B8),
-                start = Offset(22f * s, y * s),
-                end = Offset(42f * s, y * s),
-                strokeWidth = 1.2f * s,
-                cap = StrokeCap.Round,
-            )
-        }
-        // Rim
-        drawRoundRect(
-            color = Color(0xFFFF8A3D),
-            topLeft = Offset(14f * s, 28f * s),
-            size = Size(36f * s, 5f * s),
-            cornerRadius = CornerRadius(2.5f * s, 2.5f * s),
-        )
-        // Handle
-        val handle = Path().apply {
-            moveTo(24f * s, 28f * s)
-            quadraticBezierTo(32f * s, 20.5f * s, 40f * s, 28f * s)
-        }
-        drawPath(
-            handle,
-            color = Color(0xFFFF8A3D),
-            style = Stroke(width = 3f * s, cap = StrokeCap.Round),
-        )
-
-        // Lid (pivots at rim center)
-        rotate(lidAngle, pivot = Offset(32f * s, 28f * s)) {
-            drawRoundRect(
-                color = Color(0xFFF4A125),
-                topLeft = Offset(13f * s, 24f * s),
-                size = Size(38f * s, 5f * s),
-                cornerRadius = CornerRadius(2.5f * s, 2.5f * s),
-            )
-        }
-
-        // Burger
-        if (burgerA > 0.02f) {
-            translate(left = 0f, top = burgerY * s) {
-                drawRoundRect(
-                    color = Color(0xFFD4A056).copy(alpha = burgerA),
-                    topLeft = Offset(19f * s, 27f * s),
-                    size = Size(12f * s, 3.5f * s),
-                    cornerRadius = CornerRadius(1.8f * s),
+                // --- White shopping bag (front) ---
+                // Handle
+                drawPath(
+                    path = Path().apply {
+                        moveTo(24f * s, 34f * s)
+                        quadraticBezierTo(32f * s, 22f * s, 40f * s, 34f * s)
+                    },
+                    color = Color.White,
+                    style = Stroke(width = 3.2f * s, cap = StrokeCap.Round),
                 )
+                // Bag body
                 drawRoundRect(
-                    color = Color(0xFF6D4C41).copy(alpha = burgerA),
-                    topLeft = Offset(19f * s, 25.6f * s),
-                    size = Size(12f * s, 2.4f * s),
+                    color = Color.White,
+                    topLeft = Offset(16f * s, 32f * s),
+                    size = Size(32f * s, 26f * s),
+                    cornerRadius = CornerRadius(5f * s, 5f * s),
+                )
+                // Orange brand line
+                drawRoundRect(
+                    color = Color(0xFFFF8A3D),
+                    topLeft = Offset(24f * s, 44f * s),
+                    size = Size(16f * s, 2.2f * s),
                     cornerRadius = CornerRadius(1.2f * s),
                 )
-                drawRoundRect(
-                    color = Color(0xFFFFCA28).copy(alpha = burgerA),
-                    topLeft = Offset(18.4f * s, 24.1f * s),
-                    size = Size(13.2f * s, 1.9f * s),
-                    cornerRadius = CornerRadius(0.95f * s),
-                )
-                drawOval(
-                    color = Color(0xFFE8B86D).copy(alpha = burgerA),
-                    topLeft = Offset(18.4f * s, 19f * s),
-                    size = Size(13.2f * s, 5.2f * s),
-                )
             }
         }
 
-        // Souvlaki skewer
-        if (souvA > 0.02f) {
-            translate(left = 0f, top = souvY * s) {
-                drawLine(
-                    color = Color(0xFFC99B6A).copy(alpha = souvA),
-                    start = Offset(28.5f * s, 30f * s),
-                    end = Offset(40.5f * s, 17.5f * s),
-                    strokeWidth = 1.3f * s,
-                    cap = StrokeCap.Round,
+        Spacer(Modifier.height(28.dp))
+
+        // Wordmark: Fresh2GO + .GR pill
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Fresh", color = Color(0xFF111111), fontWeight = FontWeight.ExtraBold, fontSize = 28.sp)
+            Text("2", color = Color(0xFFFF6B00), fontWeight = FontWeight.ExtraBold, fontSize = 28.sp)
+            Text("GO", color = Color(0xFFF4A125), fontWeight = FontWeight.ExtraBold, fontSize = 28.sp)
+            Spacer(Modifier.size(8.dp))
+            Box(
+                Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFFFF8A3D))
+                    .size(height = 26.dp, width = 40.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(".GR", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
+        Text(
+            tagline,
+            color = Color(0xFF9CA3AF),
+            fontWeight = FontWeight.Medium,
+            fontSize = 14.sp,
+        )
+
+        Spacer(Modifier.height(28.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            for (i in 0..2) {
+                val active = (dotPhase.toInt() % 3) == i
+                Box(
+                    Modifier
+                        .size(if (active) 9.dp else 7.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (active) Color(0xFFFF8A3D) else Color(0xFFFF8A3D).copy(alpha = 0.28f),
+                        ),
                 )
-                listOf(
-                    Offset(31.86f * s, 26.5f * s) to Color(0xFFA85A29),
-                    Offset(35f * s, 23.25f * s) to Color(0xFFB5733E),
-                    Offset(38.1f * s, 20f * s) to Color(0xFFC07A44),
-                ).forEach { (c, col) ->
-                    drawRoundRect(
-                        color = col.copy(alpha = souvA),
-                        topLeft = Offset(c.x - 2.2f * s, c.y - 1.9f * s),
-                        size = Size(4.4f * s, 3.8f * s),
-                        cornerRadius = CornerRadius(1.3f * s),
-                    )
-                }
             }
-        }
-
-        // Crepe
-        if (crepeA > 0.02f) {
-            translate(left = 0f, top = crepeY * s) {
-                rotate(-30f, pivot = Offset(42f * s, 22.75f * s)) {
-                    drawRoundRect(
-                        color = Color(0xFFE7C28B).copy(alpha = crepeA),
-                        topLeft = Offset(36.5f * s, 18.5f * s),
-                        size = Size(11f * s, 8.5f * s),
-                        cornerRadius = CornerRadius(3f * s),
-                    )
-                    drawRoundRect(
-                        color = Color(0xFFF0D6A4).copy(alpha = crepeA),
-                        topLeft = Offset(38f * s, 21f * s),
-                        size = Size(8f * s, 4.5f * s),
-                        cornerRadius = CornerRadius(2f * s),
-                    )
-                }
-            }
-        }
-
-        // Sparkles near peak open
-        if (progress in 0.2f..0.75f) {
-            val spark = ((progress - 0.2f) / 0.55f).coerceIn(0f, 1f)
-            val sa = (kotlin.math.sin(spark * Math.PI).toFloat()).coerceIn(0f, 1f) * 0.85f
-            drawCircle(Color(0xFFFFEB3B).copy(alpha = sa), radius = 1.2f * s, center = Offset(20f * s, 12f * s))
-            drawCircle(Color(0xFFFFEB3B).copy(alpha = sa * 0.7f), radius = 1f * s, center = Offset(44f * s, 10f * s))
-            drawCircle(Color.White.copy(alpha = sa * 0.5f), radius = 0.9f * s, center = Offset(32f * s, 7f * s))
         }
     }
 }
