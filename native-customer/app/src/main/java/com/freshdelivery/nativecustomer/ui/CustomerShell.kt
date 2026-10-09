@@ -828,15 +828,22 @@ private fun HomeTab(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         recentStoresRail.forEach { store ->
-                            Surface(
-                                onClick = { onOpenStore(store) },
-                                shape = RoundedCornerShape(16.dp),
-                                color = Color.White,
-                                shadowElevation = 2.dp,
-                                modifier = Modifier.width(140.dp),
+                            Box(
+                                modifier = Modifier
+                                    .width(140.dp)
+                                    .shadow(2.dp, RoundedCornerShape(16.dp))
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Color.White)
+                                    .clickable { onOpenStore(store) }
+                                    .padding(12.dp),
                             ) {
-                                Column(Modifier.padding(12.dp)) {
-                                    Text(store.name, fontWeight = FontWeight.Bold, maxLines = 1, style = MaterialTheme.typography.bodySmall)
+                                Column {
+                                    Text(
+                                        store.name,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        style = MaterialTheme.typography.bodySmall,
+                                    )
                                     Text(
                                         if (isStoreOpenNow(store)) "Ανοιχτό" else "Κλειστό",
                                         color = if (isStoreOpenNow(store)) FreshGreenDark else FreshMuted,
@@ -865,15 +872,22 @@ private fun HomeTab(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         favStoresRail.forEach { store ->
-                            Surface(
-                                onClick = { onOpenStore(store) },
-                                shape = RoundedCornerShape(16.dp),
-                                color = Color.White,
-                                shadowElevation = 2.dp,
-                                modifier = Modifier.width(140.dp),
+                            Box(
+                                modifier = Modifier
+                                    .width(140.dp)
+                                    .shadow(2.dp, RoundedCornerShape(16.dp))
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Color.White)
+                                    .clickable { onOpenStore(store) }
+                                    .padding(12.dp),
                             ) {
-                                Column(Modifier.padding(12.dp)) {
-                                    Text(store.name, fontWeight = FontWeight.Bold, maxLines = 1, style = MaterialTheme.typography.bodySmall)
+                                Column {
+                                    Text(
+                                        store.name,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        style = MaterialTheme.typography.bodySmall,
+                                    )
                                     Text(
                                         if (isStoreOpenNow(store)) "Ανοιχτό" else "Κλειστό",
                                         color = if (isStoreOpenNow(store)) FreshGreenDark else FreshMuted,
