@@ -824,6 +824,8 @@ private fun SendBar(
     enabled: Boolean,
     placeholder: String,
 ) {
+    var sending by remember { mutableStateOf(false) }
+    LaunchedEffect(value) { if (value.isBlank()) sending = false }
     Row(
         Modifier
             .fillMaxWidth()
@@ -841,8 +843,12 @@ private fun SendBar(
         )
         Spacer(Modifier.width(8.dp))
         IconButton(
-            onClick = onSend,
-            enabled = enabled && value.isNotBlank(),
+            onClick = {
+                if (sending) return@IconButton
+                sending = true
+                onSend()
+            },
+            enabled = enabled && value.isNotBlank() && !sending,
         ) {
             Box(
                 Modifier

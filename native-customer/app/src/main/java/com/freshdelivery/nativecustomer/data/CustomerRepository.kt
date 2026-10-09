@@ -695,6 +695,19 @@ class CustomerRepository(
                 order("created_at", Order.DESCENDING)
             }.decodeList<OrderRow>()
         val storeById = storesByIds(orders.map { it.store_id })
+        val orderIds = orders.map { it.id }
+        val counts = runCatching {
+            if (orderIds.isEmpty()) emptyMap()
+            else {
+                client.from("order_items")
+                    .select(Columns.list("order_id", "quantity")) {
+                        filter { isIn("order_id", orderIds) }
+                        limit(500L)
+                    }.decodeList<OrderItemRow>()
+                    .groupBy { it.order_id ?: "" }
+                    .mapValues { (_, rows) -> rows.sumOf { (it.quantity).coerceAtLeast(1) } }
+            }
+        }.getOrDefault(emptyMap())
         return orders.map { o ->
             val s = storeById[o.store_id]
             OrderUi(
@@ -702,6 +715,7 @@ class CustomerRepository(
                 storeName = s?.name,
                 storeLat = s?.latitude,
                 storeLng = s?.longitude,
+                itemCount = counts[o.id] ?: 0,
             )
         }
     }

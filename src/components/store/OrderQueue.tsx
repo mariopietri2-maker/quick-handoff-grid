@@ -66,7 +66,12 @@ const statusConfig: Record<string, { label: string; short: string; bg: string; c
 
 const PREP_PRESETS = [10, 15, 20, 30, 45];
 
-async function markItemSoldOut(menuItemId: string | null | undefined, itemName: string) {
+async function markItemSoldOut(
+  menuItemId: string | null | undefined,
+  itemName: string,
+  orderId?: string | null,
+  existingNotes?: string | null,
+) {
   if (!menuItemId) {
     toast.error('Δεν βρέθηκε σύνδεση με το μενού');
     return;
@@ -78,6 +83,11 @@ async function markItemSoldOut(menuItemId: string | null | undefined, itemName: 
   if (error) {
     toast.error('Αποτυχία ενημέρωσης μενού');
     return;
+  }
+  if (orderId) {
+    const noteLine = `86: ${itemName} εξαντλήθηκε`;
+    const notes = [existingNotes?.trim(), noteLine].filter(Boolean).join('\n');
+    await supabase.from('orders').update({ notes } as any).eq('id', orderId);
   }
   toast.success(`86 · «${itemName}» εξαντλήθηκε και αφαιρέθηκε από το μενού`);
 }
@@ -423,7 +433,7 @@ export function OrderQueue({
                       <button
                         type="button"
                         className="inline-flex items-center gap-0.5 text-[10px] font-bold text-destructive/90 hover:text-destructive px-1 py-0.5 rounded border border-destructive/25"
-                        onClick={() => void markItemSoldOut(item.menu_item_id, item.name)}
+                        onClick={() => void markItemSoldOut(item.menu_item_id, item.name, order.id, order.notes)}
                       >
                         <Ban className="h-3 w-3" />
                         86

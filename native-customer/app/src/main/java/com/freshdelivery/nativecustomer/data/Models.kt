@@ -139,6 +139,7 @@ data class OrderUi(
     val storeName: String?,
     val storeLat: Double? = null,
     val storeLng: Double? = null,
+    val itemCount: Int = 0,
 )
 
 /** Mirrors web customer_app_config.published_config (Capacitor admin branding). */

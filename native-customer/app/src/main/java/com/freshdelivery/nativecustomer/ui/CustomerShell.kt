@@ -797,6 +797,18 @@ private fun HomeTab(
                 }
             }
         }
+        if (state.busy && state.stores.isEmpty()) {
+            items(4) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                        .height(88.dp)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(Color(0xFFE8E4DE)),
+                )
+            }
+        }
         // Recently viewed stores
         val recentStoresRail = state.recentStoreIds.mapNotNull { id -> state.stores.find { it.id == id } }.take(5)
         if (recentStoresRail.isNotEmpty() && state.searchQuery.isBlank() && filter == HomeFilter.All && !browseMode) {
@@ -3386,9 +3398,19 @@ private fun OrdersTab(
                                 item.storeName ?: "Κατάστημα",
                                 fontWeight = FontWeight.Bold,
                             )
-                            item.order.delivery_address?.let {
-                                Text(it, style = MaterialTheme.typography.bodySmall, color = FreshMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            }
+                            Text(
+                                buildString {
+                                    if (item.itemCount > 0) append("${item.itemCount} είδη")
+                                    item.order.delivery_address?.let {
+                                        if (isNotEmpty()) append(" · ")
+                                        append(it)
+                                    }
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = FreshMuted,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
                         }
                     }
                     item.order.store_order_number?.let {

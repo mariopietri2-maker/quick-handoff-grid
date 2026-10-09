@@ -1,3 +1,11 @@
+## 2.9.74 / 2.6.48
+- Orders item count on cards
+- Support send double-tap guard
+- Driver offline blocks new offers
+- Store 86 appends order note
+- Live chat >10min red badge
+- Home skeleton while loading stores
+
 ## 2.9.73 / 2.6.47
 - Driver offline banner + network monitor
 - Support queue: oldest open chat first

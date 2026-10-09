@@ -297,7 +297,11 @@ export function LiveChatConsole() {
                         {roleLabel[c.participant_role] ?? c.participant_role}
                       </span>
                       {c.session_status !== 'closed' && chatAgeMin((c as any).created_at || c.last_message_at) != null && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-amber-500/15 text-amber-800">
+                        <span className={
+                          (chatAgeMin((c as any).created_at || c.last_message_at) ?? 0) >= 10
+                            ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-red-500/15 text-red-700 ring-1 ring-red-500/30'
+                            : 'inline-flex items-center px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-amber-500/15 text-amber-800'
+                        }>
                           {chatAgeMin((c as any).created_at || c.last_message_at)}λ ανοιχτό
                         </span>
                       )}

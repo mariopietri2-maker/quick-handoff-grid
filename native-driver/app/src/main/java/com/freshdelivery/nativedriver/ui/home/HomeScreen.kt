@@ -357,7 +357,7 @@ fun HomeScreen(
     val centerLng = markers.firstOrNull()?.lng ?: primary?.storeLng ?: state.geo?.lng
     val err = friendlyError(state.error)
     val hasStoreCall = state.online && state.activeTrips.isEmpty() && state.isCallDriver && state.storeCalls.isNotEmpty()
-    val hasOffer = state.online && state.activeTrips.isEmpty() && state.offers.isNotEmpty()
+    val hasOffer = state.online && !state.isOffline && state.activeTrips.isEmpty() && state.offers.isNotEmpty()
     val hasTrip = state.activeTrips.isNotEmpty()
     val showOffline = state.isOffline
 

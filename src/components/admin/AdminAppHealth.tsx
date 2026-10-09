@@ -362,7 +362,7 @@ export default function AdminAppHealth() {
           <div>
             <p className="text-xs text-muted-foreground">Customer native</p>
             <p className="font-heading font-bold text-sm">{APK_NATIVE_CUSTOMER_VERSION}</p>
-            <p className="text-[10px] text-muted-foreground">Τελευταίο native build: δείτε GitHub release asset updated_at</p>
+            <p className="text-[10px] text-muted-foreground">Live από native-versions / apk-downloads · πάτα Ανανέωση πάνω</p>
           </div>
           {APK_DOWNLOADS.customerNative?.fileUrl && (
             <a href={APK_DOWNLOADS.customerNative.url} className="text-xs font-semibold text-primary underline" target="_blank" rel="noreferrer">APK</a>
