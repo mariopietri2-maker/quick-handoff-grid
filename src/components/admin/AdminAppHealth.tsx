@@ -266,7 +266,7 @@ export default function AdminAppHealth() {
           label: 'Ωράρια καταστημάτων',
           status: missingHoursN > 0 ? 'warn' : 'ok',
           detail: missingHoursN > 0
-            ? `${missingHoursN} χωρίς ωράριο${missingHoursNames ? `: ${missingHoursNames}` : ''} — συμπλήρωσε στο admin καταστημάτων`
+            ? `${missingHoursN} χωρίς ωράριο${missingHoursNames ? `: ${missingHoursNames}` : ''} — άνοιξε Admin → Καταστήματα → Ωράρια`
             : 'Όλα τα ενεργά έχουν opening_hours',
         },
         {
@@ -362,6 +362,7 @@ export default function AdminAppHealth() {
           <div>
             <p className="text-xs text-muted-foreground">Customer native</p>
             <p className="font-heading font-bold text-sm">{APK_NATIVE_CUSTOMER_VERSION}</p>
+            <p className="text-[10px] text-muted-foreground">Τελευταίο native build: δείτε GitHub release asset updated_at</p>
           </div>
           {APK_DOWNLOADS.customerNative?.fileUrl && (
             <a href={APK_DOWNLOADS.customerNative.url} className="text-xs font-semibold text-primary underline" target="_blank" rel="noreferrer">APK</a>

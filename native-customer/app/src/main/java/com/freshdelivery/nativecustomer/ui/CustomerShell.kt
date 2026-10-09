@@ -215,6 +215,7 @@ fun CustomerShell(
     onClearCart: () -> Unit = {},
     onPlaceOrder: () -> Unit,
     onTrack: (OrderUi?) -> Unit,
+    onToggleOrderDetail: (String?) -> Unit = {},
     onRefresh: () -> Unit,
     onSignOut: () -> Unit,
     onSearch: (String) -> Unit = {},
@@ -468,6 +469,7 @@ fun CustomerShell(
                 )
                 CustomerTab.Orders -> OrdersTab(
                     state, onTrack, onRefresh, onSubmitReview,
+                    onToggleOrderDetail = onToggleOrderDetail,
                     onBackToHome = { onTab(CustomerTab.Home) },
                     onReorderStore = { storeId ->
                         state.stores.firstOrNull { it.id == storeId }?.let { onOpenStore(it) }
@@ -765,6 +767,36 @@ private fun HomeTab(
         // Admin-managed promo carousel (customer_app_config.promos) — auto-rotate
         // Hidden when a chip filter is active so the store list is right under the chips.
         val enabledPromos = state.appConfig.promos.filter { it.enabled && it.title.isNotBlank() }
+        // Night banner when most stores closed
+        val openCount = state.visibleStores.count { isStoreOpenNow(it) }
+        val totalStores = state.visibleStores.size.coerceAtLeast(1)
+        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        val isNightHours = hour >= 23 || hour < 7
+        if (isNightHours && openCount * 2 < totalStores && state.searchQuery.isBlank() && filter == HomeFilter.All) {
+            item {
+                Surface(
+                    color = Color(0xFF1A237E),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                ) {
+                    Column(Modifier.padding(14.dp)) {
+                        Text(
+                            "Νυχτερινές ώρες",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        Text(
+                            "Πολλά καταστήματα είναι κλειστά · ανοιχτά τώρα: $openCount",
+                            color = Color.White.copy(alpha = 0.85f),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            }
+        }
         // Recently viewed stores
         val recentStoresRail = state.recentStoreIds.mapNotNull { id -> state.stores.find { it.id == id } }.take(5)
         if (recentStoresRail.isNotEmpty() && state.searchQuery.isBlank() && filter == HomeFilter.All && !browseMode) {
@@ -1823,8 +1855,30 @@ private fun MenuScreen(
                 }
             }
             // Clip list so scrolled cards never cover / steal taps from chips
+            val menuListState = rememberLazyListState()
+            // Auto-scroll to highlighted dish (from search)
+            LaunchedEffect(state.highlightMenuItemId, state.menu) {
+                val hid = state.highlightMenuItemId ?: return@LaunchedEffect
+                // Index: hero(1) + menu header(1) + [busy?] + for each group: cat header + items
+                var idx = 2 // hero + menu title row
+                if (state.busy) {
+                    // only spinner item — nothing to scroll to
+                    return@LaunchedEffect
+                }
+                for ((category, itemsInCat) in visibleGroups) {
+                    idx += 1 // category header
+                    val pos = itemsInCat.indexOfFirst { it.id == hid }
+                    if (pos >= 0) {
+                        idx += pos
+                        runCatching { menuListState.animateScrollToItem(idx.coerceAtLeast(0)) }
+                        break
+                    }
+                    idx += itemsInCat.size
+                }
+            }
             LazyColumn(
-                Modifier
+                state = menuListState,
+                modifier = Modifier
                     .fillMaxSize()
                     .weight(1f)
                     .clipToBounds(),
@@ -3194,6 +3248,7 @@ Text(
 private fun OrdersTab(
     state: CustomerUiState,
     onTrack: (OrderUi?) -> Unit,
+    onToggleOrderDetail: (String?) -> Unit = {},
     onRefresh: () -> Unit,
     onSubmitReview: (String, String, Int, String) -> Unit = { _, _, _, _ -> },
     onBackToHome: () -> Unit = {},
@@ -3297,7 +3352,7 @@ private fun OrdersTab(
                     .shadow(4.dp, RoundedCornerShape(20.dp))
                     .clip(RoundedCornerShape(20.dp))
                     .background(Color.White)
-                    .clickable { onTrack(item) }
+                    .clickable { onToggleOrderDetail(item.order.id) }
                     .padding(16.dp),
             ) {
                 Row(
@@ -3333,6 +3388,36 @@ private fun OrdersTab(
                 Spacer(Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     StatusPill(item.order.status)
+                    Spacer(Modifier.weight(1f))
+                    item.order.total_amount?.let {
+                        Text("€" + "%.2f".format(it), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    }
+                }
+                if (state.orderDetailId == item.order.id) {
+                    Spacer(Modifier.height(10.dp))
+                    HorizontalDivider(color = FreshChip)
+                    Spacer(Modifier.height(8.dp))
+                    Text("Λεπτομέρειες", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+                    Spacer(Modifier.height(4.dp))
+                    Text("Status: ${item.order.status}", style = MaterialTheme.typography.bodySmall, color = FreshMuted)
+                    item.order.delivery_address?.takeIf { it.isNotBlank() }?.let {
+                        Text("Διεύθυνση: $it", style = MaterialTheme.typography.bodySmall, color = FreshMuted)
+                    }
+                    Text(
+                        "Σύνολο €" + "%.2f".format(item.order.total_amount ?: 0.0),
+                        fontWeight = FontWeight.Bold,
+                        color = FreshGreenDark,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Surface(onClick = { onTrack(item) }, color = FreshGreen, shape = RoundedCornerShape(12.dp)) {
+                        Text(
+                            "Παρακολούθηση",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        )
+                    }
+                }
                     if (item.order.status == "delivered" && item.order.id !in state.reviewedOrderIds) {
                         Spacer(Modifier.height(8.dp))
                         Text("Βαθμολόγησε την παραγγελία", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
@@ -3353,11 +3438,6 @@ private fun OrdersTab(
                         ) {
                             Text("Ξαναπαράγγειλε", fontWeight = FontWeight.Bold, color = FreshGreenDark)
                         }
-                    }
-                }
-                    Spacer(Modifier.weight(1f))
-                    item.order.total_amount?.let {
-                        Text("€" + "%.2f".format(it), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                     }
                 }
                 HorizontalDivider(Modifier.padding(vertical = 12.dp), color = FreshDivider)
@@ -3471,6 +3551,14 @@ private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
                                 style = MaterialTheme.typography.bodySmall,
                             )
                         }
+                        etaMin?.let { m ->
+                            Text(
+                                "Εκτιμώμενος χρόνος ~$m λεπτά",
+                                color = FreshGreenDark,
+                                fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
                         state.driverPhone?.let { phone ->
                             val ctx = LocalContext.current
                             TextButton(onClick = {
@@ -3495,6 +3583,12 @@ private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
                 // ETA + headline
                 val etaMin = estimateEtaMinutes(order.order)
                 val headline = trackHeadline(order.order.status, state.driverLocation != null)
+                val etaMin = when (order.order.status) {
+                    "placed", "accepted", "preparing" -> 25
+                    "ready", "arrived" -> 15
+                    "picked_up" -> 10
+                    else -> null
+                }
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,

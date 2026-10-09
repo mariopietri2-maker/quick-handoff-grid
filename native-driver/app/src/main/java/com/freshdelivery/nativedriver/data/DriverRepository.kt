@@ -325,6 +325,19 @@ class DriverRepository(
                 if (!reason.isNullOrBlank()) put("reason", reason)
             },
         )
+        // Best-effort analytics for admin ops
+        runCatching {
+            client.from("app_client_events").insert(
+                buildJsonObject {
+                    put("app", "driver_native")
+                    put("event", "decline_offer")
+                    put("meta", buildJsonObject {
+                        put("offer_id", offerId)
+                        put("reason", reason ?: "")
+                    })
+                },
+            )
+        }
     }
 
     suspend fun transitionStatus(orderId: String, newStatus: String) {

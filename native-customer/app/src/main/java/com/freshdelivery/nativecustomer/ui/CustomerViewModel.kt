@@ -109,6 +109,7 @@ data class CustomerUiState(
     val storeRatings: Map<String, StoreRating> = emptyMap(),
     val favoriteStoreIds: Set<String> = emptySet(),
     val recentStoreIds: List<String> = emptyList(),
+    val orderDetailId: String? = null,
     val canManageGames: Boolean = false,
     val selectedStore: StoreRow? = null,
     val menu: List<MenuItemRow> = emptyList(),
@@ -777,6 +778,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         // Switching store starts a fresh cart (efood-style) instead of hard-blocking
         val baseCart = if (s.cartStoreId != null && s.cartStoreId != storeId) emptyList() else s.cart
         val switched = s.cartStoreId != null && s.cartStoreId != storeId
+        val switchInfo = if (switched) "Το προηγούμενο καλάθι καθαρίστηκε — νέο κατάστημα." else null
         val extra = selected.sumOf { it.price_delta }
         val label = selected.joinToString(", ") { it.option_name }
         val name = if (label.isBlank()) item.name else "${item.name} ($label)"
@@ -807,7 +809,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             cartStoreName = s.selectedStore?.name,
             error = null,
             info = if (switched) {
-                "Νέο καλάθι · ${s.selectedStore?.name ?: "κατάστημα"}"
+                "Νέο καλάθι · ${s.selectedStore?.name ?: "κατάστημα"} (το προηγούμενο καθαρίστηκε)"
             } else {
                 "Προστέθηκε στο καλάθι"
             },
@@ -892,6 +894,12 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 scheduleBannerClear()
             }
         }
+    }
+
+    fun toggleOrderDetail(orderId: String?) {
+        _state.value = _state.value.copy(
+            orderDetailId = if (_state.value.orderDetailId == orderId) null else orderId,
+        )
     }
 
     fun rememberRecentStore(storeId: String) {
