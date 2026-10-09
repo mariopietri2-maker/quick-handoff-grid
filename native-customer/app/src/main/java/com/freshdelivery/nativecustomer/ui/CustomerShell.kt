@@ -3469,8 +3469,6 @@ private fun OrdersTab(
 }
 
 @Composable
-    }
-
 private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
     val order = state.trackingOrder
 
