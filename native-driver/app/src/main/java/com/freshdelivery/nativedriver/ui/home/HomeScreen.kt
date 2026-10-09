@@ -706,6 +706,35 @@ fun HomeScreen(
                 }
 
                 else -> {
+                    state.money?.let { m ->
+                        Card(
+                            Modifier.fillMaxWidth().padding(bottom = 10.dp).shadow(8.dp, RoundedCornerShape(18.dp)),
+                            shape = RoundedCornerShape(18.dp),
+                            colors = CardDefaults.cardColors(containerColor = SurfaceCard),
+                        ) {
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column {
+                                    Text("Κέρδη σήμερα", fontSize = 12.sp, color = TextMuted)
+                                    Text(
+                                        "€" + "%.2f".format(m.todayTotal),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 22.sp,
+                                        color = TextDark,
+                                    )
+                                }
+                                Text(
+                                    "${m.todayTrips} διανομές",
+                                    fontSize = 13.sp,
+                                    color = TextMuted,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
+                        }
+                    }
                     Card(
                         Modifier.fillMaxWidth().shadow(12.dp, RoundedCornerShape(24.dp)),
                         shape = RoundedCornerShape(24.dp),

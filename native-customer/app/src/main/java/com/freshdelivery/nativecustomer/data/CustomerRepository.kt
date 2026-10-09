@@ -714,6 +714,14 @@ class CustomerRepository(
             }.decodeList<StoreRow>().associateBy { it.id }
     }
 
+    suspend fun fetchDriverProfile(driverId: String): ProfileRow? =
+        runCatching {
+            client.from("profiles").select(Columns.list("id", "full_name", "phone")) {
+                filter { eq("user_id", driverId) }
+                limit(1L)
+            }.decodeList<ProfileRow>().firstOrNull()
+        }.getOrNull()
+
     suspend fun fetchDriverLocation(driverId: String): DriverLocationRow? =
         runCatching {
             client.from("driver_locations")

@@ -765,6 +765,43 @@ private fun HomeTab(
         // Admin-managed promo carousel (customer_app_config.promos) — auto-rotate
         // Hidden when a chip filter is active so the store list is right under the chips.
         val enabledPromos = state.appConfig.promos.filter { it.enabled && it.title.isNotBlank() }
+        // Recently viewed stores
+        val recentStoresRail = state.recentStoreIds.mapNotNull { id -> state.stores.find { it.id == id } }.take(5)
+        if (recentStoresRail.isNotEmpty() && state.searchQuery.isBlank() && filter == HomeFilter.All && !browseMode) {
+            item {
+                Column(Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 4.dp)) {
+                    Text(
+                        "Πρόσφατα",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(horizontal = 16.dp, bottom = 8.dp),
+                    )
+                    Row(
+                        Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        recentStoresRail.forEach { store ->
+                            Surface(
+                                onClick = { onOpenStore(store) },
+                                shape = RoundedCornerShape(16.dp),
+                                color = Color.White,
+                                shadowElevation = 2.dp,
+                                modifier = Modifier.width(140.dp),
+                            ) {
+                                Column(Modifier.padding(12.dp)) {
+                                    Text(store.name, fontWeight = FontWeight.Bold, maxLines = 1, style = MaterialTheme.typography.bodySmall)
+                                    Text(
+                                        if (isStoreOpenNow(store)) "Ανοιχτό" else "Κλειστό",
+                                        color = if (isStoreOpenNow(store)) FreshGreenDark else FreshMuted,
+                                        style = MaterialTheme.typography.labelSmall,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
         // Favorites rail
         val favStoresRail = state.stores.filter { state.favoriteStoreIds.contains(it.id) }.take(12)
         if (favStoresRail.isNotEmpty() && state.searchQuery.isBlank() && filter == HomeFilter.All && !browseMode) {
@@ -3415,22 +3452,38 @@ private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
                         )
                         if (state.driverLocation != null) {
                             Text(
-                                "Οδηγός καθ' οδόν · ζωντανή θέση στον χάρτη",
+                                buildString {
+                                    append("Οδηγός καθ' οδόν")
+                                    state.driverName?.let { append(" · $it") }
+                                },
                                 color = FreshGreenDark,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.SemiBold,
                             )
-                            Text(
-                                "Ανανέωσε για τελευταία θέση · κάλεσε από το ιστορικό παραγγελίας αν χρειάζεται",
-                                color = FreshMuted,
-                                style = MaterialTheme.typography.labelSmall,
-                            )
                         } else if (order.order.driver_id != null) {
                             Text(
-                                "Οδηγός ανατέθηκε · αναμονή θέσης…",
+                                buildString {
+                                    append("Οδηγός ανατέθηκε")
+                                    state.driverName?.let { append(" · $it") }
+                                    append(" · αναμονή θέσης…")
+                                },
                                 color = FreshMuted,
                                 style = MaterialTheme.typography.bodySmall,
                             )
+                        }
+                        state.driverPhone?.let { phone ->
+                            val ctx = LocalContext.current
+                            TextButton(onClick = {
+                                runCatching {
+                                    val intent = android.content.Intent(
+                                        android.content.Intent.ACTION_DIAL,
+                                        android.net.Uri.parse("tel:$phone"),
+                                    )
+                                    ctx.startActivity(intent)
+                                }
+                            }) {
+                                Text("Κλήση οδηγού", color = FreshGreen, fontWeight = FontWeight.Bold)
+                            }
                         }
                         order.order.delivery_address?.let {
                             Text(it, color = FreshMuted, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)

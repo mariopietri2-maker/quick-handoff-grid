@@ -29,6 +29,8 @@ interface OrderQueueProps {
   ) => Promise<boolean> | void;
   storeName?: string;
   pendingIds?: Set<string> | string[];
+  busyMode?: boolean;
+  onBusyModeChange?: (busy: boolean) => void;
 }
 
 const statusConfig: Record<string, { label: string; short: string; bg: string; chip: string; accent: string }> = {
@@ -137,6 +139,8 @@ function getCountdownMinutes(order: OrderWithItems, now: number, prepMin: number
  * two columns (Νέα / Έγινε αποδεκτή), clean tickets, empty states, floating counts.
  */
 export function OrderQueue({
+  busyMode = false,
+  onBusyModeChange,
   orders,
   onStatusUpdate,
   storeName = 'Κατάστημα',
@@ -316,6 +320,19 @@ export function OrderQueue({
           open && 'ring-1 ring-primary/25',
         )}
       >
+      {typeof onBusyModeChange === 'function' && (
+        <div className="flex items-center justify-between gap-2 rounded-xl border border-border bg-card px-3 py-2">
+          <div>
+            <p className="text-sm font-heading font-semibold">Busy mode</p>
+            <p className="text-[11px] text-muted-foreground">Ειδοποίηση αιχμής για την κουζίνα</p>
+          </div>
+          <Button type="button" size="sm" variant={busyMode ? 'default' : 'outline'} className="font-heading font-bold"
+            onClick={() => onBusyModeChange(!busyMode)}>
+            {busyMode ? 'Ενεργό' : 'Off'}
+          </Button>
+        </div>
+      )}
+
         <div className="flex items-start gap-3">
           <button
             type="button"

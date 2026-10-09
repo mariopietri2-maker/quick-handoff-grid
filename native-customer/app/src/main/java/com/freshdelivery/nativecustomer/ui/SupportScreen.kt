@@ -679,7 +679,7 @@ private fun ColumnScope.LiveChatView(
 
     ThreadBox(
         loading = state.liveChatLoading,
-        emptyText = "Συνδέθηκες με την ομάδα. Στείλε το πρώτο μήνυμα.",
+        emptyText = if (state.liveChatClosed) "Η υποστήριξη έκλεισε τη συνομιλία." else "Συνδέθηκες με την ομάδα. Στείλε το πρώτο μήνυμα.",
         showEmpty = state.liveChatMessages.isEmpty(),
     ) {
         state.liveChatMessages.forEach { m ->

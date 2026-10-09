@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   TrendingUp, ShoppingBag, Wallet, CheckCircle2, PackagePlus, Eye, EyeOff,
 } from 'lucide-react';
@@ -53,6 +53,18 @@ export default function StoreDashboard({
 }: Props) {
   const analytics = useStoreAnalytics(storeId);
   const [revealMoney, setRevealMoney] = useState(false);
+  const [busyModeLocal, setBusyModeLocal] = useState(false);
+  const [fulfilmentMode, setFulfilmentMode] = useState<'platform' | 'store'>('platform');
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.from('stores').select('busy_mode, fulfilment_mode').eq('id', storeId).maybeSingle();
+      if (cancelled || !data) return;
+      setBusyModeLocal(!!(data as { busy_mode?: boolean }).busy_mode);
+      setFulfilmentMode((data as { fulfilment_mode?: string }).fulfilment_mode === 'store' ? 'store' : 'platform');
+    })();
+    return () => { cancelled = true; };
+  }, [storeId]);
 
   const { data: walletBal } = useQuery({
     queryKey: ['store-wallet-balance', storeId],
@@ -121,7 +133,19 @@ export default function StoreDashboard({
       </div>
 
       {/* Kitchen board */}
-      <OrderQueue fulfilmentMode={(typeof store !== "undefined" && (store as any)?.fulfilment_mode === "store") ? "store" : "platform"} orders={orders} onStatusUpdate={onStatusUpdate} storeName={storeName} storeId={storeId} pendingIds={pendingIds} />
+      <OrderQueue
+        busyMode={busyModeLocal}
+        onBusyModeChange={(b) => {
+          setBusyModeLocal(b);
+          void supabase.from('stores').update({ busy_mode: b }).eq('id', storeId);
+        }}
+        fulfilmentMode={fulfilmentMode}
+        orders={orders}
+        onStatusUpdate={onStatusUpdate}
+        storeName={storeName}
+        storeId={storeId}
+        pendingIds={pendingIds}
+      />
 
       {/* Bottom panels */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">

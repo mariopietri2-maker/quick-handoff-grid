@@ -108,6 +108,7 @@ data class CustomerUiState(
     val stores: List<StoreRow> = emptyList(),
     val storeRatings: Map<String, StoreRating> = emptyMap(),
     val favoriteStoreIds: Set<String> = emptySet(),
+    val recentStoreIds: List<String> = emptyList(),
     val canManageGames: Boolean = false,
     val selectedStore: StoreRow? = null,
     val menu: List<MenuItemRow> = emptyList(),
@@ -132,6 +133,8 @@ data class CustomerUiState(
     val orders: List<OrderUi> = emptyList(),
     val trackingOrder: OrderUi? = null,
     val driverLocation: DriverLocationRow? = null,
+    val driverName: String? = null,
+    val driverPhone: String? = null,
     val busy: Boolean = false,
     val locating: Boolean = false,
     val savingProfile: Boolean = false,
@@ -720,7 +723,8 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun openStore(store: StoreRow) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(selectedStore = store, busy = true, error = null)
+            val recent = (listOf(store.id) + _state.value.recentStoreIds).distinct().take(5)
+            _state.value = _state.value.copy(selectedStore = store, busy = true, error = null, recentStoreIds = recent)
             runCatching {
                 val menu = repo.fetchMenu(store.id)
                 val mods = repo.fetchModifiers(menu.map { it.id })
@@ -890,6 +894,11 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun rememberRecentStore(storeId: String) {
+        val recent = (listOf(storeId) + _state.value.recentStoreIds).distinct().take(5)
+        _state.value = _state.value.copy(recentStoreIds = recent)
+    }
+
     fun openStoreHighlightingItem(storeId: String, menuItemId: String?) {
         viewModelScope.launch {
             runCatching {
@@ -897,12 +906,14 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     ?: allStoresCache.firstOrNull { it.id == storeId }
                     ?: return@runCatching
                 val menu = repo.fetchMenu(storeId)
+                val recent = (listOf(storeId) + _state.value.recentStoreIds).distinct().take(5)
                 _state.value = _state.value.copy(
                     selectedStore = store,
                     menu = menu,
                     highlightMenuItemId = menuItemId,
                     showCart = false,
                     tab = com.freshdelivery.nativecustomer.data.CustomerTab.Home,
+                    recentStoreIds = recent,
                 )
             }
         }
@@ -1603,15 +1614,21 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         val driverId = _state.value.trackingOrder?.order?.driver_id
         if (driverId.isNullOrBlank()) {
             stopWatchingDriver()
-            if (_state.value.driverLocation != null) {
-                _state.value = _state.value.copy(driverLocation = null)
+            if (_state.value.driverLocation != null || _state.value.driverPhone != null) {
+                _state.value = _state.value.copy(driverLocation = null, driverName = null, driverPhone = null)
             }
             return
         }
         watchDriver(driverId)
         viewModelScope.launch {
             runCatching {
-                _state.value = _state.value.copy(driverLocation = repo.fetchDriverLocation(driverId))
+                val loc = repo.fetchDriverLocation(driverId)
+                val profile = repo.fetchDriverProfile(driverId)
+                _state.value = _state.value.copy(
+                    driverLocation = loc,
+                    driverName = profile?.full_name?.takeIf { it.isNotBlank() },
+                    driverPhone = profile?.phone?.takeIf { it.isNotBlank() },
+                )
             }
         }
     }
@@ -2139,7 +2156,8 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                                 startNewLiveConversation()
                                 _state.value = _state.value.copy(
                                     liveChatClosed = true,
-                                    info = "Η συνομιλία έκλεισε από την υποστήριξη. Διάλεξε νέο θέμα.",
+                                    supportView = SupportView.Topics,
+                                    info = "Η υποστήριξη έκλεισε τη συνομιλία. Διάλεξε νέο θέμα για νέα συνομιλία.",
                                 )
                             }
                             return@collect
