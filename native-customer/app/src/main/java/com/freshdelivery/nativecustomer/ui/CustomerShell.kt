@@ -3466,6 +3466,7 @@ private fun OrdersTab(
             }
         }
     }
+    } // PullToRefreshBox
 }
 
 @Composable
