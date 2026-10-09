@@ -132,6 +132,7 @@ class MainActivity : ComponentActivity() {
                             onSubmitReview = vm::submitReview,
                             onAddressQuery = vm::onAddressQuery,
                             onUpdateQty = vm::updateQty,
+                            onSetCartLineNote = vm::setCartLineNote,
                             onToggleCart = vm::toggleCart,
                             onSetDelivery = vm::setDelivery,
                             onSaveAddress = vm::saveAddress,

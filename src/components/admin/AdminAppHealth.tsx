@@ -75,6 +75,7 @@ export default function AdminAppHealth() {
         activeStores,
         platformStores,
         storeCourierStores,
+        missingHoursStores,
         openOrders,
         recentStoreOrders,
         stuckOrders,
@@ -113,6 +114,11 @@ export default function AdminAppHealth() {
           .eq('is_active', true)
           .eq('fulfilment_mode', 'store'),
         (supabase as any)
+          .from('stores')
+          .select('id, name', { count: 'exact' })
+          .eq('is_active', true)
+          .or('opening_hours.is.null,opening_hours.eq.{}'),
+        (supabase as any)
           .from('orders')
           .select('id', { count: 'exact', head: true })
           .in('status', ['placed', 'accepted', 'preparing', 'ready', 'arrived', 'picked_up']),
@@ -143,6 +149,12 @@ export default function AdminAppHealth() {
       const storesN = activeStores.count ?? 0;
       const platformN = platformStores.count ?? 0;
       const storeCourN = storeCourierStores.count ?? 0;
+      const missingHoursN = missingHoursStores.count ?? 0;
+      const missingHoursNames = ((missingHoursStores.data as { name?: string }[] | null) ?? [])
+        .map((s) => s.name)
+        .filter(Boolean)
+        .slice(0, 5)
+        .join(', ');
       const openN = openOrders.count ?? 0;
       const dayOrders = recentStoreOrders.count ?? 0;
       const stuckN = stuckOrders.count ?? 0;
@@ -252,8 +264,10 @@ export default function AdminAppHealth() {
         {
           id: 's_hours',
           label: 'Ωράρια καταστημάτων',
-          status: 'ok',
-          detail: 'Έλεγξε στο admin stores αν λείπουν opening_hours (επηρεάζει Ανοιχτά).',
+          status: missingHoursN > 0 ? 'warn' : 'ok',
+          detail: missingHoursN > 0
+            ? `${missingHoursN} χωρίς ωράριο${missingHoursNames ? `: ${missingHoursNames}` : ''} — συμπλήρωσε στο admin καταστημάτων`
+            : 'Όλα τα ενεργά έχουν opening_hours',
         },
         {
           id: 's_orders',
@@ -343,6 +357,26 @@ export default function AdminAppHealth() {
         </Button>
       </div>
 
+      <div className="mb-4 grid gap-2 sm:grid-cols-2">
+        <div className="rounded-xl border bg-card p-3 flex items-center justify-between gap-2">
+          <div>
+            <p className="text-xs text-muted-foreground">Customer native</p>
+            <p className="font-heading font-bold text-sm">{APK_NATIVE_CUSTOMER_VERSION}</p>
+          </div>
+          {APK_DOWNLOADS.customerNative?.fileUrl && (
+            <a href={APK_DOWNLOADS.customerNative.url} className="text-xs font-semibold text-primary underline" target="_blank" rel="noreferrer">APK</a>
+          )}
+        </div>
+        <div className="rounded-xl border bg-card p-3 flex items-center justify-between gap-2">
+          <div>
+            <p className="text-xs text-muted-foreground">Driver native</p>
+            <p className="font-heading font-bold text-sm">{APK_NATIVE_DRIVER_VERSION}</p>
+          </div>
+          {APK_DOWNLOADS.driverNative?.fileUrl && (
+            <a href={APK_DOWNLOADS.driverNative.url} className="text-xs font-semibold text-primary underline" target="_blank" rel="noreferrer">APK</a>
+          )}
+        </div>
+      </div>
       {error && (
         <Card className="border-destructive/40">
           <CardContent className="p-3 text-sm text-destructive">{error}</CardContent>

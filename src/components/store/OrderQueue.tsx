@@ -444,6 +444,9 @@ export function OrderQueue({
                   <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => setPrep(order.id, currentPrep + 5)}>
                     <Plus className="h-3 w-3" />
                   </Button>
+                  <Button type="button" variant="secondary" size="sm" className="h-7 px-2 text-xs font-bold" onClick={() => setPrep(order.id, currentPrep + 10)}>
+                    +10
+                  </Button>
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {PREP_PRESETS.map((m) => (

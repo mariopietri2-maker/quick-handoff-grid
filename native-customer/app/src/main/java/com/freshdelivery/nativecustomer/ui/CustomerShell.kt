@@ -202,6 +202,7 @@ fun CustomerShell(
     onSubmitReview: (String, String, Int, String) -> Unit = { _, _, _, _ -> },
     onReorderOrder: (String, String) -> Unit = { _, _ -> },
     onUpdateQty: (String, Int) -> Unit,
+    onSetCartLineNote: (String, String) -> Unit = { _, _ -> },
     onToggleCart: (Boolean) -> Unit,
     onSetDelivery: (String, Double?, Double?) -> Unit,
     onSaveAddress: () -> Unit = {},
@@ -319,7 +320,7 @@ fun CustomerShell(
     }
     if (state.showCart) {
         CartCheckoutScreen(
-            state, snackbar, { onToggleCart(false) }, onUpdateQty, onSetDelivery,
+            state, snackbar, { onToggleCart(false) }, onUpdateQty, onSetCartLineNote, onSetDelivery,
             onSetNotes, onSetTip, onSetPayment, onPlaceOrder, onUseLocation, onGeocode, onPickSuggestion,
             onPromoCodeInput, onApplyPromoCode, onClearPromoCode,
             onClearCart,
@@ -764,6 +765,43 @@ private fun HomeTab(
         // Admin-managed promo carousel (customer_app_config.promos) — auto-rotate
         // Hidden when a chip filter is active so the store list is right under the chips.
         val enabledPromos = state.appConfig.promos.filter { it.enabled && it.title.isNotBlank() }
+        // Favorites rail
+        val favStoresRail = state.stores.filter { state.favoriteStoreIds.contains(it.id) }.take(12)
+        if (favStoresRail.isNotEmpty() && state.searchQuery.isBlank() && filter == HomeFilter.All && !browseMode) {
+            item {
+                Column(Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 4.dp)) {
+                    Text(
+                        "Αγαπημένα",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(horizontal = 16.dp, bottom = 8.dp),
+                    )
+                    Row(
+                        Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        favStoresRail.forEach { store ->
+                            Surface(
+                                onClick = { onOpenStore(store) },
+                                shape = RoundedCornerShape(16.dp),
+                                color = Color.White,
+                                shadowElevation = 2.dp,
+                                modifier = Modifier.width(140.dp),
+                            ) {
+                                Column(Modifier.padding(12.dp)) {
+                                    Text(store.name, fontWeight = FontWeight.Bold, maxLines = 1, style = MaterialTheme.typography.bodySmall)
+                                    Text(
+                                        if (isStoreOpenNow(store)) "Ανοιχτό" else "Κλειστό",
+                                        color = if (isStoreOpenNow(store)) FreshGreenDark else FreshMuted,
+                                        style = MaterialTheme.typography.labelSmall,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
         if (state.dishHits.isNotEmpty() && state.searchQuery.isNotBlank()) {
             item {
                 Text(
@@ -1914,6 +1952,7 @@ private fun CartCheckoutScreen(
     snackbar: SnackbarHostState,
     onBack: () -> Unit,
     onUpdateQty: (String, Int) -> Unit,
+    onSetCartLineNote: (String, String) -> Unit = { _, _ -> },
     onSetDelivery: (String, Double?, Double?) -> Unit,
     onSetNotes: (String) -> Unit,
     onSetTip: (Double) -> Unit,
@@ -2041,11 +2080,23 @@ private fun CartCheckoutScreen(
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text(line.name, fontWeight = FontWeight.SemiBold)
+                        if (line.modifierLabel.isNotBlank()) {
+                            Text(line.modifierLabel, style = MaterialTheme.typography.labelSmall, color = FreshMuted)
+                        }
                         Text(
                             "€" + "%.2f".format(line.price * line.quantity),
                             color = FreshGreenDark,
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.bodySmall,
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        OutlinedTextField(
+                            value = line.note,
+                            onValueChange = { onSetCartLineNote(line.menuItemId, it) },
+                            placeholder = { Text("Σημείωση (π.χ. χωρίς κρεμμύδι)", style = MaterialTheme.typography.labelSmall) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            textStyle = MaterialTheme.typography.labelSmall,
                         )
                     }
                     Row(
@@ -3368,6 +3419,17 @@ private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
                                 color = FreshGreenDark,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                "Ανανέωσε για τελευταία θέση · κάλεσε από το ιστορικό παραγγελίας αν χρειάζεται",
+                                color = FreshMuted,
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        } else if (order.order.driver_id != null) {
+                            Text(
+                                "Οδηγός ανατέθηκε · αναμονή θέσης…",
+                                color = FreshMuted,
+                                style = MaterialTheme.typography.bodySmall,
                             )
                         }
                         order.order.delivery_address?.let {

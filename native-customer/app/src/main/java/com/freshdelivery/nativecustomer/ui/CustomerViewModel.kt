@@ -912,6 +912,13 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(highlightMenuItemId = null)
     }
 
+    fun setCartLineNote(menuItemId: String, note: String) {
+        val cart = _state.value.cart.map {
+            if (it.menuItemId == menuItemId) it.copy(note = note.take(80)) else it
+        }
+        _state.value = _state.value.copy(cart = cart)
+    }
+
     fun clearCart() {
         _state.value = _state.value.copy(
             cart = emptyList(),
@@ -2124,13 +2131,24 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     if (session != null) {
                         // Prefer open; if server still reports closed while user is on Topics, ignore
                         val isClosed = session.status == "closed"
-                        if (isClosed && _state.value.supportView == SupportView.Topics) {
+                        if (isClosed) {
+                            // Support closed the chat — reset so next topic starts a NEW session
+                            if (_state.value.supportView == SupportView.Live ||
+                                _state.value.activeLiveSession?.id == session.id
+                            ) {
+                                startNewLiveConversation()
+                                _state.value = _state.value.copy(
+                                    liveChatClosed = true,
+                                    info = "Η συνομιλία έκλεισε από την υποστήριξη. Διάλεξε νέο θέμα.",
+                                )
+                            }
                             return@collect
                         }
                         _state.value = _state.value.copy(
                             liveChatSessionId = session.id,
-                            liveChatClosed = isClosed,
+                            liveChatClosed = false,
                             liveChatTopic = session.topic?.takeIf { it.isNotBlank() } ?: _state.value.liveChatTopic,
+                            activeLiveSession = session,
                         )
                     }
                 }

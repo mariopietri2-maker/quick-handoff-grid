@@ -865,12 +865,16 @@ class CustomerRepository(
 
 private fun buildOrderNotes(notes: String?, items: List<CartLine>): String? {
     val modLines = items.mapNotNull { line ->
-        val m = line.modifierLabel.trim()
-        if (m.isBlank()) null else "${line.name}: $m"
+        val parts = listOfNotNull(
+            line.modifierLabel.takeIf { it.isNotBlank() },
+            line.note.takeIf { it.isNotBlank() }?.let { "Σημ: $it" },
+        )
+        if (parts.isEmpty()) null else "${line.name}: ${parts.joinToString(" · ")}"
     }
     val parts = listOfNotNull(notes?.takeIf { it.isNotBlank() }, modLines.takeIf { it.isNotEmpty() }?.joinToString("\n"))
     return parts.takeIf { it.isNotEmpty() }?.joinToString("\n")
 }
+
 
 @kotlinx.serialization.Serializable
 data class PaymentSheetPayload(

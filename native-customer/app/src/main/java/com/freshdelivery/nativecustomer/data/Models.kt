@@ -86,6 +86,8 @@ data class CartLine(
     /** Human-readable selected options (shown to kitchen via notes / name suffix). */
     val modifierLabel: String = "",
     val selectedModifierIds: List<String> = emptyList(),
+    /** Per-line kitchen note e.g. χωρίς κρεμμύδι */
+    val note: String = "",
 )
 
 @Serializable
