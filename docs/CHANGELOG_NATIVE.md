@@ -1,3 +1,9 @@
+## 2.9.73 / 2.6.47
+- Driver offline banner + network monitor
+- Support queue: oldest open chat first
+- Store sound test label
+- Health stuck orders hint
+
 # Native changelog (recent)
 
 ## 2.9.72 / 2.6.46

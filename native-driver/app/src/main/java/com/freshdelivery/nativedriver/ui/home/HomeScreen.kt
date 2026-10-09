@@ -59,6 +59,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -358,6 +359,7 @@ fun HomeScreen(
     val hasStoreCall = state.online && state.activeTrips.isEmpty() && state.isCallDriver && state.storeCalls.isNotEmpty()
     val hasOffer = state.online && state.activeTrips.isEmpty() && state.offers.isNotEmpty()
     val hasTrip = state.activeTrips.isNotEmpty()
+    val showOffline = state.isOffline
 
     // Clear in-app Mapbox navigation when the trip moves to the next step.
     LaunchedEffect(primary?.order?.status) {
@@ -406,6 +408,20 @@ fun HomeScreen(
             trafficSignals = navTrafficSignals,
         )
 
+        if (showOffline) {
+            Surface(
+                color = Color(0xFFB45309),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    "Χωρίς σύνδεση — οι προσφορές μπορεί να μην ενημερώνονται",
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                )
+            }
+        }
         // Top chrome — brand status pill centered between the global menu and the
         // right-side action stack (Support, Ops, Recenter).
         Row(

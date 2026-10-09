@@ -287,7 +287,7 @@ export default function AdminAppHealth() {
           status: stuckN > 5 ? 'error' : stuckN > 0 ? 'warn' : 'ok',
           detail:
             stuckN > 0
-              ? `${stuckN} παραγγελίες ανοιχτές πάνω από 15 λεπτά`
+            ? `${stuckN} κολλημένες (>15λ) — Admin → Παραγγελίες`
               : 'Καμία κολλημένη παραγγελία',
         },
         {

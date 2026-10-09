@@ -122,7 +122,14 @@ export function LiveChatConsole() {
       .some((v) => String(v).toLowerCase().includes(q));
   });
 
-  const activeChats = searched.filter((c) => c.session_status !== 'closed');
+  const activeChats = searched
+    .filter((c) => c.session_status !== 'closed')
+    .slice()
+    .sort((a, b) => {
+      const ta = new Date((a as any).created_at || a.last_message_at || 0).getTime();
+      const tb = new Date((b as any).created_at || b.last_message_at || 0).getTime();
+      return ta - tb; // oldest open first
+    });
   const closedChats = searched.filter((c) => c.session_status === 'closed');
   const visibleChats = tab === 'active' ? activeChats : closedChats;
 

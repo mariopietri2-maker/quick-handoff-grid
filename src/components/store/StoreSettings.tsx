@@ -254,7 +254,7 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
             onClick={testOrderSound}
           >
             <Play className="h-4 w-4 mr-2" />
-            Δοκιμή ήχου
+            Δοκιμή ήχου νέας παραγγελίας
           </Button>
         </CardContent>
       </Card>

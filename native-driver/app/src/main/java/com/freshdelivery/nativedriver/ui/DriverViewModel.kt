@@ -70,6 +70,7 @@ data class DriverUiState(
     val settings: PlatformSettingsRow = PlatformSettingsRow(),
     val settingsLocal: DriverSettings = DriverSettings(),
     val online: Boolean = false,
+    val isOffline: Boolean = false,
     val tab: DriverTab = DriverTab.Home,
     val offers: List<OfferUi> = emptyList(),
     val stackedOffers: List<OfferUi> = emptyList(),
@@ -184,6 +185,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     private var lastStoreCallAlertKey: String? = null
 
     init {
+        startNetworkMonitor()
         viewModelScope.launch {
             locationTracker.geo.collect { g ->
                 _state.value = _state.value.copy(geo = g)
@@ -1193,7 +1195,60 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         mediaPlayer = null
     }
 
+    private var networkCallback: android.net.ConnectivityManager.NetworkCallback? = null
+
+    fun refreshNetworkStatus() {
+        val app = getApplication<android.app.Application>()
+        val cm = app.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+        val onlineNet = cm?.activeNetwork?.let { net ->
+            val caps = cm.getNetworkCapabilities(net)
+            caps != null && (
+                caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) ||
+                    caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                    caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_ETHERNET)
+                )
+        } ?: false
+        _state.value = _state.value.copy(isOffline = !onlineNet)
+    }
+
+    private fun startNetworkMonitor() {
+        if (networkCallback != null) return
+        val app = getApplication<android.app.Application>()
+        val cm = app.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+            ?: return
+        val cb = object : android.net.ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: android.net.Network) {
+                _state.value = _state.value.copy(isOffline = false)
+            }
+            override fun onLost(network: android.net.Network) {
+                refreshNetworkStatus()
+            }
+            override fun onCapabilitiesChanged(
+                network: android.net.Network,
+                caps: android.net.NetworkCapabilities,
+            ) {
+                val online = caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                _state.value = _state.value.copy(isOffline = !online)
+            }
+        }
+        networkCallback = cb
+        runCatching {
+            val req = android.net.NetworkRequest.Builder()
+                .addCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build()
+            cm.registerNetworkCallback(req, cb)
+        }.onFailure { networkCallback = null }
+        refreshNetworkStatus()
+    }
+
     override fun onCleared() {
+        runCatching {
+            val app = getApplication<android.app.Application>()
+            val cm = app.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+            networkCallback?.let { cm?.unregisterNetworkCallback(it) }
+        }
+        networkCallback = null
+
         DriverPushTokenHolder.listener = null
         locationTracker.stop()
         stopPolling()
