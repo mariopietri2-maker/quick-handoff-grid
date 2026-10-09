@@ -468,8 +468,11 @@ fun CustomerShell(
                     onToggleFavorite = onToggleFavorite,
                 )
                 CustomerTab.Orders -> OrdersTab(
-                    state, onTrack, onRefresh, onSubmitReview,
+                    state = state,
+                    onTrack = onTrack,
                     onToggleOrderDetail = onToggleOrderDetail,
+                    onRefresh = onRefresh,
+                    onSubmitReview = onSubmitReview,
                     onBackToHome = { onTab(CustomerTab.Home) },
                     onReorderStore = { storeId ->
                         state.stores.firstOrNull { it.id == storeId }?.let { onOpenStore(it) }
@@ -3262,7 +3265,6 @@ private fun OrdersTab(
     onTrack: (OrderUi?) -> Unit,
     onToggleOrderDetail: (String?) -> Unit = {},
     onRefresh: () -> Unit = {},
-    onRefresh: () -> Unit,
     onSubmitReview: (String, String, Int, String) -> Unit = { _, _, _, _ -> },
     onBackToHome: () -> Unit = {},
     onReorderStore: (String) -> Unit = {},
@@ -3557,6 +3559,8 @@ private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
                     Text("Άνοιξε Παραγγελίες και πάτα μια ενεργή παραγγελία.", color = FreshMuted)
                 }
             } else {
+                val etaMin = estimateEtaMinutes(order.order)
+                val headline = trackHeadline(order.order.status, state.driverLocation != null)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(
@@ -3584,14 +3588,6 @@ private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
                                 style = MaterialTheme.typography.bodySmall,
                             )
                         }
-                        etaMin?.let { m ->
-                            Text(
-                                "Εκτιμώμενος χρόνος ~$m λεπτά",
-                                color = FreshGreenDark,
-                                fontWeight = FontWeight.SemiBold,
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
                         state.driverPhone?.let { phone ->
                             val ctx = LocalContext.current
                             TextButton(onClick = {
@@ -3614,14 +3610,6 @@ private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
                 }
                 Spacer(Modifier.height(10.dp))
                 // ETA + headline
-                val etaMin = estimateEtaMinutes(order.order)
-                val headline = trackHeadline(order.order.status, state.driverLocation != null)
-                val etaMin = when (order.order.status) {
-                    "placed", "accepted", "preparing" -> 25
-                    "ready", "arrived" -> 15
-                    "picked_up" -> 10
-                    else -> null
-                }
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,

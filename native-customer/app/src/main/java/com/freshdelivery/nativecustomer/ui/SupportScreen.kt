@@ -125,6 +125,7 @@ fun SupportScreen(
     onSend: (String) -> Unit,
     onSelectTopic: (String) -> Unit,
     onClearTopic: () -> Unit = {},
+    onResumeLive: () -> Unit = {},
     onShowMyTickets: () -> Unit = {},
     onOpenTicket: (SupportTicketRow) -> Unit = {},
     onSubmitTicket: (String) -> Unit = {},
