@@ -41,7 +41,12 @@ export function Logo({ variant = 'core', size = 28, withWordmark = false, withTl
           alt={BRAND.name}
           width={size}
           height={size}
-          style={{ flexShrink: 0, borderRadius: size * 0.22, objectFit: 'cover' }}
+          style={{
+            flexShrink: 0,
+            borderRadius: size * 0.22,
+            objectFit: 'cover',
+            boxShadow: '0 1px 2px rgba(15,23,42,.12), 0 4px 12px -4px rgba(234,88,12,.35)',
+          }}
         />
         {withWordmark && (
           <span style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif', fontWeight: 800, fontSize: size * 0.55, letterSpacing: '-0.02em', lineHeight: 1 }}>
