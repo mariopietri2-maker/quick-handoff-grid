@@ -537,7 +537,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 else if (!orderId.isNullOrBlank()) repo.claimOrder(orderId)
                 else error("Missing offer")
             }.onSuccess {
-                _state.value = _state.value.copy(busy = false, info = "Προσφορά αποδεκτή")
+                _state.value = _state.value.copy(busy = false, info = "Αποδοχή · επόμενο: πήγαινε στο κατάστημα")
                 refreshWork()
             }.onFailure { e ->
                 _state.value = _state.value.copy(

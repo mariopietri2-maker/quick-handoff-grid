@@ -79,7 +79,7 @@ async function markItemSoldOut(menuItemId: string | null | undefined, itemName: 
     toast.error('Αποτυχία ενημέρωσης μενού');
     return;
   }
-  toast.success(`«${itemName}» εξαντλήθηκε`);
+  toast.success(`86 · «${itemName}» εξαντλήθηκε και αφαιρέθηκε από το μενού`);
 }
 
 function itemCount(order: OrderWithItems) {

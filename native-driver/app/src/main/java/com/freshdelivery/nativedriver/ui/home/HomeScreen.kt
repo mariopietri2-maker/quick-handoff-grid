@@ -2,6 +2,7 @@ package com.freshdelivery.nativedriver.ui.home
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -69,6 +70,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -1156,6 +1158,50 @@ private fun OfferSheet(
     ) {
         Column(Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
             Handle()
+
+            // Lightweight "map" strip — store pin + distance (no Mapbox embed on offer)
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(88.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFFE8F5E9)),
+            ) {
+                Canvas(Modifier.fillMaxSize()) {
+                    // soft grid
+                    val step = 24.dp.toPx()
+                    var x = 0f
+                    while (x < size.width) {
+                        drawLine(Color(0xFFC8E6C9), Offset(x, 0f), Offset(x, size.height), 1f)
+                        x += step
+                    }
+                    var y = 0f
+                    while (y < size.height) {
+                        drawLine(Color(0xFFC8E6C9), Offset(0f, y), Offset(size.width, y), 1f)
+                        y += step
+                    }
+                    // store pin center
+                    val cx = size.width * 0.35f
+                    val cy = size.height * 0.55f
+                    drawCircle(Color(0xFFEA580C), radius = 14.dp.toPx(), center = Offset(cx, cy))
+                    drawCircle(Color.White, radius = 6.dp.toPx(), center = Offset(cx, cy))
+                    // customer hint
+                    val dx = size.width * 0.72f
+                    val dy = size.height * 0.4f
+                    drawCircle(Color(0xFF3949AB), radius = 10.dp.toPx(), center = Offset(dx, dy))
+                    drawLine(Color(0xFFEA580C).copy(alpha = 0.5f), Offset(cx, cy), Offset(dx, dy), strokeWidth = 3.dp.toPx())
+                }
+                Column(Modifier.align(Alignment.BottomStart).padding(10.dp)) {
+                    Text(
+                        formatDistance(distKm) ?: "Απόσταση —",
+                        color = Color(0xFF1B5E20),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                    )
+                    Text("~$totalMin λεπτά", color = Color(0xFF2E7D32), fontSize = 11.sp)
+                }
+            }
+            Spacer(Modifier.height(10.dp))
 
             Row(
                 Modifier.fillMaxWidth(),

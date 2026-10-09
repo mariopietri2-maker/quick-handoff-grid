@@ -36,6 +36,13 @@ const roleLabel: Record<string, string> = {
   store: 'Κατάστημα',
 };
 
+function chatAgeMin(iso?: string | null): number | null {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return null;
+  return Math.max(0, Math.floor((Date.now() - t) / 60000));
+}
+
 export function LiveChatConsole() {
   const { isAdmin } = useAuth();
   const queryClient = useQueryClient();
@@ -282,6 +289,11 @@ export function LiveChatConsole() {
                       >
                         {roleLabel[c.participant_role] ?? c.participant_role}
                       </span>
+                      {c.session_status !== 'closed' && chatAgeMin((c as any).created_at || c.last_message_at) != null && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-amber-500/15 text-amber-800">
+                          {chatAgeMin((c as any).created_at || c.last_message_at)}λ ανοιχτό
+                        </span>
+                      )}
                       {c.session_status === 'closed' && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-muted text-muted-foreground">
                           Κλειστό

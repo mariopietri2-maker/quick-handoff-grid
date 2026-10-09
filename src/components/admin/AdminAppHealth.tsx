@@ -214,7 +214,7 @@ export default function AdminAppHealth() {
           id: 'c_support',
           label: 'Ανοιχτά live chats',
           status: chatsN > 10 ? 'warn' : 'ok',
-          detail: chatsN > 0 ? `${chatsN} ανοιχτά` : 'Κανένα ανοιχτό chat',
+          detail: chatsN > 0 ? `${chatsN} ανοιχτά — Admin → Υποστήριξη / Live chat` : 'Κανένα ανοιχτό chat',
         },
       ];
 

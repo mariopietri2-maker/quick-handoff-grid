@@ -3249,12 +3249,22 @@ private fun OrdersTab(
     state: CustomerUiState,
     onTrack: (OrderUi?) -> Unit,
     onToggleOrderDetail: (String?) -> Unit = {},
+    onRefresh: () -> Unit = {},
     onRefresh: () -> Unit,
     onSubmitReview: (String, String, Int, String) -> Unit = { _, _, _, _ -> },
     onBackToHome: () -> Unit = {},
     onReorderStore: (String) -> Unit = {},
     onReorderOrder: (String, String) -> Unit = { _, _ -> },
 ) {
+    var refreshing by remember { mutableStateOf(false) }
+    val pullState = rememberPullToRefreshState()
+    LaunchedEffect(state.orders) { refreshing = false }
+    PullToRefreshBox(
+        isRefreshing = refreshing,
+        onRefresh = { refreshing = true; onRefresh() },
+        state = pullState,
+        modifier = Modifier.fillMaxSize(),
+    ) {
     LazyColumn(
         Modifier
             .fillMaxSize()
@@ -3459,6 +3469,8 @@ private fun OrdersTab(
 }
 
 @Composable
+    }
+
 private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
     val order = state.trackingOrder
 
