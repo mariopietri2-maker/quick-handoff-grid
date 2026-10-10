@@ -204,7 +204,11 @@ export default function StoreApp() {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             )}
-            <Logo withWordmark size={34} className="shrink-0" />
+            {isNStore ? (
+              <img src="/brand/ghost-store-64.png" alt="Ghost Store" className="h-9 w-9 rounded-xl shrink-0" />
+            ) : (
+              <Logo withWordmark size={34} className="shrink-0" />
+            )}
             <div className="min-w-0 leading-tight">
               <p className="font-heading font-bold text-foreground truncate leading-tight">
                 {view === 'portal'
@@ -214,6 +218,11 @@ export default function StoreApp() {
                     : store?.name ?? 'Κατάστημα'}
                 {view === 'manage' && placedCount > 0 && ` · ${placedCount} νέες`}
               </p>
+              {view === 'manage' && store && (
+                <p className={`text-[10px] font-bold uppercase tracking-wider ${isNStore ? 'text-violet-600' : 'text-primary'}`}>
+                  {isNStore ? 'Ghost Store · κλήση οδηγού' : 'Fresh2GO Partner · πλήρες κατάστημα'}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
