@@ -163,6 +163,21 @@ export function OrderQueue({
   const [busyLocal, setBusyLocal] = useState<Record<string, boolean>>({});
   const [now, setNow] = useState(() => Date.now());
   const [driverCodes, setDriverCodes] = useState<Record<string, string>>({});
+  const [soundMuted, setSoundMuted] = useState(() => localStorage.getItem('store_sound_muted') === '1');
+  const playTestSound = () => {
+    if (soundMuted) return;
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.frequency.value = 880;
+      g.gain.value = 0.08;
+      o.start();
+      setTimeout(() => { o.stop(); ctx.close(); }, 400);
+    } catch { /* ignore */ }
+  };
   const printedRef = useRef<Set<string>>(new Set());
   const printQueueRef = useRef<OrderWithItems[]>([]);
   const printRunningRef = useRef(false);
@@ -305,23 +320,7 @@ export function OrderQueue({
       !upcomingScheduled &&
       Date.now() - new Date(order.created_at).getTime() > 5 * 60_000;
 
-    const [soundMuted, setSoundMuted] = useState(() => localStorage.getItem('store_sound_muted') === '1');
-  const playTestSound = () => {
-    if (soundMuted) return;
-    try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.connect(g);
-      g.connect(ctx.destination);
-      o.frequency.value = 880;
-      g.gain.value = 0.08;
-      o.start();
-      setTimeout(() => { o.stop(); ctx.close(); }, 400);
-    } catch { /* ignore */ }
-  };
-
-  return (
+    return (
       <div
         key={order.id}
         className={cn(
@@ -330,19 +329,6 @@ export function OrderQueue({
           open && 'ring-1 ring-primary/25',
         )}
       >
-      {typeof onBusyModeChange === 'function' && (
-        <div className="flex items-center justify-between gap-2 rounded-xl border border-border bg-card px-3 py-2">
-          <div>
-            <p className="text-sm font-heading font-semibold">Busy mode</p>
-            <p className="text-[11px] text-muted-foreground">Ειδοποίηση αιχμής για την κουζίνα</p>
-          </div>
-          <Button type="button" size="sm" variant={busyMode ? 'default' : 'outline'} className="font-heading font-bold"
-            onClick={() => onBusyModeChange(!busyMode)}>
-            {busyMode ? 'Ενεργό' : 'Off'}
-          </Button>
-        </div>
-      )}
-
         <div className="flex items-start gap-3">
           <button
             type="button"
@@ -520,6 +506,20 @@ export function OrderQueue({
         <h2 className="font-heading font-extrabold text-xl md:text-2xl text-foreground tracking-tight">
           Live παραγγελίες
         </h2>
+
+      {typeof onBusyModeChange === 'function' && (
+        <div className="flex items-center justify-between gap-2 rounded-xl border border-border bg-card px-3 py-2">
+          <div>
+            <p className="text-sm font-heading font-semibold">Busy mode</p>
+            <p className="text-[11px] text-muted-foreground">Ειδοποίηση αιχμής για την κουζίνα</p>
+          </div>
+          <Button type="button" size="sm" variant={busyMode ? 'default' : 'outline'} className="font-heading font-bold"
+            onClick={() => onBusyModeChange(!busyMode)}>
+            {busyMode ? 'Ενεργό' : 'Off'}
+          </Button>
+        </div>
+      )}
+
         <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
             <span className="relative flex h-2 w-2">
