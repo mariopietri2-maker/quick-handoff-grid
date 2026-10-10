@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Truck, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { Loader2, Truck, CheckCircle, AlertCircle, X, Phone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { playDeliverySound } from '@/lib/notifications';
@@ -12,40 +12,26 @@ import { showOsNotification } from '@/lib/push-notifications';
 interface Props {
   storeId: string;
   storeName: string;
-  /** When true, the "driver accepted" chime is silenced (OS notification + toast still show). */
   muted?: boolean;
-  /** When true (store closed), the call button is disabled. */
   disabled?: boolean;
 }
 
-type CallStatus = 'idle' | 'open' | 'accepted' | 'closed';
-
-/** Must match DB cron store-call-expiry window. */
+const MAX_ACTIVE_CALLS = 3;
 const OPEN_TTL_SEC = 15 * 60;
 
-interface CallState {
+type CallStatus = 'open' | 'accepted' | 'closed';
+
+interface ActiveCall {
+  id: string;
   status: CallStatus;
-  callId: string | null;
+  createdAt: string;
   driverName: string | null;
   acceptedAt: string | null;
-  createdAt: string | null;
-  error: string | null;
 }
 
-const idleState = (): CallState => ({
-  status: 'idle',
-  callId: null,
-  driverName: null,
-  acceptedAt: null,
-  createdAt: null,
-  error: null,
-});
-
-function mapStatus(raw: string | null | undefined): CallStatus {
-  if (raw === 'open') return 'open';
-  if (raw === 'accepted') return 'accepted';
-  if (raw === 'closed') return 'closed';
-  return 'idle';
+function mapStatus(raw: string | null | undefined): CallStatus | null {
+  if (raw === 'open' || raw === 'accepted' || raw === 'closed') return raw;
+  return null;
 }
 
 function formatCountdown(totalSec: number): string {
@@ -56,181 +42,124 @@ function formatCountdown(totalSec: number): string {
 }
 
 export function StoreCallPanel({ storeId, storeName, muted = false, disabled = false }: Props) {
-  const [state, setState] = useState<CallState>(idleState);
+  const [calls, setCalls] = useState<ActiveCall[]>([]);
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
-  /** Shown on the idle card when our open call vanished without us closing it (DB expiry). */
-  const [expiredNotice, setExpiredNotice] = useState(false);
+  const [closingId, setClosingId] = useState<string | null>(null);
   const { toast } = useToast();
-  const prevStatusRef = useRef<CallStatus>('idle');
-  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
-  /** Ignore stale closed/null polls after we create an open call. */
-  const holdOpenUntilRef = useRef(0);
-  /** True while a close we initiated is in flight / done — suppresses the expiry notice. */
-  const closedByUsRef = useRef(false);
-  const confirmOpenRef = useRef(false);
+  const prevAcceptedRef = useRef<Set<string>>(new Set());
   const [, setTick] = useState(0);
-  const stateRef = useRef(state);
-  stateRef.current = state;
 
-  confirmOpenRef.current = confirmOpen;
-
-  const fetchCall = useCallback(async () => {
-    // Don't yank UI while the user is confirming a new call
-    if (confirmOpenRef.current) return;
-
+  const fetchCalls = useCallback(async () => {
     try {
-      const { data, error } = await supabase.rpc('my_store_driver_call', {
+      const { data, error } = await supabase.rpc('my_store_driver_calls' as never, {
         p_store_id: storeId,
-      });
-      if (error) throw error;
-      const call = data?.[0];
-
-      // Expiry detection: our open call turned closed without us closing it
-      // (DB cron after 15 min) — the state mapper below will drop to idle,
-      // so raise the notice here while we still know the previous state.
-      const prev = stateRef.current;
-      if (prev.status === 'open' && prev.callId && !closedByUsRef.current && call && call.id === prev.callId) {
-        const latest = mapStatus(call.status);
-        if (latest !== 'open' && latest !== 'accepted') {
-          setExpiredNotice(true);
+      } as never);
+      if (error) {
+        // Fallback to single-call RPC if plural not deployed yet
+        const single = await supabase.rpc('my_store_driver_call', { p_store_id: storeId });
+        if (single.error) throw error;
+        const row = single.data?.[0];
+        if (!row || row.status === 'closed') {
+          setCalls([]);
+          return;
         }
+        setCalls([
+          {
+            id: row.id,
+            status: mapStatus(row.status) === 'accepted' ? 'accepted' : 'open',
+            createdAt: row.created_at,
+            driverName: row.driver_name ?? null,
+            acceptedAt: row.accepted_at ?? null,
+          },
+        ]);
+        return;
       }
-
-      setState((prev) => {
-        const hold = Date.now() < holdOpenUntilRef.current;
-
-        // Protect freshly created open call from stale null/closed polls
-        if (hold && prev.status === 'open' && prev.callId) {
-          if (!call || call.id !== prev.callId || call.status === 'closed') {
-            return prev;
-          }
-        }
-
-        if (!call) {
-          if (hold && prev.status === 'open') return prev;
-          // No active call → idle (ready to call again)
-          return prev.status === 'idle' ? prev : idleState();
-        }
-
-        const next = mapStatus(call.status);
-
-        // Closed history must NOT force the "closed" screen over idle/confirm.
-        // Only open / accepted are live states the owner needs to see.
-        if (next === 'closed' || next === 'idle') {
-          if (hold && prev.status === 'open') return prev;
-          return prev.status === 'idle' ? prev : idleState();
-        }
-
-        // Ignore a different closed-era id while we still show open
-        if (prev.status === 'open' && call.id !== prev.callId && next !== 'open' && next !== 'accepted') {
-          return prev;
-        }
-
-        return {
-          status: next,
-          callId: call.id,
-          driverName: call.driver_name ?? null,
-          acceptedAt: call.accepted_at ?? null,
-          createdAt: call.created_at ?? null,
-          error: null,
-        };
-      });
-    } catch (e: unknown) {
-      console.error('fetch call error', e);
+      const rows = (data as any[]) ?? [];
+      const next: ActiveCall[] = rows
+        .map((r) => {
+          const st = mapStatus(r.status);
+          if (st !== 'open' && st !== 'accepted') return null;
+          return {
+            id: r.id as string,
+            status: st,
+            createdAt: r.created_at as string,
+            driverName: (r.driver_name as string | null) ?? null,
+            acceptedAt: (r.accepted_at as string | null) ?? null,
+          };
+        })
+        .filter(Boolean) as ActiveCall[];
+      setCalls(next);
+    } catch (e: any) {
+      console.warn('fetchCalls', e?.message || e);
     }
   }, [storeId]);
 
   useEffect(() => {
-    fetchCall();
-    // Adaptive polling: slow while idle (nothing to see), fast while a call
-    // is live so accept/close reflects within seconds. Cuts idle DB reads ~70%.
-    const interval = setInterval(fetchCall, state.status === 'idle' ? 10_000 : 3_000);
-    return () => clearInterval(interval);
-  }, [fetchCall, state.status]);
+    void fetchCalls();
+    const t = window.setInterval(() => void fetchCalls(), 4000);
+    return () => window.clearInterval(t);
+  }, [fetchCalls]);
 
   useEffect(() => {
-    if (state.status !== 'open') return;
-    const t = setInterval(() => setTick((n) => n + 1), 1000);
-    return () => clearInterval(t);
-  }, [state.status]);
+    const t = window.setInterval(() => setTick((n) => n + 1), 1000);
+    return () => window.clearInterval(t);
+  }, []);
 
+  // Celebrate newly accepted calls
   useEffect(() => {
-    const prev = prevStatusRef.current;
-    prevStatusRef.current = state.status;
-    if (prev !== 'accepted' && state.status === 'accepted') {
+    const acceptedIds = new Set(calls.filter((c) => c.status === 'accepted').map((c) => c.id));
+    for (const c of calls) {
+      if (c.status !== 'accepted') continue;
+      if (prevAcceptedRef.current.has(c.id)) continue;
+      prevAcceptedRef.current.add(c.id);
       if (!muted) {
         try {
-          playDeliverySound(loadStoreSoundPrefs().orderVolume);
-        } catch {}
+          const prefs = loadStoreSoundPrefs();
+          void playDeliverySound(prefs);
+          if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            navigator.vibrate([0, 200, 80, 200, 80, 300]);
+          }
+        } catch { /* ignore */ }
       }
-      try {
-        if (typeof navigator !== 'undefined' && navigator.vibrate) {
-          navigator.vibrate([0, 200, 80, 200, 80, 300]);
-        }
-      } catch {}
       void showOsNotification({
         title: 'Οδηγός βρέθηκε!',
-        body: `${state.driverName || 'Οδηγός'} αποδέχτηκε την κλήση — ${storeName}`,
-        tag: `store-call-accepted-${state.callId ?? 'x'}`,
+        body: `${c.driverName || 'Οδηγός'} αποδέχτηκε την κλήση — ${storeName}`,
+        tag: `store-call-accepted-${c.id}`,
         vibrate: true,
       });
       toast({
         title: 'Οδηγός βρέθηκε!',
-        description: state.driverName
-          ? `${state.driverName} αποδέχτηκε την κλήση.`
+        description: c.driverName
+          ? `${c.driverName} αποδέχτηκε την κλήση.`
           : 'Ένας οδηγός αποδέχτηκε την κλήση.',
       });
     }
-  }, [state.status, state.driverName, state.callId, storeName, toast, muted]);
+    // Drop ids no longer active
+    prevAcceptedRef.current = new Set(
+      [...prevAcceptedRef.current].filter((id) => acceptedIds.has(id) || calls.some((c) => c.id === id)),
+    );
+  }, [calls, muted, storeName, toast]);
 
+  // Realtime
   useEffect(() => {
-    const active = state.status === 'open' || state.status === 'accepted';
-    let cancelled = false;
-
-    const acquire = async () => {
-      if (!active || typeof navigator === 'undefined' || !('wakeLock' in navigator)) return;
-      try {
-        const lock = await navigator.wakeLock.request('screen');
-        if (cancelled) {
-          void lock.release();
-          return;
-        }
-        wakeLockRef.current = lock;
-        lock.addEventListener('release', () => {
-          if (wakeLockRef.current === lock) wakeLockRef.current = null;
-        });
-      } catch (e) {
-        console.warn('Wake Lock unavailable', e);
-      }
-    };
-
-    const release = () => {
-      const lock = wakeLockRef.current;
-      wakeLockRef.current = null;
-      if (lock) void lock.release().catch(() => {});
-    };
-
-    if (active) {
-      void acquire();
-    } else {
-      release();
-    }
-
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible' && active && !wakeLockRef.current) {
-        void acquire();
-      }
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-
+    const channel = supabase
+      .channel(`store-calls-${storeId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'store_driver_calls', filter: `store_id=eq.${storeId}` },
+        () => {
+          void fetchCalls();
+        },
+      )
+      .subscribe();
     return () => {
-      cancelled = true;
-      document.removeEventListener('visibilitychange', onVisibility);
-      release();
+      void supabase.removeChannel(channel);
     };
-  }, [state.status]);
+  }, [storeId, fetchCalls]);
+
+  const activeCount = calls.length;
+  const canCreateMore = activeCount < MAX_ACTIVE_CALLS && !disabled;
 
   const handleCreateCall = async () => {
     setLoading(true);
@@ -240,338 +169,166 @@ export function StoreCallPanel({ storeId, storeName, muted = false, disabled = f
       });
       if (error) throw error;
       const call = Array.isArray(data) ? data[0] : data;
-      if (!call?.id) {
-        throw new Error('Δεν επιστράφηκε κλήση από τον διακομιστή');
-      }
-
-      const createdAt = call.created_at ?? new Date().toISOString();
-      holdOpenUntilRef.current = Date.now() + 15_000;
-      closedByUsRef.current = false;
-      setExpiredNotice(false);
+      if (!call?.id) throw new Error('Δεν επιστράφηκε κλήση από τον διακομιστή');
       setConfirmOpen(false);
-      setState({
-        status: 'open',
-        callId: call.id,
-        driverName: null,
-        acceptedAt: null,
-        createdAt,
-        error: null,
-      });
+      await fetchCalls();
       toast({
-        title: 'Κλήση ενεργή',
-        description: 'Οι οδηγοί K ειδοποιήθηκαν. Η κλήση μένει ανοιχτή έως 15 λεπτά.',
+        title: 'Κλήση στάλθηκε',
+        description: `Ενεργές κλήσεις: ${Math.min(activeCount + 1, MAX_ACTIVE_CALLS)} / ${MAX_ACTIVE_CALLS}`,
       });
-      setTimeout(() => fetchCall(), 2000);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Αποτυχία δημιουργίας κλήσης';
-      setState((s) => ({ ...s, error: msg }));
+    } catch (e: any) {
+      const msg = e?.message || 'Αποτυχία κλήσης';
       toast({ title: 'Σφάλμα', description: msg, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCloseCall = async () => {
-    if (!state.callId) return;
+  const handleCloseCall = async (callId: string) => {
+    setClosingId(callId);
     setLoading(true);
-    closedByUsRef.current = true;
     try {
-      const { error } = await supabase.rpc('close_store_driver_call', {
-        p_call_id: state.callId,
-      });
+      const { error } = await supabase.rpc('close_store_driver_call', { p_call_id: callId });
       if (error) throw error;
-      holdOpenUntilRef.current = 0;
-      setState(idleState());
-      toast({ title: 'Κλήση κλείστηκε' });
-    } catch (e: unknown) {
-      closedByUsRef.current = false;
-      const msg = e instanceof Error ? e.message : 'Σφάλμα';
-      toast({ title: 'Σφάλμα', description: msg, variant: 'destructive' });
+      await fetchCalls();
+    } catch (e: any) {
+      toast({ title: 'Σφάλμα', description: e?.message || 'Αποτυχία κλεισίματος', variant: 'destructive' });
     } finally {
       setLoading(false);
+      setClosingId(null);
     }
   };
 
-  /** Driver arrived → close current call and immediately open a fresh one for the next order. */
-  const handleFinishAndNewCall = async () => {
-    if (!state.callId) return;
-    // If store is closed, just finish without opening a new call.
-    if (disabled) {
-      setConfirmCloseOpen(false);
-      await handleCloseCall();
-      return;
-    }
-    setLoading(true);
-    closedByUsRef.current = true;
-    try {
-      const { error: closeError } = await supabase.rpc('close_store_driver_call', {
-        p_call_id: state.callId,
-      });
-      if (closeError) throw closeError;
-
-      const { data, error: createError } = await supabase.rpc('create_store_driver_call', {
-        p_store_id: storeId,
-      });
-      if (createError) throw createError;
-      const call = Array.isArray(data) ? data[0] : data;
-      if (!call?.id) throw new Error('Η παλιά κλήση έκλεισε, αλλά η νέα δεν δημιουργήθηκε');
-
-      const createdAt = call.created_at ?? new Date().toISOString();
-      holdOpenUntilRef.current = Date.now() + 15_000;
-      setExpiredNotice(false);
-      setConfirmCloseOpen(false);
-      setState({
-        status: 'open',
-        callId: call.id,
-        driverName: null,
-        acceptedAt: null,
-        createdAt,
-        error: null,
-      });
-      toast({
-        title: 'Ολοκληρώθηκε — νέα κλήση ενεργή',
-        description: 'Οι οδηγοί K ειδοποιήθηκαν για την επόμενη παραγγελία.',
-      });
-      setTimeout(() => fetchCall(), 2000);
-    } catch (e: unknown) {
-      closedByUsRef.current = false;
-      const msg = e instanceof Error ? e.message : 'Σφάλμα';
-      toast({ title: 'Σφάλμα', description: msg, variant: 'destructive' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const secondsLeft =
-    state.createdAt && state.status === 'open'
-      ? Math.max(
-          0,
-          Math.ceil(
-            (OPEN_TTL_SEC * 1000 - (Date.now() - new Date(state.createdAt).getTime())) / 1000,
-          ),
-        )
-      : null;
-
-  if (state.status === 'idle') {
-    return (
-      <>
-        {expiredNotice && (
-          <div className="w-full max-w-md mx-auto mb-4 flex items-start gap-2.5 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-left">
-            <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-heading font-semibold text-foreground">Η κλήση έληξε χωρίς αποδοχή</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Κανένας οδηγός δεν αποδέχτηκε σε 15΄. Κάλεσε ξανά αν χρειάζεσαι οδηγό.
+  return (
+    <div className="w-full max-w-md mx-auto space-y-4">
+      <Card className="shadow-lg border-violet-500/20">
+        <CardContent className="pt-6 pb-6 px-5">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-12 w-12 rounded-xl bg-violet-500/15 flex items-center justify-center shrink-0">
+              <Phone className="h-6 w-6 text-violet-600" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-lg font-heading font-bold text-foreground">Κλήσεις Ghost Rider</h3>
+              <p className="text-xs text-muted-foreground">
+                Έως {MAX_ACTIVE_CALLS} ταυτόχρονες κλήσεις · {activeCount}/{MAX_ACTIVE_CALLS} ενεργές
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setExpiredNotice(false)}
-              aria-label="Απόκρυψη ειδοποίησης"
-              className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted shrink-0"
-            >
-              <X className="h-4 w-4" />
-            </button>
           </div>
-        )}
-      <Card className="w-full max-w-md mx-auto shadow-lg">
-        <CardContent className="pt-8 pb-10 px-6 text-center">
-          <div className="mx-auto h-20 w-20 rounded-full bg-emerald-500/10 flex items-center justify-center">
-            <Truck className="h-12 w-12 text-emerald-600" />
-          </div>
-          <h3 className="mt-5 text-2xl font-bold tracking-tight">Κάλεσε οδηγό</h3>
-          <p className="mt-3 text-base text-muted-foreground leading-relaxed">
-            Πατώντας θα ειδοποιηθούν όλοι οι διαθέσιμοι οδηγοί με ρόλο <b>K</b>.
-            Θα δουν μόνο το όνομά σας: <b>{storeName}</b>.
-            Η κλήση μένει ανοιχτή έως <b>15 λεπτά</b>.
-          </p>
+
+          {calls.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-3">
+              Δεν υπάρχει ανοιχτή κλήση. Κάλεσε έως {MAX_ACTIVE_CALLS} οδηγούς σε ξεχωριστές κλήσεις.
+            </p>
+          ) : (
+            <ul className="space-y-2 mb-4">
+              {calls.map((c, idx) => {
+                const ageSec = Math.floor((Date.now() - new Date(c.createdAt).getTime()) / 1000);
+                const left =
+                  c.status === 'open'
+                    ? Math.max(0, OPEN_TTL_SEC - ageSec)
+                    : null;
+                return (
+                  <li
+                    key={c.id}
+                    className={`rounded-xl border px-3 py-3 ${
+                      c.status === 'accepted'
+                        ? 'border-emerald-500/40 bg-emerald-500/5'
+                        : 'border-border bg-card'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-heading font-semibold">
+                          Κλήση {idx + 1}{' '}
+                          <span className="text-muted-foreground font-normal">
+                            · {c.status === 'open' ? 'Αναμονή' : 'Αποδοχή'}
+                          </span>
+                        </p>
+                        {c.status === 'accepted' ? (
+                          <p className="text-xs text-emerald-700 mt-0.5 flex items-center gap-1">
+                            <CheckCircle className="h-3.5 w-3.5" />
+                            {c.driverName || 'Οδηγός'} αποδέχτηκε
+                          </p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Λήγει σε {left != null ? formatCountdown(left) : '—'}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="shrink-0 h-8"
+                        disabled={loading && closingId === c.id}
+                        onClick={() => void handleCloseCall(c.id)}
+                      >
+                        {closingId === c.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Κλείσιμο'}
+                      </Button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
           <Button
             type="button"
-            className="mt-8 w-full h-16 text-xl font-semibold bg-emerald-600 hover:bg-emerald-700 rounded-2xl shadow-md active:scale-[0.98] transition-transform disabled:opacity-50"
-            disabled={loading || disabled}
+            className="w-full h-14 text-base font-semibold bg-violet-600 hover:bg-violet-700 rounded-2xl shadow-md disabled:opacity-50"
+            disabled={loading || !canCreateMore}
             onClick={() => setConfirmOpen(true)}
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
-                <Loader2 className="h-6 w-6 animate-spin" />
-                Δημιουργία…
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Αποστολή…
               </span>
             ) : disabled ? (
               'Κλειστό — άνοιξε για κλήση'
+            ) : !canCreateMore ? (
+              `Μέγιστο ${MAX_ACTIVE_CALLS} κλήσεις — κλείσε μία`
             ) : (
-              '📞 Κάλεσε τώρα τον οδηγό'
+              <span className="flex items-center justify-center gap-2">
+                <Truck className="h-5 w-5" />
+                {activeCount === 0 ? 'Κάλεσε οδηγό' : 'Κάλεσε ακόμα έναν'}
+              </span>
             )}
           </Button>
 
-          <AlertDialog
-            open={confirmOpen}
-            onOpenChange={(open) => {
-              if (loading && !open) return;
-              setConfirmOpen(open);
-            }}
-          >
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Επιβεβαίωση κλήσης οδηγού</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Θα στείλετε ειδοποίηση σε όλους τους διαθέσιμους οδηγούς με ρόλο <b>K</b>.
-                  Θα βλέπουν μόνο το όνομα: <b>{storeName}</b>.
-                  Η κλήση θα μείνει ανοιχτή έως 15 λεπτά. Συνεχίζουμε;
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)} disabled={loading}>
-                  Ακύρωση
-                </Button>
-                <Button type="button" onClick={handleCreateCall} disabled={loading}>
-                  {loading ? (
-                    <span className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Δημιουργία…
-                    </span>
-                  ) : (
-                    'Επιβεβαίωση'
-                  )}
-                </Button>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-          {state.error && <p className="mt-3 text-sm text-destructive">{state.error}</p>}
-        </CardContent>
-      </Card>
-      </>
-    );
-  }
-
-  if (state.status === 'open') {
-    return (
-      <Card className="w-full max-w-md mx-auto border-amber-500/40 shadow-lg">
-        <CardContent className="pt-8 pb-10 px-6 text-center">
-          <Loader2 className="mx-auto h-16 w-16 animate-spin text-amber-500" />
-          <h3 className="mt-5 text-2xl font-bold">Αναζήτηση οδηγού…</h3>
-          <p className="mt-2 text-base text-muted-foreground">
-            Η κλήση είναι ενεργή. Οι οδηγοί K έχουν ειδοποιηθεί.
-          </p>
-          {secondsLeft != null && (
-            <>
-              <div className="mt-5 inline-flex flex-col items-center rounded-2xl bg-amber-500/10 px-6 py-3 border border-amber-500/20">
-                <span className="text-xs font-medium uppercase tracking-wide text-amber-700 dark:text-amber-400">
-                  Απομένει
-                </span>
-                <span className="text-4xl font-mono font-bold tabular-nums text-amber-600 dark:text-amber-400">
-                  {formatCountdown(secondsLeft)}
-                </span>
-              </div>
-              <div
-                className="mt-4 h-2 w-full overflow-hidden rounded-full bg-amber-500/15"
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={Math.round((1 - secondsLeft / OPEN_TTL_SEC) * 100)}
-              >
-                <div
-                  className="h-full rounded-full bg-amber-500 transition-[width] duration-1000"
-                  style={{
-                    width: `${Math.min(100, Math.max(0, (1 - secondsLeft / OPEN_TTL_SEC) * 100))}%`,
-                  }}
-                />
-              </div>
-            </>
-          )}
-          {state.callId && (
-            <Button
-              type="button"
-              variant="outline"
-              className="mt-6 w-full h-12 text-base rounded-xl"
-              onClick={handleCloseCall}
-              disabled={loading}
-            >
-              <AlertCircle className="mr-2 h-5 w-5" />
-              Ακύρωση κλήσης
-            </Button>
-          )}
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (state.status === 'accepted') {
-    return (
-      <Card className="w-full max-w-md mx-auto border-emerald-500/40 shadow-lg ring-2 ring-emerald-500/20">
-        <CardContent className="pt-8 pb-10 px-6 text-center">
-          <div className="mx-auto h-20 w-20 rounded-full bg-emerald-500/15 flex items-center justify-center animate-pulse">
-            <CheckCircle className="h-12 w-12 text-emerald-600" />
-          </div>
-          <h3 className="mt-5 text-2xl font-bold text-emerald-700 dark:text-emerald-400">Οδηγός βρέθηκε!</h3>
-          <p className="mt-3 text-lg text-foreground">
-            <b>{state.driverName || 'Άγνωστος οδηγός'}</b> αποδέχτηκε την κλήση.
-          </p>
-          {state.acceptedAt && (
-            <p className="mt-1 text-sm text-muted-foreground">
-              Αποδεκτή στις{' '}
-              {new Date(state.acceptedAt).toLocaleTimeString('el-GR', {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+          {!canCreateMore && !disabled && (
+            <p className="mt-2 text-[11px] text-center text-muted-foreground flex items-center justify-center gap-1">
+              <AlertCircle className="h-3.5 w-3.5" />
+              Έχεις {MAX_ACTIVE_CALLS} ενεργές κλήσεις. Κλείσε μία για νέα.
             </p>
           )}
-          <Button
-            type="button"
-            className="mt-8 w-full h-16 text-xl font-semibold bg-emerald-600 hover:bg-emerald-700 rounded-2xl shadow-md active:scale-[0.98] transition-transform"
-            onClick={() => setConfirmCloseOpen(true)}
-            disabled={loading}
-          >
-            <CheckCircle className="mr-2 h-6 w-6" />
-            Τέλος — Νέα κλήση για επόμενη
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            className="mt-2 w-full h-11 text-sm rounded-xl"
-            onClick={handleCloseCall}
-            disabled={loading}
-          >
-            Ολοκλήρωση χωρίς νέα κλήση
-          </Button>
-          <AlertDialog open={confirmCloseOpen} onOpenChange={setConfirmCloseOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Ο οδηγός έφτασε;</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Θα κλείσει αυτή η κλήση και θα ανοίξει αυτόματα νέα για την επόμενη παραγγελία. Οι οδηγοί K θα ειδοποιηθούν ξανά.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <Button type="button" variant="outline" onClick={() => setConfirmCloseOpen(false)} disabled={loading}>
-                  Όχι
-                </Button>
-                <Button
-                  type="button"
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                  disabled={loading}
-                  onClick={handleFinishAndNewCall}
-                >
-                  {loading ? 'Παρακαλώ περίμενε…' : 'Ναι — Τέλος & Νέα κλήση'}
-                </Button>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </CardContent>
       </Card>
-    );
-  }
 
-  // Fallback (should rarely show — closed maps to idle)
-  return (
-    <Card className="w-full max-w-md mx-auto border-rose-500/30 shadow-lg">
-      <CardContent className="pt-8 pb-10 px-6 text-center">
-        <AlertCircle className="mx-auto h-14 w-14 text-rose-500" />
-        <h3 className="mt-4 text-xl font-bold">Κλήση κλειστή</h3>
-        <p className="mt-2 text-muted-foreground">Η προηγούμενη κλήση ολοκληρώθηκε ή ακυρώθηκε.</p>
-        <Button type="button" className="mt-6 w-full h-14 text-lg rounded-xl" onClick={() => setState(idleState())}>
-          Νέα κλήση
-        </Button>
-      </CardContent>
-    </Card>
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Νέα κλήση Ghost Rider;</AlertDialogTitle>
+            <AlertDialogDescription>
+              Θα ειδοποιηθούν οι διαθέσιμοι Ghost Riders για το <b>{storeName}</b>.
+              Μπορείς να έχεις έως <b>{MAX_ACTIVE_CALLS}</b> ανοιχτές κλήσεις ταυτόχρονα
+              (τώρα {activeCount}). Κάθε κλήση λήγει σε 15 λεπτά αν δεν γίνει αποδοχή.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)} disabled={loading}>
+              Άκυρο
+            </Button>
+            <Button
+              type="button"
+              className="bg-violet-600 hover:bg-violet-700"
+              disabled={loading}
+              onClick={() => void handleCreateCall()}
+            >
+              {loading ? 'Αποστολή…' : 'Ναι — Κάλεσε'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }
