@@ -215,7 +215,7 @@ export default function StoreApp() {
               </Button>
             )}
             {isNStore ? (
-              <img src="/brand/ghost-store-64.png" alt="Ghost Store" className="h-9 w-9 rounded-xl shrink-0" />
+              <img src="/brand/ghost-store-64.png" alt="Ghost Store" className="h-10 w-10 rounded-xl shrink-0 object-cover ring-1 ring-violet-500/40" />
             ) : (
               <Logo size={34} className="shrink-0" />
             )}
@@ -454,7 +454,7 @@ export default function StoreApp() {
             <AnnouncementsBanner audience="store_owners" />
             <div className="flex items-center justify-between rounded-2xl border border-violet-500/30 bg-card px-4 py-3 shadow-sm">
               <div className="flex items-center gap-2.5 min-w-0">
-                <img src="/brand/ghost-store-64.png" alt="Ghost Store" className="h-9 w-9 rounded-xl shrink-0" />
+                <img src="/brand/ghost-store-128.png" alt="Ghost Store" className="h-12 w-12 rounded-xl shrink-0 object-cover ring-2 ring-violet-500/30" />
                 <div className="min-w-0">
                   <p className="text-sm font-heading font-semibold text-foreground flex items-center gap-2">
                     Ghost Store
