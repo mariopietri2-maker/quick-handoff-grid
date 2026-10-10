@@ -50,7 +50,7 @@ export function Logo({ variant = 'core', size = 28, withWordmark = false, withTl
         />
         {withWordmark && (
           <span style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif', fontWeight: 800, fontSize: size * 0.55, letterSpacing: '-0.02em', lineHeight: 1 }}>
-            <span style={{ color: cfg.dark ? '#fff' : '#111' }}>Fresh</span>
+            <span style={{ color: cfg.dark ? '#fff' : 'currentColor' }}>Fresh</span>
             <span style={{ color: '#FF6B00' }}>2</span>
             <span style={{ color: '#F4A125' }}>GO</span>
             {withTld && (

@@ -207,9 +207,15 @@ export default function StoreApp() {
             {isNStore ? (
               <img src="/brand/ghost-store-64.png" alt="Ghost Store" className="h-9 w-9 rounded-xl shrink-0" />
             ) : (
-              <Logo withWordmark size={34} className="shrink-0" />
+              <Logo size={34} className="shrink-0" />
             )}
             <div className="min-w-0 leading-tight">
+              {view === 'manage' && !isNStore && (
+                <p className="font-heading font-extrabold text-[13px] leading-none tracking-tight text-foreground">
+                  Fresh<span className="text-[#FF6B00]">2</span><span className="text-[#F4A125]">GO</span>
+                  <span className="ml-1 rounded bg-primary/15 px-1.5 py-0.5 text-[9px] font-bold text-primary">.GR</span>
+                </p>
+              )}
               <p className="font-heading font-bold text-foreground truncate leading-tight">
                 {view === 'portal'
                   ? 'Τα καταστήματά μου'
@@ -220,7 +226,7 @@ export default function StoreApp() {
               </p>
               {view === 'manage' && store && (
                 <p className={`text-[10px] font-bold uppercase tracking-wider ${isNStore ? 'text-violet-600' : 'text-primary'}`}>
-                  {isNStore ? 'Ghost Store · κλήση οδηγού' : 'Fresh2GO Partner · πλήρες κατάστημα'}
+                  {isNStore ? 'Ghost Store · κλήση οδηγού' : 'Partner · πλήρες κατάστημα'}
                 </p>
               )}
             </div>
