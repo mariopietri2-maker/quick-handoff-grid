@@ -765,7 +765,7 @@ fun HomeScreen(
                         ) {
                             Text(
                                 if (state.onBreak) "Σε διάλειμμα"
-                                else if (state.isCallDriver) "Αναμονή κλήσης καταστήματος…"
+                                else if (state.isCallDriver) "Ghost Rider · αναμονή κλήσης…"
                                 else "Αναμονή παραγγελιών…",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 17.sp,
@@ -774,7 +774,7 @@ fun HomeScreen(
                             Spacer(Modifier.height(4.dp))
                             Text(
                                 if (state.onBreak) "Δεν λαμβάνεις νέες προσφορές."
-                                else if (state.isCallDriver) "Θα εμφανιστεί αυτόματα όταν ένα κατάστημα N καλέσει οδηγό."
+                                else if (state.isCallDriver) "Θα εμφανιστεί αυτόματα όταν ένα Ghost Store καλέσει."
                                 else "Θα εμφανιστούν αυτόματα όταν υπάρχει κοντινή παραγγελία.",
                                 fontSize = 13.sp,
                                 color = TextMuted,

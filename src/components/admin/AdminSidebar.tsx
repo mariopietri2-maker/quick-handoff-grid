@@ -134,7 +134,7 @@ export const NAV_SECTIONS = [
       { id: 'client_events', label: '📊 Client events' },
       { id: 'app_health', label: '📱 Υγεία apps' },
       { id: 'users', label: 'Χρήστες' },
-      { id: 'call_roles', label: '📞 Ρόλοι κλήσεων (N/K)' },
+      { id: 'call_roles', label: '👻 Ghost Stores / Riders' },
       { id: 'store_calls', label: '📞 Κλήσεις καταστημάτων' },
       { id: 'admin_perms', label: 'Δικαιώματα' },
       { id: 'support_roles', label: 'Πράκτορες support' },

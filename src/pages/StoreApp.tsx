@@ -421,17 +421,18 @@ export default function StoreApp() {
               {store.store_role === 'N' ? (
                 <div className="py-6 max-w-lg mx-auto space-y-4">
             <AnnouncementsBanner audience="store_owners" />
-            <div className="flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 shadow-sm">
+            <div className="flex items-center justify-between rounded-2xl border border-violet-500/30 bg-card px-4 py-3 shadow-sm">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${store.is_active ? 'bg-emerald-500/10' : 'bg-muted'}`}>
-                  <Power className={`h-5 w-5 ${store.is_active ? 'text-emerald-600' : 'text-muted-foreground'}`} />
-                </div>
+                <img src="/brand/ghost-store-64.png" alt="Ghost Store" className="h-9 w-9 rounded-xl shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-sm font-heading font-semibold text-foreground">
-                    {store.is_active ? 'Ανοιχτό — δέχεται κλήσεις' : 'Κλειστό'}
+                  <p className="text-sm font-heading font-semibold text-foreground flex items-center gap-2">
+                    Ghost Store
+                    <span className="text-[10px] font-normal text-violet-600 bg-violet-500/10 px-1.5 py-0.5 rounded-full">
+                      {store.is_active ? 'Ανοιχτό' : 'Κλειστό'}
+                    </span>
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {store.is_active ? 'Το κουμπί κλήσης οδηγού είναι ενεργό' : 'Άνοιξε για να καλέσεις οδηγό'}
+                    {store.is_active ? 'Κάλεσε Ghost Rider — το κουμπί κλήσης είναι ενεργό' : 'Άνοιξε για να καλέσεις Ghost Rider'}
                   </p>
                 </div>
               </div>

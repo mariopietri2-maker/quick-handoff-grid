@@ -44,7 +44,7 @@ export default function CallRolesPanel() {
     setBusyId(id);
     const { error } = await supabase.rpc('admin_set_store_call_role', { p_store_id: id, p_role: role });
     if (error) toast.error(error.message);
-    else toast.success(role === 'N' ? 'Κατάστημα → N (κουμπί κλήσης)' : 'Κατάστημα → standard');
+    else toast.success(role === 'N' ? 'Κατάστημα → Ghost Store' : 'Κατάστημα → standard');
     await load();
     setBusyId(null);
   };
@@ -53,7 +53,7 @@ export default function CallRolesPanel() {
     setBusyId(id);
     const { error } = await supabase.rpc('admin_set_driver_call_role', { p_user_id: id, p_role: role });
     if (error) toast.error(error.message);
-    else toast.success(role === 'K' ? 'Οδηγός → K (λαμβάνει κλήσεις)' : 'Οδηγός → standard');
+    else toast.success(role === 'K' ? 'Οδηγός → Ghost Rider' : 'Οδηγός → standard');
     await load();
     setBusyId(null);
   };
@@ -76,13 +76,19 @@ export default function CallRolesPanel() {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
-            <PhoneCall className="h-4 w-4" /> Call roles — side project
-            <Badge variant="outline" className="ml-1">N = κατάστημα</Badge>
-            <Badge variant="outline">K = οδηγός</Badge>
+            <PhoneCall className="h-4 w-4" /> Ghost roles
+            <Badge variant="outline" className="ml-1 gap-1">
+              <img src="/brand/ghost-store-64.png" alt="" className="h-3.5 w-3.5 rounded-sm" />
+              Ghost Store
+            </Badge>
+            <Badge variant="outline" className="gap-1">
+              <img src="/brand/ghost-rider-64.png" alt="" className="h-3.5 w-3.5 rounded-full" />
+              Ghost Rider
+            </Badge>
           </CardTitle>
           <p className="text-xs text-muted-foreground mt-1">
-            Χωρίς ρόλο δεν αλλάζει τίποτα στο app. Ν: το κατάστημα βλέπει μόνο το κουμπί «Κλήση οδηγού».
-            Κ: ο οδηγός λαμβάνει κλήσεις μόνο με όνομα καταστήματος. Καμία πληρωμή, ιστορικό σβήνει σε 24h.
+            Ghost Store: το κατάστημα βλέπει μόνο το κουμπί «Κλήση οδηγού».
+            Ghost Rider: ο οδηγός λαμβάνει κλήσεις μόνο από Ghost Stores. Καμία πληρωμή πλατφόρμας· ιστορικό σβήνει σε 24h.
           </p>
         </CardHeader>
         <CardContent>
@@ -101,7 +107,10 @@ export default function CallRolesPanel() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2"><Store className="h-4 w-4" /> Καταστήματα ({stores.length})</CardTitle>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <img src="/brand/ghost-store-64.png" alt="" className="h-5 w-5 rounded-md" />
+              Ghost Stores ({stores.length})
+            </CardTitle>
           </CardHeader>
           <CardContent className="divide-y">
             {stores.map((r) => (
@@ -111,7 +120,7 @@ export default function CallRolesPanel() {
                   <div className="text-xs text-muted-foreground truncate">{r.sublabel}</div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs text-muted-foreground">{r.call_role === 'N' ? 'N' : 'standard'}</span>
+                  <span className="text-xs text-muted-foreground">{r.call_role === 'N' ? 'Ghost Store' : 'standard'}</span>
                   <Switch
                     checked={r.call_role === 'N'}
                     disabled={!isAdmin || busyId === r.id || loading}
@@ -126,7 +135,10 @@ export default function CallRolesPanel() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2"><Bike className="h-4 w-4" /> Οδηγοί ({drivers.length})</CardTitle>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <img src="/brand/ghost-rider-64.png" alt="" className="h-5 w-5 rounded-full" />
+              Ghost Riders ({drivers.length})
+            </CardTitle>
           </CardHeader>
           <CardContent className="divide-y">
             {drivers.map((r) => (
@@ -136,7 +148,7 @@ export default function CallRolesPanel() {
                   <div className="text-xs text-muted-foreground truncate">{r.sublabel}</div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs text-muted-foreground">{r.call_role === 'K' ? 'K' : 'standard'}</span>
+                  <span className="text-xs text-muted-foreground">{r.call_role === 'K' ? 'Ghost Rider' : 'standard'}</span>
                   <Switch
                     checked={r.call_role === 'K'}
                     disabled={!isAdmin || busyId === r.id || loading}

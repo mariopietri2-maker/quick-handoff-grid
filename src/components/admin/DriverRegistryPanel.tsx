@@ -339,7 +339,7 @@ export default function DriverRegistryPanel({ profiles, driverProfiles }: Props)
                     )}
                     {selected.dp?.call_role && (
                       <Badge variant="secondary" className="h-5 text-[10px]">
-                        Call: {selected.dp.call_role}
+                        Call: {selected.dp.call_role === 'K' ? 'Ghost Rider' : selected.dp.call_role === 'both' ? 'Ghost Rider + regular' : selected.dp.call_role}
                       </Badge>
                     )}
                   </div>
