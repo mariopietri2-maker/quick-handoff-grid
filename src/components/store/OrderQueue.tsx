@@ -164,20 +164,6 @@ export function OrderQueue({
   const [now, setNow] = useState(() => Date.now());
   const [driverCodes, setDriverCodes] = useState<Record<string, string>>({});
   const [soundMuted, setSoundMuted] = useState(() => localStorage.getItem('store_sound_muted') === '1');
-  const playTestSound = () => {
-    if (soundMuted) return;
-    try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.connect(g);
-      g.connect(ctx.destination);
-      o.frequency.value = 880;
-      g.gain.value = 0.08;
-      o.start();
-      setTimeout(() => { o.stop(); ctx.close(); }, 400);
-    } catch { /* ignore */ }
-  };
   const printedRef = useRef<Set<string>>(new Set());
   const printQueueRef = useRef<OrderWithItems[]>([]);
   const printRunningRef = useRef(false);
@@ -598,7 +584,26 @@ export function OrderQueue({
         </div>
       </div>
     <div className="fixed bottom-4 left-4 z-40 flex gap-2">
-      <button type="button" onClick={playTestSound} className="rounded-full border bg-card px-3 py-2 text-[12px] font-bold shadow-md">
+      <button
+        type="button"
+        onClick={() => {
+          if (soundMuted) return;
+          try {
+            const AC = window.AudioContext || (window as any).webkitAudioContext;
+            if (!AC) return;
+            const ctx = new AC();
+            const o = ctx.createOscillator();
+            const g = ctx.createGain();
+            o.connect(g);
+            g.connect(ctx.destination);
+            o.frequency.value = 880;
+            g.gain.value = 0.08;
+            o.start();
+            setTimeout(() => { try { o.stop(); ctx.close(); } catch { /* ignore */ } }, 400);
+          } catch { /* ignore */ }
+        }}
+        className="rounded-full border bg-card px-3 py-2 text-[12px] font-bold shadow-md"
+      >
         Δοκιμή ήχου
       </button>
       <button
