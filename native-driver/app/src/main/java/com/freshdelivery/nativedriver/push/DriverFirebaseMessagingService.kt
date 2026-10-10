@@ -86,7 +86,12 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
         val isStoreCall = type == "store_call"
         val isOffer = type == "offer" || type == "new_offer" || data.containsKey("offer_id")
 
-        if (isStoreCall) {
+        val storeIdForCall = data["store_id"].orEmpty()
+        // Already accepted a call from this store → no second ring/sound
+        val suppressStoreRing = isStoreCall && storeIdForCall.isNotEmpty() &&
+            StoreCallPrefs.hasAccepted(this, storeIdForCall)
+
+        if (isStoreCall && !suppressStoreRing) {
             StoreCallSignal.fire()
         }
 
@@ -108,21 +113,26 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
             "freshdriver:offer",
         )?.apply {
             setReferenceCounted(false)
-            acquire(if (isStoreCall) 25_000L else 15_000L)
+            acquire(if (isStoreCall && !suppressStoreRing) 25_000L else 15_000L)
         }
 
         try {
             ensureOfferChannel(this)
             StoreCallRingService.ensureChannel(this)
             if (isStoreCall) {
-                // 1) Local MAX notification with channel sound (works if process alive)
-                showNotification(title, body, isStoreCall = true)
-                // 2) Looping FGS ring — may be blocked on some OEMs; never fail the push
-                runCatching { StoreCallRingService.start(this, title, body) }
-                // 3) Fallback: loop the loud alarm sound immediately so even a
-                //    throttled/transient FCM process rings continuously.
-                playOfferSound(loop = true)
-                vibratePattern()
+                if (suppressStoreRing) {
+                    // Silent/minimal: already on a job for this store
+                    showNotification(title, body, isStoreCall = false)
+                } else {
+                    // 1) Local MAX notification with channel sound (works if process alive)
+                    showNotification(title, body, isStoreCall = true)
+                    // 2) Looping FGS ring — may be blocked on some OEMs; never fail the push
+                    runCatching { StoreCallRingService.start(this, title, body) }
+                    // 3) Fallback: loop the loud alarm sound immediately so even a
+                    //    throttled/transient FCM process rings continuously.
+                    playOfferSound(loop = true)
+                    vibratePattern()
+                }
             } else {
                 showNotification(title, body, isStoreCall = false)
                 if (isOffer || type.isBlank()) {
