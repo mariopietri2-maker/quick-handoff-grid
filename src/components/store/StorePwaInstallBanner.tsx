@@ -33,7 +33,7 @@ async function openExternal(url: string) {
  * - Web: beforeinstallprompt or iOS Safari instructions
  * - Beta APK (native shell): open PWA in system browser so user can install / bookmark
  */
-export function StorePwaInstallBanner() {
+export function StorePwaInstallBanner({ ghostMode = false }: { ghostMode?: boolean } = {}) {
   const native = isNativeShell();
   const [ready, setReady] = useState(false);
   const [dismissed, setDismissed] = useState(() => {
@@ -128,7 +128,7 @@ export function StorePwaInstallBanner() {
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-heading font-bold text-foreground leading-tight">
-          Εγκατάσταση Fresh2GO.GR Store
+          {ghostMode ? 'Εγκατάσταση Ghost Store' : 'Εγκατάσταση Fresh2GO.GR Store'}
         </p>
         {ready ? (
           <p className="text-xs text-muted-foreground mt-0.5 leading-snug">

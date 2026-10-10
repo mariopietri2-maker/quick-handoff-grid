@@ -118,6 +118,16 @@ export default function StoreApp() {
   // N stores are call-only: they never render orders, so skip the orders
   // fetch + realtime subscription entirely (faster load, less battery/data).
   const isNStore = store?.store_role === 'N';
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (isNStore && store?.name) {
+      document.title = `${store.name} · Ghost Store`;
+    } else if (store?.name) {
+      document.title = `${store.name} · Fresh2GO Store`;
+    } else {
+      document.title = isNStore ? 'Ghost Store' : 'Fresh2GO Store';
+    }
+  }, [isNStore, store?.name]);
   const { orders, loading: ordersLoading, updateStatus, pendingIds } = useStoreOrders(
     isNStore ? null : (store?.id ?? null),
     { suppressSound: isNStore },
@@ -210,11 +220,17 @@ export default function StoreApp() {
               <Logo size={34} className="shrink-0" />
             )}
             <div className="min-w-0 leading-tight">
-              {view === 'manage' && !isNStore && (
-                <p className="font-heading font-extrabold text-[13px] leading-none tracking-tight text-foreground">
-                  Fresh<span className="text-[#FF6B00]">2</span><span className="text-[#F4A125]">GO</span>
-                  <span className="ml-1 rounded bg-primary/15 px-1.5 py-0.5 text-[9px] font-bold text-primary">.GR</span>
-                </p>
+              {view === 'manage' && (
+                isNStore ? (
+                  <p className="font-heading font-extrabold text-[13px] leading-none tracking-tight text-violet-600">
+                    Ghost Store
+                  </p>
+                ) : (
+                  <p className="font-heading font-extrabold text-[13px] leading-none tracking-tight text-foreground">
+                    Fresh<span className="text-[#FF6B00]">2</span><span className="text-[#F4A125]">GO</span>
+                    <span className="ml-1 rounded bg-primary/15 px-1.5 py-0.5 text-[9px] font-bold text-primary">.GR</span>
+                  </p>
+                )
               )}
               <p className="font-heading font-bold text-foreground truncate leading-tight">
                 {view === 'portal'
@@ -226,7 +242,7 @@ export default function StoreApp() {
               </p>
               {view === 'manage' && store && (
                 <p className={`text-[10px] font-bold uppercase tracking-wider ${isNStore ? 'text-violet-600' : 'text-primary'}`}>
-                  {isNStore ? 'Ghost Store · κλήση οδηγού' : 'Partner · πλήρες κατάστημα'}
+                  {isNStore ? 'Κλήση οδηγού' : 'Partner · πλήρες κατάστημα'}
                 </p>
               )}
             </div>
@@ -264,7 +280,7 @@ export default function StoreApp() {
       </header>
 
       <div className={`mx-auto py-4 ${view === 'manage' && !isNStore ? 'max-w-none px-0' : 'container max-w-5xl px-4'}`}>
-        <StorePwaInstallBanner />
+        <StorePwaInstallBanner ghostMode={!!isNStore} />
 
         {view === 'create' ? (
           <div className="max-w-lg mx-auto py-4">
@@ -447,7 +463,7 @@ export default function StoreApp() {
                     </span>
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {store.is_active ? 'Κάλεσε Ghost Rider — το κουμπί κλήσης είναι ενεργό' : 'Άνοιξε για να καλέσεις Ghost Rider'}
+                    {store.is_active ? 'Κάλεσε Ghost Rider — έτοιμο για κλήση' : 'Άνοιξε το κατάστημα για κλήση Ghost Rider'}
                   </p>
                 </div>
               </div>
