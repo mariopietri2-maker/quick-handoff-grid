@@ -1,0 +1,20 @@
+{
+  "name": "Ghost Store",
+  "short_name": "Ghost Store",
+  "description": "Ghost Store — κλήση οδηγού Ghost Rider.",
+  "start_url": "/store",
+  "scope": "/",
+  "id": "/store-ghost",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1A1428",
+  "theme_color": "#7C3AED",
+  "lang": "el",
+  "dir": "ltr",
+  "categories": ["business", "food", "productivity"],
+  "icons": [
+    { "src": "/icons/ghost-store-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/ghost-store-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/ghost-store-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -2,11 +2,12 @@ import { Capacitor } from '@capacitor/core';
 
 const MANIFEST_SELECTOR = 'link[rel="manifest"]';
 
-export type PwaManifestKind = 'default' | 'store' | 'customer' | 'driver';
+export type PwaManifestKind = 'default' | 'store' | 'ghost-store' | 'customer' | 'driver';
 
 const MANIFEST_HREF: Record<PwaManifestKind, string> = {
   default: '/manifest.json',
   store: '/manifest-store.json',
+  'ghost-store': '/manifest-ghost-store.json',
   customer: '/manifest-customer.json',
   driver: '/manifest-driver.json',
 };
@@ -14,6 +15,7 @@ const MANIFEST_HREF: Record<PwaManifestKind, string> = {
 const THEME: Record<PwaManifestKind, string> = {
   default: '#FF8A3D',
   store: '#EA580C',
+  'ghost-store': '#7C3AED',
   customer: '#FF8A3D',
   driver: '#FF8A3D',
 };
@@ -21,6 +23,7 @@ const THEME: Record<PwaManifestKind, string> = {
 const APPLE_TITLE: Record<PwaManifestKind, string> = {
   default: 'Fresh2GO',
   store: 'Fresh2GO Store',
+  'ghost-store': 'Ghost Store',
   customer: 'Fresh2GO',
   driver: 'Fresh2GO Driver',
 };
@@ -28,6 +31,7 @@ const APPLE_TITLE: Record<PwaManifestKind, string> = {
 const APPLE_ICON: Record<PwaManifestKind, string> = {
   default: '/icons/app-192.png',
   store: '/icons/store-192.png',
+  'ghost-store': '/icons/ghost-store-192.png',
   customer: '/icons/app-192.png',
   driver: '/icons/app-192.png',
 };

@@ -5,6 +5,7 @@ import {
   Wallet, Store as StoreIcon, History,
 } from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
+import { setPwaManifest } from '@/lib/pwa';
 import { UserMenu } from '@/components/UserMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import StoreDashboard from '@/components/store/StoreDashboard';
@@ -127,6 +128,8 @@ export default function StoreApp() {
     } else {
       document.title = isNStore ? 'Ghost Store' : 'Fresh2GO Store';
     }
+    // Browser install dialog reads the web manifest — switch away from Fresh2GO for Ghost Stores
+    setPwaManifest(isNStore ? 'ghost-store' : 'store');
   }, [isNStore, store?.name]);
   const { orders, loading: ordersLoading, updateStatus, pendingIds } = useStoreOrders(
     isNStore ? null : (store?.id ?? null),
