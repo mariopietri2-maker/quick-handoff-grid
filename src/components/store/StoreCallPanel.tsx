@@ -158,8 +158,10 @@ export function StoreCallPanel({ storeId, storeName, muted = false, disabled = f
     };
   }, [storeId, fetchCalls]);
 
+  const openCount = calls.filter((c) => c.status === 'open').length;
   const activeCount = calls.length;
-  const canCreateMore = activeCount < MAX_ACTIVE_CALLS && !disabled;
+  // Can start another call without closing — only blocked when 3 are still waiting (open)
+  const canCreateMore = openCount < MAX_ACTIVE_CALLS && !disabled;
 
   const handleCreateCall = async () => {
     setLoading(true);
@@ -174,7 +176,7 @@ export function StoreCallPanel({ storeId, storeName, muted = false, disabled = f
       await fetchCalls();
       toast({
         title: 'Κλήση στάλθηκε',
-        description: `Ενεργές κλήσεις: ${Math.min(activeCount + 1, MAX_ACTIVE_CALLS)} / ${MAX_ACTIVE_CALLS}`,
+        description: `Νέα κλήση στάλθηκε. Ανοιχτές σε αναμονή: έως ${MAX_ACTIVE_CALLS}.`,
       });
     } catch (e: any) {
       const msg = e?.message || 'Αποτυχία κλήσης';
@@ -210,7 +212,7 @@ export function StoreCallPanel({ storeId, storeName, muted = false, disabled = f
             <div className="min-w-0">
               <h3 className="text-lg font-heading font-bold text-foreground">Κλήσεις Ghost Rider</h3>
               <p className="text-xs text-muted-foreground">
-                Έως {MAX_ACTIVE_CALLS} ταυτόχρονες κλήσεις · {activeCount}/{MAX_ACTIVE_CALLS} ενεργές
+                Έως {MAX_ACTIVE_CALLS} ανοιχτές κλήσεις μαζί · {openCount} σε αναμονή · {activeCount} συνολικά
               </p>
             </div>
           </div>
@@ -286,11 +288,11 @@ export function StoreCallPanel({ storeId, storeName, muted = false, disabled = f
             ) : disabled ? (
               'Κλειστό — άνοιξε για κλήση'
             ) : !canCreateMore ? (
-              `Μέγιστο ${MAX_ACTIVE_CALLS} κλήσεις — κλείσε μία`
+              `Μέγιστο ${MAX_ACTIVE_CALLS} ανοιχτές — περίμενε αποδοχή ή κλείσε μία`
             ) : (
               <span className="flex items-center justify-center gap-2">
                 <Truck className="h-5 w-5" />
-                {activeCount === 0 ? 'Κάλεσε οδηγό' : 'Κάλεσε ακόμα έναν'}
+                {openCount === 0 && activeCount === 0 ? 'Κάλεσε οδηγό' : 'Κάλεσε ακόμα έναν (χωρίς να κλείσεις)'}
               </span>
             )}
           </Button>
@@ -298,7 +300,7 @@ export function StoreCallPanel({ storeId, storeName, muted = false, disabled = f
           {!canCreateMore && !disabled && (
             <p className="mt-2 text-[11px] text-center text-muted-foreground flex items-center justify-center gap-1">
               <AlertCircle className="h-3.5 w-3.5" />
-              Έχεις {MAX_ACTIVE_CALLS} ενεργές κλήσεις. Κλείσε μία για νέα.
+              Έχεις {MAX_ACTIVE_CALLS} ανοιχτές κλήσεις σε αναμονή. Μπορείς ξανά όταν κάποιος αποδεχτεί ή κλείσεις μία.
             </p>
           )}
         </CardContent>
@@ -310,8 +312,8 @@ export function StoreCallPanel({ storeId, storeName, muted = false, disabled = f
             <AlertDialogTitle>Νέα κλήση Ghost Rider;</AlertDialogTitle>
             <AlertDialogDescription>
               Θα ειδοποιηθούν οι διαθέσιμοι Ghost Riders για το <b>{storeName}</b>.
-              Μπορείς να έχεις έως <b>{MAX_ACTIVE_CALLS}</b> ανοιχτές κλήσεις ταυτόχρονα
-              (τώρα {activeCount}). Κάθε κλήση λήγει σε 15 λεπτά αν δεν γίνει αποδοχή.
+              Μπορείς να ανοίξεις έως <b>{MAX_ACTIVE_CALLS}</b> κλήσεις μαζί χωρίς να κλείσεις τις προηγούμενες
+              (τώρα ανοιχτές: {openCount}). Δεν χρειάζεται να κλείσεις για να καλέσεις τον επόμενο.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
