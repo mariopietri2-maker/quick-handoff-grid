@@ -821,7 +821,7 @@ private fun HomeTab(
                         "Πρόσφατα",
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(horizontal = 16.dp, bottom = 8.dp),
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
                     )
                     Row(
                         Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
@@ -839,7 +839,7 @@ private fun HomeTab(
                             ) {
                                 Column {
                                     Text(
-                                        store.name,
+                                        store.name ?: "Κατάστημα",
                                         fontWeight = FontWeight.Bold,
                                         maxLines = 1,
                                         style = MaterialTheme.typography.bodySmall,
@@ -865,7 +865,7 @@ private fun HomeTab(
                         "Αγαπημένα",
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(horizontal = 16.dp, bottom = 8.dp),
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
                     )
                     Row(
                         Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
@@ -883,7 +883,7 @@ private fun HomeTab(
                             ) {
                                 Column {
                                     Text(
-                                        store.name,
+                                        store.name ?: "Κατάστημα",
                                         fontWeight = FontWeight.Bold,
                                         maxLines = 1,
                                         style = MaterialTheme.typography.bodySmall,
@@ -3137,7 +3137,7 @@ private fun BrowseTab(
                     "Δημοφιλή",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp).padding(top = 14.dp, bottom = 8.dp),
+                    modifier = Modifier.padding(start = 16.dp).padding(top = 14.dp, end = 16.dp).padding(top = 14.dp, bottom = 8.dp),
                 )
             }
             item {
@@ -3165,7 +3165,7 @@ private fun BrowseTab(
                     "Κατηγορίες",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp).padding(top = 18.dp, bottom = 10.dp),
+                    modifier = Modifier.padding(start = 16.dp).padding(top = 18.dp, end = 16.dp).padding(top = 18.dp, bottom = 10.dp),
                 )
             }
             item {
