@@ -365,7 +365,7 @@ export default function AdminAppHealth() {
             <p className="text-[10px] text-muted-foreground">Live από native-versions / apk-downloads · πάτα Ανανέωση πάνω</p>
           </div>
           {APK_DOWNLOADS.customerNative?.fileUrl && (
-            <a href={APK_DOWNLOADS.customerNative.url} className="text-xs font-semibold text-primary underline" target="_blank" rel="noreferrer">APK</a>
+            <a href={APK_DOWNLOADS.customerNative.fileUrl} className="text-xs font-semibold text-primary underline" target="_blank" rel="noreferrer">APK</a>
           )}
         </div>
         <div className="rounded-xl border bg-card p-3 flex items-center justify-between gap-2">
@@ -374,7 +374,7 @@ export default function AdminAppHealth() {
             <p className="font-heading font-bold text-sm">{APK_NATIVE_DRIVER_VERSION}</p>
           </div>
           {APK_DOWNLOADS.driverNative?.fileUrl && (
-            <a href={APK_DOWNLOADS.driverNative.url} className="text-xs font-semibold text-primary underline" target="_blank" rel="noreferrer">APK</a>
+            <a href={APK_DOWNLOADS.driverNative.fileUrl} className="text-xs font-semibold text-primary underline" target="_blank" rel="noreferrer">APK</a>
           )}
         </div>
       </div>

@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
-import {Search, X, ChevronRight, Activity, Smartphone} from 'lucide-react';
-// Activity used for client events
 import {
+  Search, X, ChevronRight, Activity, Smartphone,
   Users, ShieldCheck, Headphones, Zap, Palette, Sparkles, Megaphone, MessageSquareText,
-  SlidersHorizontal, Shield, Stethoscope, Activity, Cloud, FileCheck, TriangleAlert, Flag, Gauge,
+  SlidersHorizontal, Shield, Stethoscope, Cloud, FileCheck, TriangleAlert, Flag, Gauge,
   Link2, Truck, ReceiptText, Gift, Bot,
 } from 'lucide-react';
 

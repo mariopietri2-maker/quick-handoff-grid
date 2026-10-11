@@ -6,7 +6,6 @@ import { Loader2, Truck, CheckCircle, AlertCircle, X, Phone } from 'lucide-react
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { playDeliverySound } from '@/lib/notifications';
-import { loadStoreSoundPrefs } from '@/lib/store-sound-prefs';
 import { showOsNotification } from '@/lib/push-notifications';
 
 interface Props {
@@ -115,8 +114,7 @@ export function StoreCallPanel({ storeId, storeName, muted = false, disabled = f
       prevAcceptedRef.current.add(c.id);
       if (!muted) {
         try {
-          const prefs = loadStoreSoundPrefs();
-          void playDeliverySound(prefs);
+          void playDeliverySound(0.35);
           if (typeof navigator !== 'undefined' && navigator.vibrate) {
             navigator.vibrate([0, 200, 80, 200, 80, 300]);
           }
