@@ -6,6 +6,7 @@ on:
     paths:
       - "native-driver/**"
       - "native-customer/**"
+      - "native-admin/**"
       - "mobile-signing/fresh2go-debug.keystore"
       - "src/lib/apk-downloads.ts"
       - ".github/workflows/build-native-apks.yml"
@@ -100,6 +101,15 @@ jobs:
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           ./gradlew :app:assembleDebug :app:bundleDebug --no-daemon --stacktrace
 
+      - name: Build admin debug APK
+        id: admin
+        working-directory: native-admin
+        continue-on-error: true
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace
+
       - name: Stage APKs and AABs
         run: |
           mkdir -p dist
@@ -114,6 +124,11 @@ jobs:
           cp native-customer/app/build/outputs/apk/debug/app-debug.apk dist/fresh2go-customer-native-debug.apk
           if [ -f native-customer/app/build/outputs/bundle/debug/app-debug.aab ]; then
             cp native-customer/app/build/outputs/bundle/debug/app-debug.aab dist/fresh2go-customer-native-debug.aab
+          fi
+          if [ -f native-admin/app/build/outputs/apk/debug/app-debug.apk ]; then
+            cp native-admin/app/build/outputs/apk/debug/app-debug.apk dist/fresh2go-admin-native-debug.apk
+          else
+            echo "::warning::admin APK not built (optional)"
           fi
           ls -lah dist/
 

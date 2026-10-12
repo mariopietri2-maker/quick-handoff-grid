@@ -5,6 +5,7 @@ import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -25,6 +26,12 @@ class AdminRepository {
     suspend fun currentUserId(): String? =
         sb.auth.currentSessionOrNull()?.user?.id
 
+    @Serializable
+    private data class RoleRow(
+        val user_id: String? = null,
+        val role: String? = null,
+    )
+
     suspend fun isAdmin(userId: String): Boolean {
         return try {
             val rows = sb.from("user_roles").select {
@@ -39,9 +46,6 @@ class AdminRepository {
             false
         }
     }
-
-    @kotlinx.serialization.Serializable
-    private data class RoleRow(val role: String? = null)
 
     suspend fun loadDrivers(): List<DriverUi> {
         val states = runCatching {
@@ -75,11 +79,14 @@ class AdminRepository {
 
     suspend fun loadOpenOrders(): List<OrderRow> {
         return runCatching {
-            sb.from("orders").select {
-                filter {
-                    isIn("status", listOf("placed", "accepted", "preparing", "ready", "picked_up", "delivering"))
+            // Avoid isIn API differences across supabase-kt versions — filter client-side
+            sb.from("orders").select().decodeList<OrderRow>()
+                .filter {
+                    it.status in setOf(
+                        "placed", "accepted", "preparing", "ready",
+                        "picked_up", "delivering",
+                    )
                 }
-            }.decodeList<OrderRow>()
                 .sortedByDescending { it.created_at }
                 .take(80)
         }.getOrDefault(emptyList())
@@ -92,7 +99,11 @@ class AdminRepository {
         }.getOrDefault(emptyList())
     }
 
-    suspend fun snapshot(drivers: List<DriverUi>, orders: List<OrderRow>, stores: List<StoreRow>): OpsSnapshot {
+    suspend fun snapshot(
+        drivers: List<DriverUi>,
+        orders: List<OrderRow>,
+        stores: List<StoreRow>,
+    ): OpsSnapshot {
         return OpsSnapshot(
             openOrders = orders.count { it.status in setOf("placed", "accepted", "preparing", "ready") },
             onlineDrivers = drivers.count { it.online && !it.onBreak },
