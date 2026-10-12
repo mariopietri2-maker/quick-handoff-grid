@@ -35,41 +35,43 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
 
     companion object {
         /** Bump when channel attributes change (Android freezes channel settings). */
-        const val CHANNEL_ID = "driver-offers-v8"
+        const val CHANNEL_ID = "driver-offers-v9"
         private const val STORE_CALL_NOTIF_ID = 71001
         private const val _MAX_FALLBACK_RING_MS = 15_000L
+        @Volatile private var lastMediaSoundAt = 0L
 
-        /** Create channel at process start so first push already has sound. */
+        /** Create channel at process start. Sound is played by MediaPlayer only (no double). */
         fun ensureOfferChannel(context: Context) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
             val manager =
                 context.getSystemService(NotificationManager::class.java) ?: return
-            val attrs = AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_ALARM)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .build()
-            val sound = Uri.parse(
-                "android.resource://${context.packageName}/${R.raw.fresh_delivery}",
-            )
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "Κλήσεις & προσφορές",
                 NotificationManager.IMPORTANCE_MAX,
             ).apply {
-                description = "Κλήσεις καταστήματος και προσφορές παράδοσης — ήχος συναγερμού"
+                description = "Προσφορές παράδοσης — ένας ήχος από την εφαρμογή"
                 enableVibration(true)
-                vibrationPattern = longArrayOf(0, 400, 100, 400, 100, 300)
+                vibrationPattern = longArrayOf(0, 250, 80, 250, 80, 400)
                 enableLights(true)
-                setSound(sound, attrs)
+                // Silent channel: MediaPlayer plays offer_alert once (avoids double sound)
+                setSound(null, null)
                 setBypassDnd(true)
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
             manager.createNotificationChannel(channel)
-            // Drop old silent channel ids if present (optional; id is frozen per install)
-            runCatching { manager.deleteNotificationChannel("driver-offers-v5") }
-            runCatching { manager.deleteNotificationChannel("driver-offers-v4")
-            runCatching { manager.deleteNotificationChannel("driver-offers-v3") } }
-            runCatching { manager.deleteNotificationChannel("driver-offers-v2") }
+            listOf(
+                "driver-offers-v8", "driver-offers-v7", "driver-offers-v6",
+                "driver-offers-v5", "driver-offers-v4", "driver-offers-v3", "driver-offers-v2",
+            ).forEach { id -> runCatching { manager.deleteNotificationChannel(id) } }
+        }
+
+        /** Returns true if we should play media sound now (debounce 1.2s). */
+        fun claimMediaSoundSlot(): Boolean {
+            val now = System.currentTimeMillis()
+            if (now - lastMediaSoundAt < 1200L) return false
+            lastMediaSoundAt = now
+            return true
         }
     }
 
@@ -124,19 +126,18 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
                     // Silent/minimal: already on a job for this store
                     showNotification(title, body, isStoreCall = false)
                 } else {
-                    // 1) Local MAX notification with channel sound (works if process alive)
-                    showNotification(title, body, isStoreCall = true)
-                    // 2) Looping FGS ring — may be blocked on some OEMs; never fail the push
+                    // One ring only: FGS MediaPlayer. Notification is silent.
+                    showNotification(title, body, isStoreCall = true, silent = true)
                     runCatching { StoreCallRingService.start(this, title, body) }
-                    // 3) Fallback: loop the loud alarm sound immediately so even a
-                    //    throttled/transient FCM process rings continuously.
-                    playOfferSound(loop = true)
                     vibratePattern()
                 }
             } else {
-                showNotification(title, body, isStoreCall = false)
+                // One sound only: MediaPlayer. Notification is silent (channel has no sound).
+                showNotification(title, body, isStoreCall = false, silent = true)
                 if (isOffer || type.isBlank()) {
-                    playOfferSound(loop = false)
+                    if (claimMediaSoundSlot()) {
+                        playOfferSound(loop = false)
+                    }
                     vibratePattern()
                 }
             }
@@ -204,7 +205,12 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
         }
     }
 
-    private fun showNotification(title: String, body: String, isStoreCall: Boolean) {
+    private fun showNotification(
+        title: String,
+        body: String,
+        isStoreCall: Boolean,
+        silent: Boolean = false,
+    ) {
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             putExtra("from_push", true)
@@ -229,12 +235,18 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
                 else NotificationCompat.CATEGORY_ALARM,
             )
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setSound(soundUri())
-            .setVibrate(longArrayOf(0, 500, 200, 500, 200, 500))
             .setContentIntent(pi)
             .setAutoCancel(true)
-            .setOnlyAlertOnce(false)
+            .setOnlyAlertOnce(true)
             .setDefaults(NotificationCompat.DEFAULT_LIGHTS)
+        if (silent) {
+            builder.setSilent(true)
+            builder.setSound(null)
+            builder.setVibrate(null)
+        } else {
+            builder.setSound(soundUri())
+            builder.setVibrate(longArrayOf(0, 250, 80, 250, 80, 400))
+        }
         // Heads-up / lock-screen for offers and store calls when backgrounded
         builder.setFullScreenIntent(pi, true)
         builder.setTimeoutAfter(90_000L)

@@ -29,7 +29,7 @@ class StoreCallRingService : Service() {
     companion object {
         const val ACTION_START = "com.freshdelivery.nativedriver.STORE_CALL_RING_START"
         const val ACTION_STOP = "com.freshdelivery.nativedriver.STORE_CALL_RING_STOP"
-        const val CHANNEL_ID = "driver-store-calls-v4"
+        const val CHANNEL_ID = "driver-store-calls-v5"
         private const val NOTIF_ID = 71002
         private const val MAX_RING_MS = 15_000L
 
@@ -71,7 +71,7 @@ class StoreCallRingService : Service() {
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 500, 200, 500, 200, 500)
                 enableLights(true)
-                setSound(sound, attrs)
+                setSound(null, null)
                 setBypassDnd(true)
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }

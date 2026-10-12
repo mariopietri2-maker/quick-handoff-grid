@@ -182,6 +182,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     private var mediaPlayer: MediaPlayer? = null
     private var storeCallRealtimeJob: Job? = null
     private var lastOfferAlertKey: String? = null
+    private var lastOfferSoundAtMs: Long = 0L
     private var lastStoreCallAlertKey: String? = null
 
     init {
@@ -1064,6 +1065,10 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         if (key == lastOfferAlertKey) return
         lastOfferAlertKey = key
         val local = _state.value.settingsLocal
+        // Debounce: FCM + poll can fire together — only one sound
+        val now = System.currentTimeMillis()
+        if (now - lastOfferSoundAtMs < 1500L) return
+        lastOfferSoundAtMs = now
         if (local.offerSound) playSoundById(local.soundId)
         if (local.vibration) vibrateOffer()
     }
