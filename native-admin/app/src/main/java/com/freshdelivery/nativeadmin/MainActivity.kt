@@ -33,6 +33,8 @@ import com.freshdelivery.nativeadmin.data.StoreRow
 import com.freshdelivery.nativeadmin.ui.AdminUiState
 import com.freshdelivery.nativeadmin.ui.AdminViewModel
 import com.freshdelivery.nativeadmin.ui.DriverMapWebView
+import com.freshdelivery.nativeadmin.data.LoginPrefs
+import androidx.compose.ui.platform.LocalContext
 
 private val Orange = Color(0xFFEA580C)
 private val Ink = Color(0xFF0F172A)
@@ -62,7 +64,9 @@ class MainActivity : ComponentActivity() {
                     state.bootstrapping -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = Orange)
                     }
-                    !state.signedIn -> LoginScreen(state.busy, state.error, vm::signIn)
+                    !state.signedIn -> LoginScreen(state.busy, state.error) { email, pass, remember ->
+                        vm.signIn(email, pass, remember)
+                    }
                     else -> AdminShell(vm, state)
                 }
             }
@@ -71,9 +75,11 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun LoginScreen(busy: Boolean, error: String?, onLogin: (String, String) -> Unit) {
-    var email by remember { mutableStateOf("") }
-    var pass by remember { mutableStateOf("") }
+private fun LoginScreen(busy: Boolean, error: String?, onLogin: (String, String, Boolean) -> Unit) {
+    val context = LocalContext.current
+    var email by remember { mutableStateOf(LoginPrefs.loadEmail(context)) }
+    var pass by remember { mutableStateOf(LoginPrefs.loadPassword(context)) }
+    var remember by remember { mutableStateOf(LoginPrefs.isRemember(context)) }
     Column(
         Modifier.fillMaxSize().background(Surface).padding(28.dp),
         verticalArrangement = Arrangement.Center,
@@ -97,13 +103,21 @@ private fun LoginScreen(busy: Boolean, error: String?, onLogin: (String, String)
             singleLine = true, visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
         )
+        Spacer(Modifier.height(8.dp))
+        Row(
+            Modifier.fillMaxWidth().clickable { remember = !remember },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Checkbox(checked = remember, onCheckedChange = { remember = it }, colors = CheckboxDefaults.colors(checkedColor = Orange))
+            Text("Save email & password", fontSize = 14.sp, color = Ink)
+        }
         if (error != null) {
             Spacer(Modifier.height(10.dp))
             Text(error, color = Color(0xFFDC2626), fontSize = 13.sp)
         }
         Spacer(Modifier.height(18.dp))
         Button(
-            onClick = { onLogin(email, pass) },
+            onClick = { onLogin(email, pass, remember) },
             enabled = !busy && email.isNotBlank() && pass.isNotBlank(),
             modifier = Modifier.fillMaxWidth().height(54.dp),
             shape = RoundedCornerShape(14.dp),

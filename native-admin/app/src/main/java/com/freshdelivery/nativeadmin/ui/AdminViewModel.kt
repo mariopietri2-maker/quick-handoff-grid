@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.freshdelivery.nativeadmin.data.AdminRepository
+import com.freshdelivery.nativeadmin.data.LoginPrefs
 import com.freshdelivery.nativeadmin.data.DriverUi
 import com.freshdelivery.nativeadmin.data.OpsSnapshot
 import com.freshdelivery.nativeadmin.data.OrderRow
@@ -67,7 +68,7 @@ class AdminViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun signIn(email: String, password: String) {
+    fun signIn(email: String, password: String, remember: Boolean = true) {
         viewModelScope.launch {
             _state.value = _state.value.copy(busy = true, error = null)
             runCatching {
@@ -78,6 +79,7 @@ class AdminViewModel(app: Application) : AndroidViewModel(app) {
                     error("Μόνο λογαριασμοί admin")
                 }
             }.onSuccess {
+                LoginPrefs.save(getApplication(), email, password, remember)
                 _state.value = _state.value.copy(busy = false, signedIn = true, isAdmin = true)
                 startPolling()
             }.onFailure { e ->
