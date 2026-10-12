@@ -29,7 +29,7 @@ class StoreCallRingService : Service() {
     companion object {
         const val ACTION_START = "com.freshdelivery.nativedriver.STORE_CALL_RING_START"
         const val ACTION_STOP = "com.freshdelivery.nativedriver.STORE_CALL_RING_STOP"
-        const val CHANNEL_ID = "driver-store-calls-v3"
+        const val CHANNEL_ID = "driver-store-calls-v4"
         private const val NOTIF_ID = 71002
         private const val MAX_RING_MS = 15_000L
 
@@ -60,7 +60,7 @@ class StoreCallRingService : Service() {
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                 .build()
             val sound = android.net.Uri.parse(
-                "android.resource://${context.packageName}/${R.raw.fresh_delivery}",
+                "android.resource://${context.packageName}/${R.raw.offer_alert_loop}",
             )
             val ch = NotificationChannel(
                 CHANNEL_ID,
@@ -176,7 +176,7 @@ class StoreCallRingService : Service() {
     private fun startLoopingSound() {
         stopPlayer()
         runCatching {
-            val p = MediaPlayer.create(this, R.raw.fresh_delivery)
+            val p = MediaPlayer.create(this, R.raw.offer_alert_loop)
                 ?: MediaPlayer().apply {
                     setDataSource(
                         applicationContext,

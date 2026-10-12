@@ -1077,9 +1077,11 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
             .build()
         when (OfferSoundId.fromId(soundId)) {
             OfferSoundId.CLASSIC -> runCatching {
-                mediaPlayer = MediaPlayer.create(app, R.raw.fresh_delivery)?.also {
+                // Punchy dual-burst offer alert (clearer than soft brand chime)
+                mediaPlayer = MediaPlayer.create(app, R.raw.offer_alert)?.also {
                     runCatching { it.setAudioAttributes(attrs) }
                     it.isLooping = false
+                    it.setVolume(1f, 1f)
                     it.start()
                 }
             }
@@ -1168,21 +1170,20 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun vibrateOffer() {
         runCatching {
+            val pattern = longArrayOf(0, 220, 70, 220, 70, 400, 100, 300)
             val app = getApplication<Application>()
-            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 val vm = app.getSystemService(VibratorManager::class.java)
-                vm?.defaultVibrator
+                vm?.defaultVibrator?.vibrate(VibrationEffect.createWaveform(pattern, -1))
             } else {
                 @Suppress("DEPRECATION")
-                app.getSystemService(Vibrator::class.java)
-            } ?: return
-            val pattern = longArrayOf(0, 350, 80, 350, 80, 220)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val amps = intArrayOf(0, 255, 0, 255, 0, 200)
-                vibrator.vibrate(VibrationEffect.createWaveform(pattern, amps, -1))
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator.vibrate(pattern, -1)
+                val v = app.getSystemService(Vibrator::class.java)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    v?.vibrate(VibrationEffect.createWaveform(pattern, -1))
+                } else {
+                    @Suppress("DEPRECATION")
+                    v?.vibrate(pattern, -1)
+                }
             }
         }
     }

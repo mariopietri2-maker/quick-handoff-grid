@@ -35,7 +35,7 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
 
     companion object {
         /** Bump when channel attributes change (Android freezes channel settings). */
-        const val CHANNEL_ID = "driver-offers-v7"
+        const val CHANNEL_ID = "driver-offers-v8"
         private const val STORE_CALL_NOTIF_ID = 71001
         private const val _MAX_FALLBACK_RING_MS = 15_000L
 
@@ -148,21 +148,22 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     private fun soundUri(): Uri =
-        Uri.parse("android.resource://$packageName/${R.raw.fresh_delivery}")
+        Uri.parse("android.resource://$packageName/${R.raw.offer_alert}")
 
     private fun playOfferSound(loop: Boolean) {
         runCatching {
-            val player = MediaPlayer.create(this, R.raw.fresh_delivery)
-                ?: MediaPlayer().apply {
-                    setDataSource(applicationContext, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM))
-                    setAudioAttributes(
-                        AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_ALARM)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                            .build(),
-                    )
-                    prepare()
-                }
+            val attrs = AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_ALARM)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build()
+            val resId = if (loop) R.raw.offer_alert_loop else R.raw.offer_alert
+            val player = MediaPlayer.create(this, resId)?.also {
+                runCatching { it.setAudioAttributes(attrs) }
+            } ?: MediaPlayer().apply {
+                setDataSource(applicationContext, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM))
+                setAudioAttributes(attrs)
+                prepare()
+            }
             player.isLooping = loop
             player.setOnCompletionListener { it.release() }
             player.setOnErrorListener { mp, _, _ ->
@@ -184,7 +185,7 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
 
     private fun vibratePattern() {
         runCatching {
-            val pattern = longArrayOf(0, 400, 100, 400, 100, 300)
+            val pattern = longArrayOf(0, 250, 80, 250, 80, 450, 120, 350)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 val vm = getSystemService(VibratorManager::class.java)
                 vm?.defaultVibrator?.vibrate(
