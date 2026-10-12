@@ -178,7 +178,7 @@ jobs:
           while IFS=$'\t' read -r id name url; do
             [ -z "${id:-}" ] && continue
             case "$name" in
-              fresh2go-driver-native-debug.apk|fresh2go-driver-native-debug.aab|fresh2go-customer-native-debug.apk|fresh2go-customer-native-debug.aab)
+              fresh2go-driver-native-debug.apk|fresh2go-driver-native-debug.aab|fresh2go-customer-native-debug.apk|fresh2go-customer-native-debug.aab|fresh2go-admin-native-debug.apk)
                 echo "KEEP $name"
                 ;;
               *)
