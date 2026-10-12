@@ -14,6 +14,9 @@ export const APK_NATIVE_DRIVER_VERSION = '2.6.27-bg-offer';
 /** Native Kotlin/Compose customer. */
 export const APK_NATIVE_CUSTOMER_VERSION = '2.9.78-fresh2go';
 
+/** Native Kotlin/Compose admin ops console. */
+export const APK_NATIVE_ADMIN_VERSION = '1.1.0-admin';
+
 // Prefer GitHub release assets (CI uploads). Website /apk is fallback only.
 const RELEASE_BASE = 'https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1';
 const WEBSITE_APK_BASE = 'https://fresh2go.gr/apk';
@@ -49,7 +52,7 @@ export const APK_DOWNLOADS = {
     filename: 'fresh2go-admin-native-debug.apk',
     fileUrl: `${RELEASE_BASE}/fresh2go-admin-native-debug.apk`,
     sizeLabel: '~15 MB',
-    versionLabel: '1.1.0-admin',
+    versionLabel: APK_NATIVE_ADMIN_VERSION,
     badge: 'Admin',
   },
   driver: {

@@ -377,6 +377,15 @@ export default function AdminAppHealth() {
             <a href={APK_DOWNLOADS.driverNative.fileUrl} className="text-xs font-semibold text-primary underline" target="_blank" rel="noreferrer">APK</a>
           )}
         </div>
+        <div className="rounded-xl border bg-card p-3 flex items-center justify-between gap-2">
+          <div>
+            <p className="text-xs text-muted-foreground">Admin native</p>
+            <p className="font-heading font-bold text-sm">1.1.0-admin</p>
+          </div>
+          {APK_DOWNLOADS.adminNative?.fileUrl && (
+            <a href={APK_DOWNLOADS.adminNative.fileUrl} className="text-xs font-semibold text-primary underline" target="_blank" rel="noreferrer">APK</a>
+          )}
+        </div>
       </div>
       {error && (
         <Card className="border-destructive/40">

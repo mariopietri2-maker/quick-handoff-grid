@@ -40,6 +40,7 @@ function useQrDataUrl(text: string) {
 function flavorIcon(flavor: ApkFlavor) {
   if (flavor === 'customer' || flavor === 'customerNative') return Smartphone;
   if (flavor === 'driverNative') return Cpu;
+  if (flavor === 'adminNative') return ShieldAlert;
   return Bike;
 }
 
@@ -195,10 +196,10 @@ export default function DownloadAppPage() {
             Δοκιμαστικά APK & PWA
           </h1>
           <p className="mt-3 text-muted-foreground text-sm sm:text-base max-w-lg mx-auto leading-relaxed">
-            Capacitor και Native για πελάτη και οδηγό, plus Store PWA χωρίς APK.
+            Native για πελάτη, οδηγό και admin ops, plus Store PWA χωρίς APK.
           </p>
           <p className="mt-2 text-xs text-muted-foreground/80 font-mono">
-            Native driver v{APK_NATIVE_DRIVER_VERSION} · Native customer v{APK_NATIVE_CUSTOMER_VERSION} · Capacitor v{APK_BUILD_VERSION}
+            Native driver v{APK_NATIVE_DRIVER_VERSION} · Native customer v{APK_NATIVE_CUSTOMER_VERSION} · Admin v1.1.0 · Capacitor v{APK_BUILD_VERSION}
           </p>
           <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/5 px-4 py-1.5 text-sm">
             <span className="font-heading font-bold uppercase tracking-wider text-primary text-[10px]">Capacitor build</span>
@@ -211,6 +212,7 @@ export default function DownloadAppPage() {
           <StorePwaCard highlighted={params.get('app') === 'store'} />
           <ApkCard flavor="driverNative" highlighted={focus === 'driverNative'} />
           <ApkCard flavor="customerNative" highlighted={focus === 'customerNative'} />
+          <ApkCard flavor="adminNative" highlighted={focus === 'adminNative' || params.get('app') === 'admin'} />
           <ApkCard flavor="driver" highlighted={focus === 'driver'} />
           <ApkCard flavor="customer" highlighted={focus === 'customer'} />
         </div>
