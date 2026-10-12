@@ -49,7 +49,7 @@ export const APK_DOWNLOADS = {
     filename: 'fresh2go-admin-native-debug.apk',
     fileUrl: `${RELEASE_BASE}/fresh2go-admin-native-debug.apk`,
     sizeLabel: '~15 MB',
-    versionLabel: '1.0.0-admin',
+    versionLabel: '1.1.0-admin',
     badge: 'Admin',
   },
   driver: {

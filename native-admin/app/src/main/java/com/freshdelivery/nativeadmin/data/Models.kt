@@ -1,6 +1,5 @@
 package com.freshdelivery.nativeadmin.data
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -39,6 +38,9 @@ data class OrderRow(
     val delivery_address: String? = null,
     val created_at: String? = null,
     val source: String? = null,
+    val customer_name: String? = null,
+    val customer_phone: String? = null,
+    val notes: String? = null,
 )
 
 @Serializable
@@ -48,22 +50,40 @@ data class StoreRow(
     val is_active: Boolean? = null,
     val store_role: String? = null,
     val address: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+)
+
+@Serializable
+data class StoreCallRow(
+    val id: String,
+    val store_id: String,
+    val status: String,
+    val accepted_by: String? = null,
+    val created_at: String? = null,
+    val accepted_at: String? = null,
 )
 
 data class DriverUi(
     val id: String,
     val name: String,
+    val phone: String?,
     val online: Boolean,
     val onBreak: Boolean,
     val active: Boolean,
     val callRole: String,
+    val vehicle: String?,
     val lat: Double?,
     val lng: Double?,
+    val updatedAt: String?,
 )
 
 data class OpsSnapshot(
     val openOrders: Int,
     val onlineDrivers: Int,
+    val onBreakDrivers: Int,
     val activeStores: Int,
-    val acceptedOrders: Int,
+    val onRoadOrders: Int,
+    val openStoreCalls: Int,
+    val acceptedStoreCalls: Int,
 )

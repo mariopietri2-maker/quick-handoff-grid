@@ -64,22 +64,29 @@ class AdminRepository {
         return ids.map { id ->
             val st = stateBy[id]
             val dp = byId[id]
+            val prof = names[id]
             DriverUi(
                 id = id,
-                name = names[id]?.full_name?.ifBlank { null } ?: id.take(8),
+                name = prof?.full_name?.ifBlank { null } ?: id.take(8),
+                phone = prof?.phone,
                 online = st?.shift_started_at != null,
                 onBreak = st?.on_break == true,
                 active = dp?.is_active != false,
                 callRole = dp?.call_role ?: "standard",
+                vehicle = dp?.vehicle_type,
                 lat = st?.last_lat,
                 lng = st?.last_lng,
+                updatedAt = st?.updated_at,
             )
-        }.sortedWith(compareByDescending<DriverUi> { it.online }.thenBy { it.name })
+        }.sortedWith(
+            compareByDescending<DriverUi> { it.online }
+                .thenByDescending { it.active }
+                .thenBy { it.name },
+        )
     }
 
     suspend fun loadOpenOrders(): List<OrderRow> {
         return runCatching {
-            // Avoid isIn API differences across supabase-kt versions — filter client-side
             sb.from("orders").select().decodeList<OrderRow>()
                 .filter {
                     it.status in setOf(
@@ -88,7 +95,7 @@ class AdminRepository {
                     )
                 }
                 .sortedByDescending { it.created_at }
-                .take(80)
+                .take(100)
         }.getOrDefault(emptyList())
     }
 
@@ -99,16 +106,29 @@ class AdminRepository {
         }.getOrDefault(emptyList())
     }
 
-    suspend fun snapshot(
+    suspend fun loadStoreCalls(): List<StoreCallRow> {
+        return runCatching {
+            sb.from("store_driver_calls").select().decodeList<StoreCallRow>()
+                .filter { it.status in setOf("open", "accepted") }
+                .sortedByDescending { it.created_at }
+                .take(50)
+        }.getOrDefault(emptyList())
+    }
+
+    fun snapshot(
         drivers: List<DriverUi>,
         orders: List<OrderRow>,
         stores: List<StoreRow>,
+        calls: List<StoreCallRow>,
     ): OpsSnapshot {
         return OpsSnapshot(
             openOrders = orders.count { it.status in setOf("placed", "accepted", "preparing", "ready") },
             onlineDrivers = drivers.count { it.online && !it.onBreak },
+            onBreakDrivers = drivers.count { it.online && it.onBreak },
             activeStores = stores.count { it.is_active == true },
-            acceptedOrders = orders.count { it.status in setOf("picked_up", "delivering") },
+            onRoadOrders = orders.count { it.status in setOf("picked_up", "delivering") },
+            openStoreCalls = calls.count { it.status == "open" },
+            acceptedStoreCalls = calls.count { it.status == "accepted" },
         )
     }
 
@@ -136,6 +156,23 @@ class AdminRepository {
                 put("p_order_id", orderId)
                 put("p_status", status)
             },
+        )
+    }
+
+    suspend fun assignOrderDriver(orderId: String, driverId: String) {
+        sb.postgrest.rpc(
+            "admin_assign_order_driver",
+            buildJsonObject {
+                put("p_order_id", orderId)
+                put("p_driver_id", driverId)
+            },
+        )
+    }
+
+    suspend fun closeStoreCall(callId: String) {
+        sb.postgrest.rpc(
+            "close_store_driver_call",
+            buildJsonObject { put("p_call_id", callId) },
         )
     }
 }
