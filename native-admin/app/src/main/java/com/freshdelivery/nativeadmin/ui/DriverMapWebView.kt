@@ -56,12 +56,15 @@ private fun buildMapHtml(
                 .put("lat", lat)
                 .put("lng", lng)
                 .put("name", d.name)
-                .put("status", when {
-                    !d.active -> "off"
-                    d.online && d.onBreak -> "break"
-                    d.online -> "online"
-                    else -> "idle"
-                })
+                .put(
+                    "status",
+                    when {
+                        !d.active -> "off"
+                        d.online && d.onBreak -> "break"
+                        d.online -> "online"
+                        else -> "idle"
+                    },
+                )
                 .put("role", d.callRole),
         )
     }
@@ -80,6 +83,8 @@ private fun buildMapHtml(
     }
     val centerLat = focusLat ?: 39.6650
     val centerLng = focusLng ?: 20.8537
+
+    // Build without Kotlin string templates colliding with JS `$`
     return """
 <!DOCTYPE html>
 <html><head>
@@ -97,24 +102,28 @@ private fun buildMapHtml(
 </head><body>
 <div id="map"></div>
 <script>
-const drivers = $pts;
-const stores = $storePts;
-const map = L.map('map',{zoomControl:true}).setView([$centerLat,$centerLng], 13);
+const drivers = __DRIVERS__;
+const stores = __STORES__;
+const map = L.map('map',{zoomControl:true}).setView([__CLAT__,__CLNG__], 13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-  maxZoom:19, attribution:'© OSM'
+  maxZoom:19, attribution:'OSM'
 }).addTo(map);
 const group = L.featureGroup();
-stores.forEach(s=>{
-  const ic = L.divIcon({className:'', html:`<div class="store ${s.ghost?'ghost':''} ${s.open?'':'closed'}"></div>`, iconSize:[12,12]});
-  L.marker([s.lat,s.lng],{icon:ic}).bindPopup(`<b>${s.name}</b><br>${s.ghost?'Ghost Store':'Partner'}${s.open?' · OPEN':' · CLOSED'}`).addTo(group);
+stores.forEach(function(s){
+  var ic = L.divIcon({className:'', html:'<div class="store '+(s.ghost?'ghost':'')+' '+(s.open?'':'closed')+'"></div>', iconSize:[12,12]});
+  L.marker([s.lat,s.lng],{icon:ic}).bindPopup('<b>'+s.name+'</b><br>'+(s.ghost?'Ghost Store':'Partner')+(s.open?' · OPEN':' · CLOSED')).addTo(group);
 });
-drivers.forEach(d=>{
-  const ic = L.divIcon({className:'', html:`<div class="pin ${d.status}"></div>`, iconSize:[16,16]});
-  L.marker([d.lat,d.lng],{icon:ic}).bindPopup(`<b>${d.name}</b><br>${d.status} · ${d.role}`).addTo(group);
+drivers.forEach(function(d){
+  var ic = L.divIcon({className:'', html:'<div class="pin '+d.status+'"></div>', iconSize:[16,16]});
+  L.marker([d.lat,d.lng],{icon:ic}).bindPopup('<b>'+d.name+'</b><br>'+d.status+' · '+d.role).addTo(group);
 });
 group.addTo(map);
 if(group.getLayers().length){ map.fitBounds(group.getBounds().pad(0.2)); }
 </script>
 </body></html>
 """.trimIndent()
+        .replace("__DRIVERS__", pts.toString())
+        .replace("__STORES__", storePts.toString())
+        .replace("__CLAT__", centerLat.toString())
+        .replace("__CLNG__", centerLng.toString())
 }
