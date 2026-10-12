@@ -89,7 +89,7 @@ private fun LoginScreen(busy: Boolean, error: String?, onLogin: (String, String,
             Modifier.size(72.dp).clip(RoundedCornerShape(20.dp)).background(Orange),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Default.AdminPanelSettings, null, tint = Color.White, modifier = Modifier.size(40.dp))
+            Icon(Icons.Default.Settings, null, tint = Color.White, modifier = Modifier.size(40.dp))
         }
         Spacer(Modifier.height(16.dp))
         Text("Fresh2GO", fontSize = 30.sp, fontWeight = FontWeight.Black, color = Orange)
@@ -146,18 +146,48 @@ private fun AdminShell(vm: AdminViewModel, state: AdminUiState) {
                         CircularProgressIndicator(Modifier.size(18.dp).padding(end = 8.dp), strokeWidth = 2.dp, color = Orange)
                     }
                     IconButton(onClick = vm::refresh) { Icon(Icons.Default.Refresh, "Refresh") }
-                    IconButton(onClick = vm::signOut) { Icon(Icons.Default.Logout, "Logout") }
+                    IconButton(onClick = vm::signOut) { Icon(Icons.Default.ExitToApp, "Logout") }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = CardBg),
             )
         },
         bottomBar = {
             NavigationBar(containerColor = CardBg, tonalElevation = 8.dp) {
-                NavItem(state.tab == 0, { vm.setTab(0) }, Icons.Default.Dashboard, "Home")
-                NavItem(state.tab == 1, { vm.setTab(1) }, Icons.Default.Map, "Map")
-                NavItem(state.tab == 2, { vm.setTab(2) }, Icons.Default.TwoWheeler, "Drivers")
-                NavItem(state.tab == 3, { vm.setTab(3) }, Icons.Default.ReceiptLong, "Orders")
-                NavItem(state.tab == 4, { vm.setTab(4) }, Icons.Default.Store, "Stores")
+                NavigationBarItem(
+                    selected = state.tab == 0,
+                    onClick = { vm.setTab(0) },
+                    icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+                    label = { Text("Home", fontSize = 10.sp) },
+                    colors = NavigationBarItemDefaults.colors(indicatorColor = Orange.copy(alpha = 0.15f), selectedIconColor = Orange),
+                )
+                NavigationBarItem(
+                    selected = state.tab == 1,
+                    onClick = { vm.setTab(1) },
+                    icon = { Icon(Icons.Default.Place, contentDescription = "Map") },
+                    label = { Text("Map", fontSize = 10.sp) },
+                    colors = NavigationBarItemDefaults.colors(indicatorColor = Orange.copy(alpha = 0.15f), selectedIconColor = Orange),
+                )
+                NavigationBarItem(
+                    selected = state.tab == 2,
+                    onClick = { vm.setTab(2) },
+                    icon = { Icon(Icons.Default.Person, contentDescription = "Drivers") },
+                    label = { Text("Drivers", fontSize = 10.sp) },
+                    colors = NavigationBarItemDefaults.colors(indicatorColor = Orange.copy(alpha = 0.15f), selectedIconColor = Orange),
+                )
+                NavigationBarItem(
+                    selected = state.tab == 3,
+                    onClick = { vm.setTab(3) },
+                    icon = { Icon(Icons.Default.List, contentDescription = "Orders") },
+                    label = { Text("Orders", fontSize = 10.sp) },
+                    colors = NavigationBarItemDefaults.colors(indicatorColor = Orange.copy(alpha = 0.15f), selectedIconColor = Orange),
+                )
+                NavigationBarItem(
+                    selected = state.tab == 4,
+                    onClick = { vm.setTab(4) },
+                    icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Stores") },
+                    label = { Text("Stores", fontSize = 10.sp) },
+                    colors = NavigationBarItemDefaults.colors(indicatorColor = Orange.copy(alpha = 0.15f), selectedIconColor = Orange),
+                )
             }
         },
     ) { pad ->
@@ -191,16 +221,6 @@ private fun AdminShell(vm: AdminViewModel, state: AdminUiState) {
     }
 }
 
-@Composable
-private fun NavItem(selected: Boolean, onClick: () -> Unit, icon: androidx.compose.ui.graphics.vector.ImageVector, label: String) {
-    NavigationBarItem(
-        selected = selected,
-        onClick = onClick,
-        icon = { Icon(icon, null) },
-        label = { Text(label, fontSize = 10.sp) },
-        colors = NavigationBarItemDefaults.colors(indicatorColor = Orange.copy(alpha = 0.15f), selectedIconColor = Orange),
-    )
-}
 
 @Composable
 private fun HomeTab(state: AdminUiState) {
@@ -574,7 +594,7 @@ private fun StoreCard(s: StoreRow) {
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    if (s.store_role == "N") Icons.Default.VisibilityOff else Icons.Default.Store,
+                    if (s.store_role == "N") Icons.Default.Lock else Icons.Default.Store,
                     null,
                     tint = if (s.store_role == "N") Violet else Orange,
                 )
