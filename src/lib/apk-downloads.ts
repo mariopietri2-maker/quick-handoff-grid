@@ -42,6 +42,16 @@ export const APK_DOWNLOADS = {
     versionLabel: APK_NATIVE_CUSTOMER_VERSION,
     badge: 'Native',
   },
+  adminNative: {
+    id: 'adminNative' as const,
+    title: 'Admin Native',
+    subtitle: 'Ops console · drivers · orders · stores',
+    filename: 'fresh2go-admin-native-debug.apk',
+    fileUrl: `${RELEASE_BASE}/fresh2go-admin-native-debug.apk`,
+    sizeLabel: '~15 MB',
+    versionLabel: '1.0.0-admin',
+    badge: 'Admin',
+  },
   driver: {
     id: 'driver' as const,
     title: 'Οδηγός (παλιό)',
