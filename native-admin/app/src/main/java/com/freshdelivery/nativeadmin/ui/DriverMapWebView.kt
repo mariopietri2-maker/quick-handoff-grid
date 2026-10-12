@@ -1,10 +1,22 @@
 package com.freshdelivery.nativeadmin.ui
 
 import android.annotation.SuppressLint
+import android.graphics.Color
+import android.os.Build
+import android.view.ViewGroup
+import android.webkit.WebChromeClient
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.freshdelivery.nativeadmin.data.DriverUi
@@ -12,49 +24,74 @@ import com.freshdelivery.nativeadmin.data.StoreRow
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** Leaflet + OSM map — no Mapbox token required. Centered on Ioannina. */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun DriverMapWebView(
     drivers: List<DriverUi>,
     stores: List<StoreRow>,
     modifier: Modifier = Modifier,
-    focusLat: Double? = null,
-    focusLng: Double? = null,
 ) {
-    val html = remember(drivers, stores, focusLat, focusLng) {
-        buildMapHtml(drivers, stores, focusLat, focusLng)
+    val payload = remember(drivers, stores) { buildPayload(drivers, stores) }
+    var ready by remember { mutableStateOf(false) }
+    var webRef by remember { mutableStateOf<WebView?>(null) }
+
+    Box(modifier) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { ctx ->
+                WebView(ctx).apply {
+                    setBackgroundColor(Color.parseColor("#1e293b"))
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                    )
+                    settings.javaScriptEnabled = true
+                    settings.domStorageEnabled = true
+                    settings.cacheMode = WebSettings.LOAD_DEFAULT
+                    settings.loadsImagesAutomatically = true
+                    settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        settings.safeBrowsingEnabled = false
+                    }
+                    webChromeClient = WebChromeClient()
+                    webViewClient = object : WebViewClient() {
+                        override fun onPageFinished(view: WebView?, url: String?) {
+                            ready = true
+                            inject(view, payload)
+                        }
+                    }
+                    loadUrl("file:///android_asset/admin_map.html")
+                    webRef = this
+                }
+            },
+            update = { web ->
+                if (ready) inject(web, payload)
+            },
+        )
+        if (!ready) {
+            CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.Center),
+                color = androidx.compose.ui.graphics.Color(0xFFEA580C),
+            )
+        }
     }
-    AndroidView(
-        modifier = modifier,
-        factory = { ctx ->
-            WebView(ctx).apply {
-                settings.javaScriptEnabled = true
-                settings.domStorageEnabled = true
-                webViewClient = WebViewClient()
-                loadDataWithBaseURL("https://leafletjs.com", html, "text/html", "UTF-8", null)
-            }
-        },
-        update = { web ->
-            web.loadDataWithBaseURL("https://leafletjs.com", html, "text/html", "UTF-8", null)
-        },
-    )
 }
 
-private fun buildMapHtml(
-    drivers: List<DriverUi>,
-    stores: List<StoreRow>,
-    focusLat: Double?,
-    focusLng: Double?,
-): String {
-    val pts = JSONArray()
+private fun inject(web: WebView?, payload: String) {
+    if (web == null) return
+    val escaped = JSONObject.quote(payload)
+    web.evaluateJavascript("window.setMapData && window.setMapData($escaped);", null)
+}
+
+private fun buildPayload(drivers: List<DriverUi>, stores: List<StoreRow>): String {
+    val root = JSONObject()
+    val dArr = JSONArray()
     drivers.forEach { d ->
-        val lat = d.lat ?: return@forEach
-        val lng = d.lng ?: return@forEach
-        pts.put(
+        if (d.lat == null || d.lng == null) return@forEach
+        dArr.put(
             JSONObject()
-                .put("lat", lat)
-                .put("lng", lng)
+                .put("lat", d.lat)
+                .put("lng", d.lng)
                 .put("name", d.name)
                 .put(
                     "status",
@@ -68,62 +105,19 @@ private fun buildMapHtml(
                 .put("role", d.callRole),
         )
     }
-    val storePts = JSONArray()
+    val sArr = JSONArray()
     stores.forEach { s ->
-        val lat = s.latitude ?: return@forEach
-        val lng = s.longitude ?: return@forEach
-        storePts.put(
+        if (s.latitude == null || s.longitude == null) return@forEach
+        sArr.put(
             JSONObject()
-                .put("lat", lat)
-                .put("lng", lng)
+                .put("lat", s.latitude)
+                .put("lng", s.longitude)
                 .put("name", s.name)
                 .put("open", s.is_active == true)
                 .put("ghost", s.store_role == "N"),
         )
     }
-    val centerLat = focusLat ?: 39.6650
-    val centerLng = focusLng ?: 20.8537
-
-    // Build without Kotlin string templates colliding with JS `$`
-    return """
-<!DOCTYPE html>
-<html><head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<style>
-  html,body,#map{height:100%;margin:0;padding:0}
-  .pin{border-radius:50%;border:2px solid #fff;width:16px;height:16px;box-shadow:0 1px 4px rgba(0,0,0,.35)}
-  .online{background:#10b981}.break{background:#f59e0b}.idle{background:#9ca3af}.off{background:#ef4444}
-  .store{width:12px;height:12px;border-radius:3px;background:#ea580c;border:2px solid #fff}
-  .store.ghost{background:#7c3aed}.store.closed{opacity:.45}
-</style>
-</head><body>
-<div id="map"></div>
-<script>
-const drivers = __DRIVERS__;
-const stores = __STORES__;
-const map = L.map('map',{zoomControl:true}).setView([__CLAT__,__CLNG__], 13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-  maxZoom:19, attribution:'OSM'
-}).addTo(map);
-const group = L.featureGroup();
-stores.forEach(function(s){
-  var ic = L.divIcon({className:'', html:'<div class="store '+(s.ghost?'ghost':'')+' '+(s.open?'':'closed')+'"></div>', iconSize:[12,12]});
-  L.marker([s.lat,s.lng],{icon:ic}).bindPopup('<b>'+s.name+'</b><br>'+(s.ghost?'Ghost Store':'Partner')+(s.open?' · OPEN':' · CLOSED')).addTo(group);
-});
-drivers.forEach(function(d){
-  var ic = L.divIcon({className:'', html:'<div class="pin '+d.status+'"></div>', iconSize:[16,16]});
-  L.marker([d.lat,d.lng],{icon:ic}).bindPopup('<b>'+d.name+'</b><br>'+d.status+' · '+d.role).addTo(group);
-});
-group.addTo(map);
-if(group.getLayers().length){ map.fitBounds(group.getBounds().pad(0.2)); }
-</script>
-</body></html>
-""".trimIndent()
-        .replace("__DRIVERS__", pts.toString())
-        .replace("__STORES__", storePts.toString())
-        .replace("__CLAT__", centerLat.toString())
-        .replace("__CLNG__", centerLng.toString())
+    root.put("drivers", dArr)
+    root.put("stores", sArr)
+    return root.toString()
 }

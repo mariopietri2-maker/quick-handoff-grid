@@ -15,7 +15,7 @@ export const APK_NATIVE_DRIVER_VERSION = '2.6.27-bg-offer';
 export const APK_NATIVE_CUSTOMER_VERSION = '2.9.78-fresh2go';
 
 /** Native Kotlin/Compose admin ops console. */
-export const APK_NATIVE_ADMIN_VERSION = '1.1.0-admin';
+export const APK_NATIVE_ADMIN_VERSION = '1.2.0-admin';
 
 // Prefer GitHub release assets (CI uploads). Website /apk is fallback only.
 const RELEASE_BASE = 'https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1';

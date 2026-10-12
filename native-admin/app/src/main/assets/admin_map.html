@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    html, body, #map { height: 100%; margin: 0; padding: 0; background: #1e293b; }
+    .pin { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.4); }
+    .online { background: #10b981; }
+    .break { background: #f59e0b; }
+    .idle { background: #94a3b8; }
+    .off { background: #ef4444; }
+    .store-dot { width: 14px; height: 14px; border-radius: 4px; background: #ea580c; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35); }
+    .store-dot.ghost { background: #7c3aed; }
+    .store-dot.closed { opacity: .4; }
+    .leaflet-popup-content { font-family: system-ui, sans-serif; font-size: 13px; margin: 8px 10px; }
+    .leaflet-popup-content b { color: #0f172a; }
+  </style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+  var map = L.map('map', { zoomControl: true }).setView([39.665, 20.8537], 13);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: 'OSM'
+  }).addTo(map);
+  var layer = L.layerGroup().addTo(map);
+
+  function setData(payload) {
+    try {
+      var data = typeof payload === 'string' ? JSON.parse(payload) : payload;
+      layer.clearLayers();
+      var bounds = [];
+      (data.stores || []).forEach(function (s) {
+        if (s.lat == null || s.lng == null) return;
+        var cls = 'store-dot' + (s.ghost ? ' ghost' : '') + (s.open ? '' : ' closed');
+        var ic = L.divIcon({ className: '', html: '<div class="' + cls + '"></div>', iconSize: [14, 14], iconAnchor: [7, 7] });
+        var m = L.marker([s.lat, s.lng], { icon: ic }).bindPopup(
+          '<b>' + (s.name || 'Store') + '</b><br>' + (s.ghost ? 'Ghost Store' : 'Partner') + (s.open ? ' · OPEN' : ' · CLOSED')
+        );
+        m.addTo(layer);
+        bounds.push([s.lat, s.lng]);
+      });
+      (data.drivers || []).forEach(function (d) {
+        if (d.lat == null || d.lng == null) return;
+        var st = d.status || 'idle';
+        var ic = L.divIcon({ className: '', html: '<div class="pin ' + st + '"></div>', iconSize: [18, 18], iconAnchor: [9, 9] });
+        var m = L.marker([d.lat, d.lng], { icon: ic }).bindPopup(
+          '<b>' + (d.name || 'Driver') + '</b><br>' + st.toUpperCase() + ' · ' + (d.role || '')
+        );
+        m.addTo(layer);
+        bounds.push([d.lat, d.lng]);
+      });
+      if (bounds.length) {
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+      } else {
+        map.setView([39.665, 20.8537], 13);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  window.setMapData = setData;
+</script>
+</body>
+</html>

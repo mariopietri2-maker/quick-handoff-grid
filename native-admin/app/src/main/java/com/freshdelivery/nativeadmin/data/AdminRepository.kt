@@ -91,11 +91,11 @@ class AdminRepository {
                 .filter {
                     it.status in setOf(
                         "placed", "accepted", "preparing", "ready",
-                        "picked_up", "delivering",
+                        "picked_up", "delivering", "cancelled",
                     )
                 }
                 .sortedByDescending { it.created_at }
-                .take(100)
+                .take(120)
         }.getOrDefault(emptyList())
     }
 
@@ -121,12 +121,13 @@ class AdminRepository {
         stores: List<StoreRow>,
         calls: List<StoreCallRow>,
     ): OpsSnapshot {
+        val liveOrders = orders.filter { it.status != "cancelled" }
         return OpsSnapshot(
-            openOrders = orders.count { it.status in setOf("placed", "accepted", "preparing", "ready") },
+            openOrders = liveOrders.count { it.status in setOf("placed", "accepted", "preparing", "ready") },
             onlineDrivers = drivers.count { it.online && !it.onBreak },
             onBreakDrivers = drivers.count { it.online && it.onBreak },
             activeStores = stores.count { it.is_active == true },
-            onRoadOrders = orders.count { it.status in setOf("picked_up", "delivering") },
+            onRoadOrders = liveOrders.count { it.status in setOf("picked_up", "delivering") },
             openStoreCalls = calls.count { it.status == "open" },
             acceptedStoreCalls = calls.count { it.status == "accepted" },
         )

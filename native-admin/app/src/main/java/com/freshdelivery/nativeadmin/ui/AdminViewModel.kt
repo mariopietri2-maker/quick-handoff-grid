@@ -38,6 +38,7 @@ data class AdminUiState(
     val selectedDriverId: String? = null,
     val selectedOrderId: String? = null,
     val assignOrderId: String? = null,
+    val lastUpdated: Long = 0L,
 )
 
 class AdminViewModel(app: Application) : AndroidViewModel(app) {
@@ -160,6 +161,7 @@ class AdminViewModel(app: Application) : AndroidViewModel(app) {
                 storeCalls = calls,
                 snapshot = snap,
                 error = null,
+                lastUpdated = System.currentTimeMillis(),
             )
         }.onFailure { e ->
             _state.value = _state.value.copy(error = e.message)
