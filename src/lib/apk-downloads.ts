@@ -6,16 +6,16 @@ export const APK_RELEASE_TAG = 'mobile-apks-v1';
 /** Bumped to the current Capacitor build version.
  *  Source of truth for /download AND dist/native-versions.json (self-update
  *  channel polled by sideloaded native apps — stamped by run-vite-build.mjs). */
-export const APK_BUILD_VERSION = '1.0.9091800';
+export const APK_BUILD_VERSION = '1.0.0';
 
 /** Native Kotlin/Compose driver (replaces Capacitor driver when installed). */
-export const APK_NATIVE_DRIVER_VERSION = '2.6.27-bg-offer';
+export const APK_NATIVE_DRIVER_VERSION = '1.0.0';
 
 /** Native Kotlin/Compose customer. */
-export const APK_NATIVE_CUSTOMER_VERSION = '2.9.78-fresh2go';
+export const APK_NATIVE_CUSTOMER_VERSION = '1.0.0';
 
 /** Native Kotlin/Compose admin ops console. */
-export const APK_NATIVE_ADMIN_VERSION = '1.2.0-admin';
+export const APK_NATIVE_ADMIN_VERSION = '1.0.0';
 
 // Prefer GitHub release assets (CI uploads). Website /apk is fallback only.
 const RELEASE_BASE = 'https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1';
