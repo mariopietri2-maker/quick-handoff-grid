@@ -29,6 +29,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -71,13 +76,24 @@ internal fun PromoCarousel(
             .padding(top = 2.dp, bottom = 0.dp)
             .height(168.dp),
     ) {
+        // Let vertical drags pass through to the parent LazyColumn (home scroll).
+        val passVertical = remember {
+            object : NestedScrollConnection {
+                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                    // Do not consume vertical pre-scroll — parent LazyColumn handles it.
+                    return Offset(0f, 0f)
+                }
+            }
+        }
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(148.dp)
+                .nestedScroll(passVertical)
                 .clip(RoundedCornerShape(24.dp)),
             pageSpacing = 0.dp,
+            userScrollEnabled = true,
         ) { page ->
             val promo = promos[page]
             val gradient = when (promo.gradient) {

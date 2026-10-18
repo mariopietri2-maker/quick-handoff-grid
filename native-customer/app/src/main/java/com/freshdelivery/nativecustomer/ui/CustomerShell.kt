@@ -556,7 +556,14 @@ private fun HomeTab(
         }
     }
 
+    // Pull-to-refresh must not stay stuck (blocks vertical scroll on some OEMs).
     var refreshing by remember { mutableStateOf(false) }
+    LaunchedEffect(refreshing) {
+        if (!refreshing) return@LaunchedEffect
+        // Safety: always release the refresh indicator so scroll stays usable.
+        kotlinx.coroutines.delay(2500)
+        refreshing = false
+    }
     LaunchedEffect(state.busy) {
         if (refreshing && !state.busy) refreshing = false
     }
@@ -568,14 +575,17 @@ private fun HomeTab(
             onRefresh()
         },
         state = pullState,
-        modifier = Modifier.fillMaxSize().background(if (nightMode) Color(0xFFF3F0EB) else FreshBg),
-    ) {
-    LazyColumn(
-        state = listState,
         modifier = Modifier
             .fillMaxSize()
             .background(if (nightMode) Color(0xFFF3F0EB) else FreshBg),
-        contentPadding = PaddingValues(bottom = 24.dp),
+    ) {
+    LazyColumn(
+        state = listState,
+        userScrollEnabled = true,
+        modifier = Modifier
+            .fillMaxSize()
+            .background(if (nightMode) Color(0xFFF3F0EB) else FreshBg),
+        contentPadding = PaddingValues(bottom = 96.dp),
     ) {
         if (state.isOffline) {
             item {
