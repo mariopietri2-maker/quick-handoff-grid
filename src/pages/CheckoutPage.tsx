@@ -36,6 +36,7 @@ interface AppliedPromo {
   code: string;
   discount_type: 'percentage' | 'fixed';
   discount_value: number;
+  free_delivery?: boolean;
 }
 
 export default function CheckoutPage() {
@@ -134,6 +135,7 @@ export default function CheckoutPage() {
   const [promoCode, setPromoCode] = useState('');
   const [promoLoading, setPromoLoading] = useState(false);
   const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
+  const [roulettePromo, setRoulettePromo] = useState<AppliedPromo | null>(null);
   const cardEnabled = cardPaymentsAllowed && isPaymentsConfigured();
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash' | 'viva'>('cash');
   const [vivaPaymentsAllowed, setVivaPaymentsAllowed] = useState(false);
@@ -151,22 +153,29 @@ export default function CheckoutPage() {
   const [tipOption, setTipOption] = useState<number | 'custom'>(0);
   const [customTip, setCustomTip] = useState('');
 
-  const subtotalAfterDiscount = Math.max(0, total - (appliedPromo
-    ? appliedPromo.discount_type === 'percentage'
-      ? Math.min(total, total * (appliedPromo.discount_value / 100))
-      : Math.min(total, appliedPromo.discount_value)
-    : 0));
+  const promoDiscountAmount = (promo: AppliedPromo | null, base: number) => {
+    if (!promo || base <= 0) return 0;
+    if (promo.discount_type === 'percentage') {
+      return Math.min(base, base * (promo.discount_value / 100));
+    }
+    return Math.min(base, promo.discount_value);
+  };
+  // Stack roulette + coupon (order: percentage-like first from roulette, then fixed coupon)
+  const rouletteDisc = promoDiscountAmount(roulettePromo, total);
+  const afterRoulette = Math.max(0, total - rouletteDisc);
+  const couponDisc = promoDiscountAmount(appliedPromo, afterRoulette);
+  const discount = rouletteDisc + couponDisc;
+  const subtotalAfterDiscount = Math.max(0, total - discount);
+  const effectiveDeliveryFee =
+    (roulettePromo as any)?.free_delivery || (appliedPromo as any)?.free_delivery
+      ? 0
+      : deliveryFee;
 
   const tipAmount = tipOption === 'custom'
     ? Math.max(0, parseFloat(customTip) || 0)
     : subtotalAfterDiscount * (tipOption / 100);
 
-  const discount = appliedPromo
-    ? appliedPromo.discount_type === 'percentage'
-      ? Math.min(total, total * (appliedPromo.discount_value / 100))
-      : Math.min(total, appliedPromo.discount_value)
-    : 0;
-  const grandTotal = subtotalAfterDiscount + deliveryFee + tipAmount;
+  const grandTotal = subtotalAfterDiscount + effectiveDeliveryFee + tipAmount;
 
   // VAT (ΦΠΑ) breakdown — Greek restaurant food is 13%, the delivery service
   // is 24%. Prices are inclusive (Greek consumer law). The split is display-only
@@ -175,9 +184,9 @@ export default function CheckoutPage() {
   const DELIVERY_VAT_RATE = 0.24;
   // Tip is excluded from VAT (paid directly to driver)
   const foodNet = subtotalAfterDiscount / (1 + FOOD_VAT_RATE);
-  const deliveryNet = deliveryFee / (1 + DELIVERY_VAT_RATE);
+  const deliveryNet = effectiveDeliveryFee / (1 + DELIVERY_VAT_RATE);
   const netAmount = foodNet + deliveryNet;
-  const vatAmount = subtotalAfterDiscount - foodNet + (deliveryFee - deliveryNet);
+  const vatAmount = subtotalAfterDiscount - foodNet + (effectiveDeliveryFee - deliveryNet);
 
   const applyPromoCode = useCallback(
     async (code: string) => {
@@ -227,6 +236,7 @@ export default function CheckoutPage() {
         code: data.code,
         discount_type: data.discount_type as 'percentage' | 'fixed',
         discount_value: Number(data.discount_value),
+        free_delivery: !!(data as any).free_delivery,
       });
       toast.success('Ο κωδικός εφαρμόστηκε! 🎉');
       setPromoLoading(false);
@@ -236,13 +246,32 @@ export default function CheckoutPage() {
 
   const handleApplyPromo = () => applyPromoCode(promoCode);
 
+  // Load roulette prize into its own slot so loyalty coupons are not overwritten
   useEffect(() => {
-    if (appliedPromo || total <= 0) return;
+    if (total <= 0 || roulettePromo) return;
     const deal = getWonDeal();
-    if (deal && deal.code) {
-      void applyPromoCode(deal.code);
-    }
-  }, [appliedPromo, total, storeId, applyPromoCode]);
+    if (!deal?.code) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('promo_codes')
+        .select('*')
+        .ilike('code', deal.code)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (cancelled || error || !data) return;
+      if (data.expires_at && new Date(data.expires_at) < new Date()) return;
+      if (data.max_uses !== null && data.current_uses >= data.max_uses) return;
+      setRoulettePromo({
+        code: data.code,
+        id: data.id,
+        discount_type: data.discount_type as 'percentage' | 'fixed',
+        discount_value: Number(data.discount_value),
+        free_delivery: !!(data as any).free_delivery,
+      } as AppliedPromo);
+    })();
+    return () => { cancelled = true; };
+  }, [total, storeId, roulettePromo]);
 
   const removePromo = () => {
     setAppliedPromo(null);
@@ -337,11 +366,11 @@ export default function CheckoutPage() {
         p_delivery_longitude: deliveryCoords?.lon ?? null,
         p_payment_method: paymentMethod,
         p_tip_amount: tipAmount,
-        p_delivery_fee: deliveryFee,
+        p_delivery_fee: effectiveDeliveryFee,
         p_notes: notes || null,
         p_scheduled_for: scheduledFor,
         p_distance_km: distanceKm,
-        p_promo_code: appliedPromo?.code ?? null,
+        p_promo_code: [roulettePromo?.code, appliedPromo?.code].filter(Boolean).join('|') || null,
       });
 
       if (orderError || !orderId) {
@@ -625,6 +654,29 @@ export default function CheckoutPage() {
           </CardContent>
         </Card>
 
+        {/* Stacked discounts notice */}
+        {(roulettePromo || appliedPromo) && (
+          <div className="rounded-2xl border border-primary/20 bg-primary/5 px-3 py-2 text-[12px] text-foreground">
+            {roulettePromo && (
+              <p>🎰 Ρουλέτα: <span className="font-semibold">{roulettePromo.code}</span>
+                {' '}({roulettePromo.discount_type === 'percentage'
+                  ? `${roulettePromo.discount_value}%`
+                  : `€${roulettePromo.discount_value}`})
+              </p>
+            )}
+            {appliedPromo && (
+              <p>🎁 Κουπόνι: <span className="font-semibold">{appliedPromo.code}</span>
+                {' '}({appliedPromo.discount_type === 'percentage'
+                  ? `${appliedPromo.discount_value}%`
+                  : `€${appliedPromo.discount_value}`})
+              </p>
+            )}
+            {roulettePromo && appliedPromo && (
+              <p className="text-muted-foreground mt-0.5">Συνδυάζονται στην ίδια παραγγελία</p>
+            )}
+          </div>
+        )}
+
         {/* Promo Code */}
         <Card className={`rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)] ${appliedPromo ? 'border-warning/30' : ''}`}>
           <CardContent className="p-4 space-y-3">
@@ -689,7 +741,7 @@ export default function CheckoutPage() {
             {deliveryEnabled && (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Κόστος Παράδοσης</span>
-                <span className="text-foreground">{deliveryFee.toFixed(2)}€</span>
+                <span className="text-foreground">{effectiveDeliveryFee.toFixed(2)}€</span>
               </div>
             )}
             <div className="flex justify-between text-sm">
