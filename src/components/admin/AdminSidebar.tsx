@@ -150,6 +150,7 @@ export const NAV_SECTIONS = [
       { id: 'system_health', label: 'Κατάσταση συστήματος' },
       { id: 'cloud_usage', label: '☁️ Χρήση cloud' },
       { id: 'loyalty', label: '🎁 Πόντοι / Loyalty' },
+      { id: 'roulette-stores', label: '🎰 Ρουλέτα καταστήματα' },
       { id: 'platform_cost', label: '💶 Κόστος πλατφόρμας' },
       { id: 'announcements', label: 'Ανακοινώσεις' },
       { id: 'canned_replies', label: 'Έτοιμες απαντήσεις' },

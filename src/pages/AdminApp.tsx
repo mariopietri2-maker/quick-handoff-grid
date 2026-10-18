@@ -71,6 +71,7 @@ const LedgerPanel            = lazy(() => import('@/components/admin/LedgerPanel
 const CloudUsagePanel        = lazy(() => import('@/components/admin/CloudUsagePanel'));
 const PlatformCostPanel      = lazy(() => import('@/components/admin/PlatformCostPanel'));
 const AdminLoyaltyPanel      = lazy(() => import('@/components/admin/AdminLoyaltyPanel'));
+const AdminRouletteStoresPanel = lazy(() => import('@/components/admin/AdminRouletteStoresPanel'));
 const AdminOpsAssistant    = lazy(() => import('@/components/admin/AdminOpsAssistant'));
 const AdminClientEvents    = lazy(() => import('@/components/admin/AdminClientEvents'));
 const AdminAppHealth       = lazy(() => import('@/components/admin/AdminAppHealth'));
@@ -524,6 +525,8 @@ export default function AdminApp() {
         return <AdminAppHealth />;
       case 'loyalty':
         return <AdminLoyaltyPanel />;
+      case 'roulette-stores':
+        return <AdminRouletteStoresPanel />;
       case 'system_doctor':
         return <SystemDoctorPanel />;
       case 'mission_control':

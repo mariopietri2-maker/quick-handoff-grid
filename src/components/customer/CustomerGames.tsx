@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Gift } from 'lucide-react';
 import { useCustomerGames } from '@/hooks/useCustomerGames';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 import type { WheelSegmentConfig, MysteryCardConfig } from '@/hooks/useCustomerAppConfig';
 import { formatDealTime } from '@/lib/customer-games';
 
@@ -187,8 +189,66 @@ function LuckyWheel(props: {
             <span className="text-[12px] font-extrabold text-[#0E2B1D]">{wheelResult.label}</span>
           </div>
         )}
+        {wheelResult && <RouletteStoreSuggestions />}
       </div>
     </section>
+  );
+}
+
+type SuggestedStore = {
+  store_id: string;
+  name: string;
+  logo_url: string | null;
+  image_url: string | null;
+  is_active: boolean;
+};
+
+function RouletteStoreSuggestions() {
+  const [stores, setStores] = useState<SuggestedStore[]>([]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await (supabase as any).rpc('list_roulette_suggested_stores', { p_limit: 6 });
+      if (cancelled || error || !Array.isArray(data)) return;
+      setStores(data as SuggestedStore[]);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (stores.length === 0) return null;
+
+  return (
+    <div className="mt-4 text-left">
+      <p className="text-[12px] font-extrabold text-white mb-2 px-0.5">
+        Χρησιμοποίησε την έκπτωση εδώ
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        {stores.slice(0, 6).map((s) => {
+          const img = s.logo_url || s.image_url;
+          return (
+            <button
+              key={s.store_id}
+              type="button"
+              onClick={() => navigate(`/restaurant/${s.store_id}`)}
+              className="flex items-center gap-2 rounded-xl bg-white/95 px-2.5 py-2 text-left shadow-sm active:scale-[0.98] transition"
+            >
+              <div className="h-9 w-9 rounded-lg bg-muted overflow-hidden shrink-0 flex items-center justify-center text-[11px] font-bold text-muted-foreground">
+                {img ? (
+                  <img src={img} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  (s.name || '?').slice(0, 1)
+                )}
+              </div>
+              <span className="text-[11px] font-bold text-[#0E2B1D] line-clamp-2 leading-tight">
+                {s.name}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
