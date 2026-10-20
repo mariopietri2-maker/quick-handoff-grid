@@ -52,11 +52,21 @@ export function printOrderTicket(
 
   const itemsHtml = (order.order_items ?? [])
     .map((i) => {
-      const line = lineTotal(i.unit_price, i.quantity);
+      const qty = Number(i.quantity) || 0;
+      const unit = Number((i as any).unit_price ?? (i as any).price ?? 0) || 0;
+      const line = lineTotal(i.unit_price ?? (i as any).price, i.quantity);
+      const unitHint =
+        qty > 1 && unit > 0
+          ? `<span class="unit">(${money(unit)} × ${qty})</span>`
+          : '';
       return `
         <div class="item">
-          <div class="row1">${Number(i.quantity)}x ${e(String(i.name ?? ''))}</div>
-          <div class="row2">${money(line)}</div>
+          <div class="row-main">
+            <span class="qty">${qty}×</span>
+            <span class="name">${e(String(i.name ?? 'Προϊόν'))}</span>
+            <span class="price">${money(line)}€</span>
+          </div>
+          ${unitHint ? `<div class="row-sub">${unitHint}</div>` : ''}
         </div>`;
     })
     .join('');
@@ -81,8 +91,8 @@ export function printOrderTicket(
           padding: 6px 4px 10px;
           max-width: ${bodyMm}mm; width: ${bodyMm}mm;
           margin: 0 auto;
-          font-size: 12px;
-          line-height: 1.35;
+          font-size: ${narrow ? 11 : 12}px;
+          line-height: 1.4;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
         }
@@ -127,7 +137,7 @@ export function printOrderTicket(
           margin-bottom: 2px;
         }
         .ticket-no .num {
-          font-size: 34px;
+          font-size: ${narrow ? 28 : 36}px;
           font-weight: 900;
           letter-spacing: 0.04em;
           line-height: 1;
@@ -155,62 +165,107 @@ export function printOrderTicket(
           border-top: 1px dashed #444;
           margin: 8px 0;
         }
-        .item { margin: 0 0 6px; page-break-inside: avoid; }
-        .item .row1 { font-weight: 700; word-break: break-word; }
-        .item .row2 { text-align: right; font-weight: 900; font-size: 12px; }
-        .tot-row { display: flex; justify-content: space-between; gap: 6px; padding: 2px 0; font-weight: 700; }
+        .section-label {
+          text-align: center;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          margin: 8px 0 6px;
+          color: #000;
+        }
+        .item { margin: 0 0 8px; page-break-inside: avoid; }
+        .item .row-main {
+          display: flex;
+          align-items: flex-start;
+          gap: 4px;
+          width: 100%;
+        }
+        .item .qty {
+          flex: 0 0 auto;
+          font-weight: 900;
+          font-size: 13px;
+          min-width: 1.6em;
+        }
+        .item .name {
+          flex: 1 1 auto;
+          font-weight: 700;
+          font-size: 12px;
+          word-break: break-word;
+          min-width: 0;
+        }
+        .item .price {
+          flex: 0 0 auto;
+          font-weight: 900;
+          font-size: 13px;
+          white-space: nowrap;
+          text-align: right;
+          min-width: 3.6em;
+        }
+        .item .row-sub {
+          text-align: right;
+          font-size: 10px;
+          color: #333;
+          margin-top: 1px;
+        }
+        .item .unit { font-weight: 600; }
+        .tot-row { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; font-weight: 700; font-size: 12px; }
         .tot-row .lab { flex: 1 1 auto; min-width: 0; }
         .tot-row .val { flex: 0 0 auto; font-weight: 900; white-space: nowrap; }
-        .tot-grand { border-top: 2px solid #000; margin-top: 4px; padding-top: 6px; font-size: 14px; font-weight: 900; }
-        .tot-grand .val { font-size: 16px; }
+        .tot-grand { border-top: 2px solid #000; margin-top: 6px; padding-top: 8px; font-size: 15px; font-weight: 900; }
+        .tot-grand .val { font-size: 17px; }
         .block {
-          margin: 14px auto 0;
+          margin: 12px auto 0;
           width: 100%;
           max-width: 100%;
           box-sizing: border-box;
           font-size: 13px;
           text-align: center !important;
-          border: 2px solid #000;
-          border-radius: 8px;
-          padding: 12px 6px 14px;
+          border: 2.5px solid #000;
+          border-radius: 10px;
+          padding: 14px 8px 16px;
+          background: #fff;
         }
         .block * { text-align: center !important; }
         .block strong {
           display: block;
           width: 100%;
-          text-align: center;
+          text-align: center !important;
           font-size: 11px;
-          letter-spacing: 0.14em;
+          letter-spacing: 0.18em;
           text-transform: uppercase;
-          margin: 0 0 8px;
-          padding-bottom: 6px;
-          border-bottom: 1px solid #000;
+          margin: 0 0 10px;
+          padding-bottom: 8px;
+          border-bottom: 2px solid #000;
+          font-weight: 900;
         }
         .block .line {
           display: block;
           width: 100%;
-          text-align: center;
-          font-weight: 800;
-          font-size: 14px;
-          line-height: 1.4;
-          margin: 0 auto;
+          text-align: center !important;
+          font-weight: 900;
+          font-size: 16px;
+          line-height: 1.35;
+          margin: 0 auto 4px;
         }
         .block .sub {
           display: block;
           width: 100%;
-          text-align: center;
-          font-size: 12px;
-          font-weight: 700;
+          text-align: center !important;
+          font-size: 14px;
+          font-weight: 800;
           margin: 4px auto 0;
+          letter-spacing: 0.04em;
         }
         .block .addr {
           display: block;
           width: 100%;
-          text-align: center;
+          text-align: center !important;
           font-weight: 800;
           font-size: 13px;
-          line-height: 1.35;
-          margin: 6px auto 0;
+          line-height: 1.4;
+          margin: 8px auto 0;
+          padding: 0 4px;
         }
         .notes {
           background: #000;
@@ -299,17 +354,19 @@ export function printOrderTicket(
           : ''
       }
 
+      <div class="section-label">· Είδη ·</div>
       <hr/>
-      ${itemsHtml || '<div class="item"><div class="row1">—</div></div>'}
+      ${itemsHtml || '<div class="item"><div class="row-main"><span class="name">—</span></div></div>'}
       <hr/>
-      <div class="tot-row"><span class="lab">Υποσύνολο</span><span class="val">${money(subtotal)}</span></div>
-      <div class="tot-row"><span class="lab">Παράδοση</span><span class="val">${money(om.deliveryFee)}</span></div>
-      <div class="tot-row"><span class="lab">Φιλοδώρημα</span><span class="val">${money(om.tip)}</span></div>
-      <div class="tot-row tot-grand"><span class="lab">ΣΥΝΟΛΟ</span><span class="val">${money(displayTotal)}</span></div>
+      <div class="section-label">· Σύνολα ·</div>
+      <div class="tot-row"><span class="lab">Υποσύνολο</span><span class="val">${money(subtotal)}€</span></div>
+      <div class="tot-row"><span class="lab">Παράδοση</span><span class="val">${money(om.deliveryFee)}€</span></div>
+      <div class="tot-row"><span class="lab">Φιλοδώρημα</span><span class="val">${money(om.tip)}€</span></div>
+      <div class="tot-row tot-grand"><span class="lab">ΣΥΝΟΛΟ</span><span class="val">${money(displayTotal)}€</span></div>
 
       ${
         isCash
-          ? `<div class="notes">⚠ ΕΙΣΠΡΑΞΗ ΜΕΤΡΗΤΩΝ · ${money(displayTotal)}</div>`
+          ? `<div class="notes">⚠ ΕΙΣΠΡΑΞΗ ΜΕΤΡΗΤΩΝ · ${money(displayTotal)}€</div>`
           : ''
       }
 
@@ -324,8 +381,16 @@ export function printOrderTicket(
           ? `<div class="block">
               <strong>ΠΑΡΑΛΗΠΤΗΣ</strong>
               ${recipientName ? `<span class="line">${e(recipientName)}</span>` : ''}
-              ${recipientPhone ? `<span class="sub">${e(recipientPhone)}</span>` : ''}
+              ${recipientPhone ? `<span class="sub">☎ ${e(recipientPhone)}</span>` : ''}
               ${recipientAddr ? `<span class="addr">${e(recipientAddr)}</span>` : ''}
+            </div>`
+          : ''
+      }
+      ${
+        extras.driverCode
+          ? `<div class="block" style="margin-top:8px;border-style:dashed;">
+              <strong>ΟΔΗΓΟΣ</strong>
+              <span class="line">${e(String(extras.driverCode))}</span>
             </div>`
           : ''
       }

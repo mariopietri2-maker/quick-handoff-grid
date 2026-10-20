@@ -137,14 +137,20 @@ export function buildOrderEscPos(
   enc.align('left');
   for (const item of items) {
     const qty = Number(item.quantity) || 0;
-    const unit = parseMoney((item as { unit_price?: unknown }).unit_price);
+    const unit = parseMoney(
+      (item as { unit_price?: unknown }).unit_price ??
+        (item as { price?: unknown }).price,
+    );
     const lineAmt = lineTotal(unit, qty);
     const name = String(item.name ?? '').trim() || 'Προϊόν';
-    const amtStr = money(lineAmt);
-    enc.text(cutText(`${qty}x ${name}`, cols));
+    const amtStr = `${money(lineAmt)}E`;
+    // Prefer one line: "2x Name .... 12.00E" so price never disappears
+    enc.text(twoCol(`${qty}x ${name}`, amtStr, cols));
     enc.line();
-    enc.text(amountLine(amtStr, cols));
-    enc.line();
+    if (qty > 1 && unit > 0) {
+      enc.text(escpad(`  (${money(unit)} x ${qty})`, cols, 'right').trimEnd());
+      enc.line();
+    }
   }
   if (items.length === 0) {
     enc.text('-');
@@ -153,16 +159,14 @@ export function buildOrderEscPos(
   enc.text('-'.repeat(cols));
   enc.line();
 
-  enc.text(twoCol('Υποσύνολο', money(subAmt), cols));
+  enc.text(twoCol('Υποσύνολο', `${money(subAmt)}E`, cols));
   enc.line();
-  enc.text(twoCol('Παράδοση', money(fee), cols));
+  enc.text(twoCol('Παράδοση', `${money(fee)}E`, cols));
   enc.line();
-  enc.text(twoCol('Φιλοδώρημα', money(tip), cols));
+  enc.text(twoCol('Φιλοδώρημα', `${money(tip)}E`, cols));
   enc.line();
   enc.bold(true);
-  enc.text(cutText('ΣΥΝΟΛΟ', cols));
-  enc.line();
-  enc.text(amountLine(money(totalAmt), cols));
+  enc.text(twoCol('ΣΥΝΟΛΟ', `${money(totalAmt)}E`, cols));
   enc.bold(false);
   enc.feed(1);
 
@@ -194,25 +198,57 @@ export function buildOrderEscPos(
   const recipientAddr = order.delivery_address ? String(order.delivery_address).trim() : '';
   if (recipientName || recipientPhone || recipientAddr) {
     enc.align('center');
+    enc.feed(1);
     enc.text('='.repeat(cols));
     enc.line();
     enc.bold(true);
+    enc.tall(true);
     enc.text(escpad('ΠΑΡΑΛΗΠΤΗΣ', cols, 'center'));
+    enc.tall(false);
     enc.bold(false);
     enc.line();
+    enc.text('-'.repeat(cols));
+    enc.line();
     if (recipientName) {
+      enc.bold(true);
       enc.text(escpad(cutText(recipientName, cols), cols, 'center'));
+      enc.bold(false);
       enc.line();
     }
     if (recipientPhone) {
-      enc.text(escpad(cutText(recipientPhone, cols), cols, 'center'));
+      enc.text(escpad(cutText(`Tel ${recipientPhone}`, cols), cols, 'center'));
       enc.line();
     }
     if (recipientAddr) {
-      enc.text(escpad(cutText(recipientAddr, cols), cols, 'center'));
-      enc.line();
+      // Wrap address across lines, still centered
+      const words = recipientAddr.split(/\s+/).filter(Boolean);
+      let line = '';
+      for (const w of words) {
+        const next = line ? `${line} ${w}` : w;
+        if ([...next].length > cols && line) {
+          enc.text(escpad(cutText(line, cols), cols, 'center'));
+          enc.line();
+          line = w;
+        } else {
+          line = next;
+        }
+      }
+      if (line) {
+        enc.text(escpad(cutText(line, cols), cols, 'center'));
+        enc.line();
+      }
     }
     enc.text('='.repeat(cols));
+    enc.line();
+  }
+
+  if (extras.driverCode) {
+    enc.align('center');
+    enc.bold(true);
+    enc.text(escpad('ΟΔΗΓΟΣ', cols, 'center'));
+    enc.bold(false);
+    enc.line();
+    enc.text(escpad(cutText(String(extras.driverCode), cols), cols, 'center'));
     enc.line();
   }
 
@@ -223,7 +259,7 @@ export function buildOrderEscPos(
   enc.text(escpad('Fresh2GO.GR', cols, 'center'));
   enc.line();
   enc.text(escpad(cutText(`REF ${orderNoPlain}`, cols), cols, 'center'));
-  enc.feed(3);
+  enc.feed(4);
   enc.cut();
 
   return enc.getChunks();
