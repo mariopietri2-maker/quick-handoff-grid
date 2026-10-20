@@ -26,6 +26,8 @@ export interface PrinterPrefs {
   printCopies: 1 | 2;
   /** Hide zero tip / free delivery lines for a cleaner kitchen ticket */
   compactTotals: boolean;
+  /** Larger type for kitchen readability */
+  largeType: boolean;
   baudRate: number;
   blePreset: string;
   bleCustomService: string;
@@ -41,6 +43,7 @@ const DEFAULTS: PrinterPrefs = {
   paperWidth: 58,
   printCopies: 1,
   compactTotals: true,
+  largeType: true,
   baudRate: 9600,
   blePreset: 'ff00',
   bleCustomService: '',

@@ -97,8 +97,18 @@ export function printOrderTicket(
   const recipientPhone = extras.customerPhone ? String(extras.customerPhone).trim() : '';
   const recipientAddr = order.delivery_address ? String(order.delivery_address).trim() : '';
   const hasRecipient = !!(recipientName || recipientPhone || recipientAddr);
+  const copies = prefs.printCopies === 2 ? 2 : 1;
+  const compact = prefs.compactTotals !== false;
+  const showDelivery = !compact || om.deliveryFee > 0;
+  const showTip = !compact || om.tip > 0;
+  const largeType = prefs.largeType !== false;
+  const readyMin = Number((order as any).prep_minutes ?? (order as any).estimated_prep_minutes ?? 0) || 0;
+  const scheduled = (order as any).scheduled_for
+    ? new Date((order as any).scheduled_for).toLocaleString('el-GR', {
+        day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+      })
+    : '';
 
-  const copyLabel = copies === 2 ? 'ΚΟΥΖΙΝΑ / ΠΕΛΑΤΗΣ' : null;
   const html = `
     <!doctype html>
     <html lang="el">
@@ -114,7 +124,7 @@ export function printOrderTicket(
           padding: 6px 4px 10px;
           max-width: ${bodyMm}mm; width: ${bodyMm}mm;
           margin: 0 auto;
-          font-size: ${narrow ? 11 : 12}px;
+          font-size: ${largeType ? (narrow ? 12 : 13) : (narrow ? 11 : 12)}px;
           line-height: 1.4;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
@@ -160,7 +170,7 @@ export function printOrderTicket(
           margin-bottom: 2px;
         }
         .ticket-no .num {
-          font-size: ${narrow ? 28 : 36}px;
+          font-size: ${largeType ? (narrow ? 30 : 38) : (narrow ? 28 : 36)}px;
           font-weight: 900;
           letter-spacing: 0.04em;
           line-height: 1;
@@ -399,12 +409,17 @@ export function printOrderTicket(
       </style>
     </head>
     <body>
-      <div class="brand">Fresh2GO.GR</div>
+      ${copies === 2 ? '<div class="copy-banner">— ΑΝΤΙΓΡΑΦΟ ΕΚΤΥΠΩΣΗΣ —</div>' : ''}
+      ${isCash ? `<div class="cash-top">⚠ ΜΕΤΡΗΤΑ · ΕΙΣΠΡΑΞΗ ${money(displayTotal)}€</div>` : ''}
+      <div class="fulfill">${fulfillment}</div>
+      <div class="brand">FRESH2GO.GR</div>
       <div class="store">${e(String(storeName ?? 'Κατάστημα'))}</div>
       <div class="meta">
         <span>${e(created.split(',')[0] ?? '')}</span>
         <span>${e(created.split(',')[1] ?? '')}</span>
       </div>
+      ${scheduled ? `<div class="schedule">📅 ΠΡΟΓΡ. ${e(scheduled)}</div>` : ''}
+      ${readyMin > 0 ? `<div class="prep">⏱ Ετοιμασία ~${readyMin}′</div>` : ''}
 
       <div class="ticket-no">
         <div class="label">Αριθμός παραγγελίας</div>
@@ -468,9 +483,11 @@ export function printOrderTicket(
 
       <div class="barcode">▮▮▮ ▯▯▮ ▮▯▯ ▮▮▯ ▯▮▮ ▮▯▮</div>
 
+      <div class="cut-line">· · · · · · · · · · · · · · · ·</div>
       <div class="footer">
         <div>Ευχαριστούμε — Fresh2GO.GR</div>
         <div class="ref">REF ${e(orderNoPlain)} · ${e(String(order.id ?? '').slice(0, 8).toUpperCase())}</div>
+        <div class="ref" style="margin-top:4px">${e(created)}</div>
       </div>
       ${
         extras.fiscal && (extras.fiscal.mark || extras.fiscal.uid || extras.fiscal.number)
@@ -513,7 +530,12 @@ export async function printOrderSafe(
   if (prefs.enabled && prefs.mode === 'direct' && st.status === 'connected') {
     const width = prefs.paperWidth === 58 ? 58 : 80;
     const chunks = buildOrderEscPos(order, storeName, extras, width);
+    const copies = prefs.printCopies === 2 ? 2 : 1;
     await sendToActivePrinter(chunks);
+    if (copies === 2) {
+      await new Promise((r) => setTimeout(r, 400));
+      await sendToActivePrinter(chunks);
+    }
     return { direct: true };
   }
   printOrderTicket(order, storeName, extras, storeId);

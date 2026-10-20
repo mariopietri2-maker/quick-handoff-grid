@@ -338,6 +338,19 @@ export function PrinterSettings({ storeName, storeId }: PrinterSettingsProps) {
           />
         </div>
 
+        <div className={`flex items-center justify-between rounded-lg border p-3 ${prefs.largeType !== false ? 'border-primary/30 bg-primary/5' : 'border-border'}`}>
+          <div>
+            <p className="text-sm font-medium">Μεγάλα γράμματα</p>
+            <p className="text-[11px] text-muted-foreground">Πιο ευανάγνωστα για κουζίνα</p>
+          </div>
+          <input
+            type="checkbox"
+            className="h-4 w-4"
+            checked={prefs.largeType !== false}
+            onChange={(e) => update({ largeType: e.target.checked })}
+          />
+        </div>
+
               )}
             </div>
 

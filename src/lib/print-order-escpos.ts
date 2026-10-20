@@ -134,6 +134,28 @@ export function buildOrderEscPos(
     enc.bold(false);
     enc.feed(1);
   }
+  {
+    const scheduled = (order as { scheduled_for?: string | null }).scheduled_for;
+    if (scheduled) {
+      const s = new Date(scheduled).toLocaleString('el-GR', {
+        day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+      });
+      enc.align('center');
+      enc.bold(true);
+      enc.text(escpad(cutText(`ΠΡΟΓΡ. ${s}`, cols), cols, 'center'));
+      enc.bold(false);
+      enc.feed(1);
+    }
+    const readyMin = Number(
+      (order as { prep_minutes?: number; estimated_prep_minutes?: number }).prep_minutes ??
+        (order as { estimated_prep_minutes?: number }).estimated_prep_minutes ?? 0,
+    ) || 0;
+    if (readyMin > 0) {
+      enc.align('center');
+      enc.text(escpad(cutText(`Ετοιμασία ~${readyMin}'`, cols), cols, 'center'));
+      enc.feed(1);
+    }
+  }
 
   if (payLabel) {
     enc.align('center');
