@@ -50,23 +50,45 @@ export function printOrderTicket(
   const payLabel = PAYMENT_LABELS[payKey] ?? (payKey ? payKey.toUpperCase() : null);
   const isCash = payKey === 'cash';
 
-  const itemsHtml = (order.order_items ?? [])
-    .map((i) => {
+  const fulfillment =
+    String((order as any).fulfillment ?? (order as any).order_type ?? '').toLowerCase() === 'pickup'
+      ? 'ΠΑΡΑΛΑΒΗ'
+      : 'ΠΑΡΑΔΟΣΗ';
+  const itemList = order.order_items ?? [];
+  const itemsHtml = itemList
+    .map((i, idx) => {
       const qty = Number(i.quantity) || 0;
       const unit = Number((i as any).unit_price ?? (i as any).price ?? 0) || 0;
       const line = lineTotal(i.unit_price ?? (i as any).price, i.quantity);
       const unitHint =
         qty > 1 && unit > 0
-          ? `<span class="unit">(${money(unit)} × ${qty})</span>`
+          ? `<span class="unit">${money(unit)}€ × ${qty}</span>`
           : '';
+      const mods = Array.isArray((i as any).modifiers)
+        ? ((i as any).modifiers as { option_name?: string; group_name?: string; price_delta?: number }[])
+        : Array.isArray((i as any).order_item_modifiers)
+          ? ((i as any).order_item_modifiers as { option_name?: string; group_name?: string; price_delta?: number }[])
+          : [];
+      const modHtml = mods
+        .map((m) => {
+          const label = [m.group_name, m.option_name].filter(Boolean).join(': ') || m.option_name || '';
+          const delta = Number(m.price_delta) || 0;
+          if (!label) return '';
+          return `<div class="mod">+ ${e(String(label))}${delta ? ` (${money(delta)}€)` : ''}</div>`;
+        })
+        .join('');
+      const note = String((i as any).notes ?? (i as any).note ?? '').trim();
       return `
         <div class="item">
           <div class="row-main">
+            <span class="idx">#${idx + 1}</span>
             <span class="qty">${qty}×</span>
             <span class="name">${e(String(i.name ?? 'Προϊόν'))}</span>
             <span class="price">${money(line)}€</span>
           </div>
           ${unitHint ? `<div class="row-sub">${unitHint}</div>` : ''}
+          ${modHtml}
+          ${note ? `<div class="item-note">※ ${e(note)}</div>` : ''}
         </div>`;
     })
     .join('');
@@ -76,6 +98,7 @@ export function printOrderTicket(
   const recipientAddr = order.delivery_address ? String(order.delivery_address).trim() : '';
   const hasRecipient = !!(recipientName || recipientPhone || recipientAddr);
 
+  const copyLabel = copies === 2 ? 'ΚΟΥΖΙΝΑ / ΠΕΛΑΤΗΣ' : null;
   const html = `
     <!doctype html>
     <html lang="el">
@@ -209,6 +232,53 @@ export function printOrderTicket(
           margin-top: 1px;
         }
         .item .unit { font-weight: 600; }
+
+        .idx {
+          flex: 0 0 auto;
+          font-weight: 900;
+          font-size: 11px;
+          color: #000;
+          min-width: 1.5em;
+        }
+        .mod {
+          margin-left: 2.2em;
+          font-size: 10px;
+          font-weight: 600;
+          color: #222;
+        }
+        .item-note {
+          margin-left: 2.2em;
+          font-size: 10px;
+          font-weight: 800;
+          color: #000;
+        }
+        .copy-banner {
+          text-align: center;
+          font-size: 10px;
+          font-weight: 900;
+          letter-spacing: 0.2em;
+          border: 1px dashed #000;
+          padding: 4px;
+          margin: 0 0 8px;
+        }
+        .cash-top {
+          text-align: center;
+          font-weight: 900;
+          font-size: 12px;
+          border: 2px solid #000;
+          padding: 6px;
+          margin: 0 0 8px;
+          background: #000;
+          color: #fff;
+        }
+        .fulfill {
+          text-align: center;
+          font-weight: 900;
+          font-size: 12px;
+          letter-spacing: 0.12em;
+          margin: 0 0 6px;
+        }
+
         .tot-row { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; font-weight: 700; font-size: 12px; }
         .tot-row .lab { flex: 1 1 auto; min-width: 0; }
         .tot-row .val { flex: 0 0 auto; font-weight: 900; white-space: nowrap; }
@@ -360,9 +430,10 @@ export function printOrderTicket(
       <hr/>
       <div class="section-label">· Σύνολα ·</div>
       <div class="tot-row"><span class="lab">Υποσύνολο</span><span class="val">${money(subtotal)}€</span></div>
-      <div class="tot-row"><span class="lab">Παράδοση</span><span class="val">${money(om.deliveryFee)}€</span></div>
-      <div class="tot-row"><span class="lab">Φιλοδώρημα</span><span class="val">${money(om.tip)}€</span></div>
+      ${showDelivery ? `<div class="tot-row"><span class="lab">Παράδοση</span><span class="val">${money(om.deliveryFee)}€</span></div>` : ''}
+      ${showTip ? `<div class="tot-row"><span class="lab">Φιλοδώρημα</span><span class="val">${money(om.tip)}€</span></div>` : ''}
       <div class="tot-row tot-grand"><span class="lab">ΣΥΝΟΛΟ</span><span class="val">${money(displayTotal)}€</span></div>
+      <div class="tot-row" style="font-size:10px;font-weight:600;"><span class="lab">Είδη</span><span class="val">${itemList.length}</span></div>
 
       ${
         isCash
@@ -411,7 +482,19 @@ export function printOrderTicket(
              </div>`
           : ''
       }
-      <script>window.onload=()=>{window.print();setTimeout(()=>window.close(),250);}</script>
+      <script>
+        window.onload = function () {
+          var copies = ${copies};
+          var n = 0;
+          function go() {
+            window.print();
+            n += 1;
+            if (n < copies) setTimeout(go, 600);
+            else setTimeout(function () { window.close(); }, 400);
+          }
+          go();
+        };
+      </script>
     </body>
     </html>
   `;

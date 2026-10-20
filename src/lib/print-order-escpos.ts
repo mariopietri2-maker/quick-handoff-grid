@@ -122,6 +122,18 @@ export function buildOrderEscPos(
   enc.bold(false);
   enc.tall(false);
   enc.feed(1);
+  {
+    const fulfill =
+      String((order as { fulfillment?: string; order_type?: string }).fulfillment ??
+        (order as { order_type?: string }).order_type ?? '').toLowerCase() === 'pickup'
+        ? 'ΠΑΡΑΛΑΒΗ'
+        : 'ΠΑΡΑΔΟΣΗ';
+    enc.align('center');
+    enc.bold(true);
+    enc.text(escpad(fulfill, cols, 'center'));
+    enc.bold(false);
+    enc.feed(1);
+  }
 
   if (payLabel) {
     enc.align('center');
@@ -135,7 +147,7 @@ export function buildOrderEscPos(
   enc.feed(1);
 
   enc.align('left');
-  for (const item of items) {
+  items.forEach((item, idx) => {
     const qty = Number(item.quantity) || 0;
     const unit = parseMoney(
       (item as { unit_price?: unknown }).unit_price ??
@@ -144,14 +156,23 @@ export function buildOrderEscPos(
     const lineAmt = lineTotal(unit, qty);
     const name = String(item.name ?? '').trim() || 'Προϊόν';
     const amtStr = `${money(lineAmt)}E`;
-    // Prefer one line: "2x Name .... 12.00E" so price never disappears
-    enc.text(twoCol(`${qty}x ${name}`, amtStr, cols));
+    enc.text(twoCol(`#${idx + 1} ${qty}x ${name}`, amtStr, cols));
     enc.line();
     if (qty > 1 && unit > 0) {
       enc.text(escpad(`  (${money(unit)} x ${qty})`, cols, 'right').trimEnd());
       enc.line();
     }
-  }
+    const mods = Array.isArray((item as { order_item_modifiers?: unknown }).order_item_modifiers)
+      ? ((item as { order_item_modifiers: { option_name?: string; group_name?: string; price_delta?: number }[] }).order_item_modifiers)
+      : [];
+    for (const m of mods) {
+      const label = [m.group_name, m.option_name].filter(Boolean).join(': ') || m.option_name || '';
+      if (!label) continue;
+      const delta = Number(m.price_delta) || 0;
+      enc.text(cutText(`  + ${label}${delta ? ` (${money(delta)}E)` : ''}`, cols));
+      enc.line();
+    }
+  });
   if (items.length === 0) {
     enc.text('-');
     enc.line();

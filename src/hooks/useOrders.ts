@@ -54,7 +54,7 @@ export function useStoreOrders(
     if (!storeId) return;
     const { data, error } = await supabase
       .from('orders')
-      .select('*, order_items(*)')
+      .select('*, order_items(*, order_item_modifiers(*))')
       .eq('store_id', storeId)
       .in('status', ['placed', 'accepted', 'preparing', 'ready'])
       .order('created_at', { ascending: false })
@@ -258,7 +258,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       // Active deliveries for this driver
       let activeQ = supabase
         .from('orders')
-        .select('*, order_items(*)')
+        .select('*, order_items(*, order_item_modifiers(*))')
         .in('status', ['accepted', 'preparing', 'ready', 'picked_up'])
         .order('created_at', { ascending: false })
         .limit(20);
@@ -297,7 +297,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       if (uid) {
         const { data: done } = await supabase
           .from('orders')
-          .select('*, order_items(*)')
+          .select('*, order_items(*, order_item_modifiers(*))')
           .eq('driver_id', uid)
           .eq('status', 'delivered')
           .order('updated_at', { ascending: false })

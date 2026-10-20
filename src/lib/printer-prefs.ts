@@ -22,6 +22,10 @@ export interface PrinterPrefs {
   mode: PrinterMode;
   /** Physical paper width of THIS store's printer */
   paperWidth: 58 | 80;
+  /** How many ticket copies per print (1 = one, 2 = kitchen + customer) */
+  printCopies: 1 | 2;
+  /** Hide zero tip / free delivery lines for a cleaner kitchen ticket */
+  compactTotals: boolean;
   baudRate: number;
   blePreset: string;
   bleCustomService: string;
@@ -35,6 +39,8 @@ const DEFAULTS: PrinterPrefs = {
   printerName: '',
   mode: 'browser',
   paperWidth: 58,
+  printCopies: 1,
+  compactTotals: true,
   baudRate: 9600,
   blePreset: 'ff00',
   bleCustomService: '',
