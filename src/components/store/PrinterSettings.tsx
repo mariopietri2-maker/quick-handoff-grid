@@ -309,49 +309,48 @@ export function PrinterSettings({ storeName, storeId }: PrinterSettingsProps) {
                     </SelectContent>
                   </Select>
                 </div>
-
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
-          <div>
-            <p className="text-sm font-medium">Αντίγραφα</p>
-            <p className="text-[11px] text-muted-foreground">1 ή 2 (κουζίνα + πελάτης)</p>
-          </div>
-          <select
-            className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
-            value={String(prefs.printCopies ?? 1)}
-            onChange={(e) => update({ printCopies: (Number(e.target.value) === 2 ? 2 : 1) as 1 | 2 })}
-          >
-            <option value="1">1</option>
-            <option value="2">2</option>
-          </select>
-        </div>
-
-        <div className={`flex items-center justify-between rounded-lg border p-3 ${prefs.compactTotals ? 'border-primary/30 bg-primary/5' : 'border-border'}`}>
-          <div>
-            <p className="text-sm font-medium">Συμπαγή σύνολα</p>
-            <p className="text-[11px] text-muted-foreground">Απόκρυψη 0€ φιλοδώρημα / δωρεάν παράδοση</p>
-          </div>
-          <input
-            type="checkbox"
-            className="h-4 w-4"
-            checked={!!prefs.compactTotals}
-            onChange={(e) => update({ compactTotals: e.target.checked })}
-          />
-        </div>
-
-        <div className={`flex items-center justify-between rounded-lg border p-3 ${prefs.largeType !== false ? 'border-primary/30 bg-primary/5' : 'border-border'}`}>
-          <div>
-            <p className="text-sm font-medium">Μεγάλα γράμματα</p>
-            <p className="text-[11px] text-muted-foreground">Πιο ευανάγνωστα για κουζίνα</p>
-          </div>
-          <input
-            type="checkbox"
-            className="h-4 w-4"
-            checked={prefs.largeType !== false}
-            onChange={(e) => update({ largeType: e.target.checked })}
-          />
-        </div>
-
               )}
+            </div>
+
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+              <div>
+                <p className="text-sm font-medium">Αντίγραφα</p>
+                <p className="text-[11px] text-muted-foreground">1 ή 2 (κουζίνα + πελάτης)</p>
+              </div>
+              <select
+                className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+                value={String(prefs.printCopies ?? 1)}
+                onChange={(e) => update({ printCopies: (Number(e.target.value) === 2 ? 2 : 1) as 1 | 2 })}
+              >
+                <option value="1">1</option>
+                <option value="2">2</option>
+              </select>
+            </div>
+
+            <div className={`flex items-center justify-between rounded-lg border p-3 ${prefs.compactTotals ? 'border-primary/30 bg-primary/5' : 'border-border'}`}>
+              <div>
+                <p className="text-sm font-medium">Συμπαγή σύνολα</p>
+                <p className="text-[11px] text-muted-foreground">Απόκρυψη 0€ φιλοδώρημα / δωρεάν παράδοση</p>
+              </div>
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                checked={!!prefs.compactTotals}
+                onChange={(e) => update({ compactTotals: e.target.checked })}
+              />
+            </div>
+
+            <div className={`flex items-center justify-between rounded-lg border p-3 ${prefs.largeType !== false ? 'border-primary/30 bg-primary/5' : 'border-border'}`}>
+              <div>
+                <p className="text-sm font-medium">Μεγάλα γράμματα</p>
+                <p className="text-[11px] text-muted-foreground">Πιο ευανάγνωστα για κουζίνα</p>
+              </div>
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                checked={prefs.largeType !== false}
+                onChange={(e) => update({ largeType: e.target.checked })}
+              />
             </div>
 
             {printerSupport.ble && (
