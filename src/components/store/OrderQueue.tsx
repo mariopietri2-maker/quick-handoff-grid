@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Clock, Car, ChevronDown, ChevronRight, Timer, Plus, Minus, Trash2, Package, Ban,
-  User, ShoppingBag, Search, Printer, Volume2, VolumeX,
+  User, ShoppingBag, Search, Printer, Volume2, VolumeX, ArrowUpDown, StickyNote, Rows3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -171,6 +171,10 @@ export function OrderQueue({
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'placed' | 'accepted' | 'preparing' | 'ready'>('all');
   const [expandAll, setExpandAll] = useState(false);
+  const [sortOldestFirst, setSortOldestFirst] = useState(true);
+  const [compactCards, setCompactCards] = useState(() => localStorage.getItem('store_compact_cards') === '1');
+  const [noteDraft, setNoteDraft] = useState<Record<string, string>>({});
+  const [savingNote, setSavingNote] = useState<string | null>(null);
 
   const filteredOrders = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -239,24 +243,29 @@ export function OrderQueue({
   }, [pendingIds]);
 
   const columns = useMemo(() => {
+    const dir = sortOldestFirst ? 1 : -1;
+    const byTime = (a: OrderWithItems, b: OrderWithItems) =>
+      (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * dir;
     const src = filteredOrders;
-    const neu = src.filter((o) => o.status === 'placed').sort(sortForKitchen);
+    const neu = src.filter((o) => o.status === 'placed').sort(byTime);
     const accepted = src
       .filter((o) => o.status === 'accepted' || o.status === 'preparing')
-      .sort(sortForKitchen);
-    const ready = src.filter((o) => o.status === 'ready').sort(sortForKitchen);
+      .sort(byTime);
+    const ready = src.filter((o) => o.status === 'ready').sort(byTime);
     return [
       { id: 'new' as const, label: 'Νέα', items: neu, accent: 'border-border bg-card' },
       { id: 'accepted' as const, label: 'Έγινε αποδεκτή', items: accepted, accent: 'border-border bg-card' },
       { id: 'ready' as const, label: 'Έτοιμες', items: ready, accent: 'border-border bg-card' },
     ];
-  }, [filteredOrders]);
+  }, [filteredOrders, sortOldestFirst]);
 
   const setPrep = (orderId: string, value: number) => {
-    setPrepTimes((prev) => ({ ...prev, [orderId]: Math.max(5, Math.min(120, value)) }));
+    const v = Math.max(5, Math.min(120, value));
+    setPrepTimes((prev) => ({ ...prev, [orderId]: v }));
+    try { localStorage.setItem('store_default_prep', String(v)); } catch { /* ignore */ }
   };
   const getPrep = (order: OrderWithItems) =>
-    prepTimes[order.id] ?? order.estimated_prep_time ?? 20;
+    prepTimes[order.id] ?? order.estimated_prep_time ?? (Number(localStorage.getItem('store_default_prep')) || 20);
 
   // pendingIds is only for new-order highlight — must NOT block Accept.
   const isBusy = (id: string) => !!busyLocal[id];
@@ -352,7 +361,8 @@ export function OrderQueue({
       <div
         key={order.id}
         className={cn(
-          'rounded-xl border bg-card px-3 py-3 shadow-sm transition-shadow hover:shadow-md',
+          'rounded-xl border bg-card shadow-sm transition-shadow hover:shadow-md',
+          compactCards ? 'px-2.5 py-2' : 'px-3 py-3',
           urgent && 'ring-2 ring-destructive/40 border-destructive/30',
           open && 'ring-1 ring-primary/25',
         )}
@@ -419,7 +429,7 @@ export function OrderQueue({
               size="sm"
               disabled={busy}
               className={cn(
-                'shrink-0 h-9 px-4 font-heading font-bold text-[13px]',
+                'shrink-0 h-11 sm:h-9 px-5 sm:px-4 font-heading font-bold text-[14px] sm:text-[13px]',
                 order.status === 'placed'
                   ? 'bg-primary hover:bg-primary/90'
                   : 'bg-info text-info-foreground hover:bg-info/90',
@@ -467,6 +477,45 @@ export function OrderQueue({
                 📝 {order.notes}
               </div>
             )}
+
+            <div className="flex gap-1.5 items-center pt-1">
+              <input
+                value={noteDraft[order.id] ?? ''}
+                onChange={(e) => setNoteDraft((p) => ({ ...p, [order.id]: e.target.value }))}
+                placeholder="Γρήγορη σημείωση κουζίνας…"
+                className="flex-1 h-8 rounded-md border border-border bg-background px-2 text-[11px] font-heading"
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-8 text-[11px] shrink-0"
+                disabled={savingNote === order.id || !(noteDraft[order.id] ?? '').trim()}
+                onClick={() => {
+                  const text = (noteDraft[order.id] ?? '').trim();
+                  if (!text) return;
+                  setSavingNote(order.id);
+                  const prev = order.notes ? String(order.notes) : '';
+                  const merged = prev ? `${prev}\n${text}` : text;
+                  void supabase
+                    .from('orders')
+                    .update({ notes: merged } as any)
+                    .eq('id', order.id)
+                    .then(({ error }) => {
+                      setSavingNote(null);
+                      if (error) toast.error('Αποτυχία σημείωσης');
+                      else {
+                        toast.success('Σημείωση αποθηκεύτηκε');
+                        setNoteDraft((p) => ({ ...p, [order.id]: '' }));
+                      }
+                    });
+                }}
+              >
+                <StickyNote className="h-3.5 w-3.5 mr-1" />
+                OK
+              </Button>
+            </div>
+
 
             {order.status === 'placed' && (
               <div className="rounded-md bg-muted/30 border border-border p-2 space-y-1.5">
@@ -573,6 +622,31 @@ export function OrderQueue({
           >
             {soundMuted ? <VolumeX className="h-3.5 w-3.5 mr-1" /> : <Volume2 className="h-3.5 w-3.5 mr-1" />}
             {soundMuted ? 'Σίγαση' : 'Ήχος'}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-9 text-xs"
+            onClick={() => setSortOldestFirst((v) => !v)}
+            title="Σειρά"
+          >
+            <ArrowUpDown className="h-3.5 w-3.5 mr-1" />
+            {sortOldestFirst ? 'Παλαιότερες' : 'Νεότερες'}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={compactCards ? 'default' : 'outline'}
+            className="h-9 text-xs"
+            onClick={() => {
+              const next = !compactCards;
+              setCompactCards(next);
+              localStorage.setItem('store_compact_cards', next ? '1' : '0');
+            }}
+          >
+            <Rows3 className="h-3.5 w-3.5 mr-1" />
+            {compactCards ? 'Compact' : 'Κανονικό'}
           </Button>
         </div>
       </div>

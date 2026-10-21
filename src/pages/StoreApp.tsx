@@ -120,6 +120,11 @@ export default function StoreApp() {
   // fetch + realtime subscription entirely (faster load, less battery/data).
   const isNStore = store?.store_role === 'N';
 
+  useEffect(() => {
+    setLastUpdated(Date.now());
+  }, [orders]);
+
+
   const todayStats = useMemo(() => {
     const list = orders ?? [];
     const pending = list.filter((o) => o.status === 'placed').length;
@@ -143,10 +148,36 @@ export default function StoreApp() {
     isNStore ? null : (store?.id ?? null),
     { suppressSound: isNStore },
   );
+
+  // Kitchen shortcut: A = accept oldest pending order
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target && (e.target as HTMLElement).closest('input, textarea, select, [contenteditable]')) return;
+      if (e.key === 'a' || e.key === 'A') {
+        const pending = (orders ?? [])
+          .filter((o) => o.status === 'placed')
+          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        const first = pending[0];
+        if (!first) return;
+        e.preventDefault();
+        void updateStatus(first.id, 'accepted');
+      }
+      if (e.key === 'f' || e.key === 'F') {
+        if (e.shiftKey) {
+          e.preventDefault();
+          setKitchenFocus((v) => !v);
+        }
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [orders, updateStatus]);
   const [newStore, setNewStore] = useState({ name: '', address: '', phone: '' });
   const [creating, setCreating] = useState(false);
   const [view, setView] = useState<ViewMode>('portal');
   const [online, setOnline] = useState(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const [kitchenFocus, setKitchenFocus] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(() => Date.now());
 
   useEffect(() => {
     const on = () => setOnline(true);
@@ -471,7 +502,9 @@ export default function StoreApp() {
             {isNStore && (
               <aside className="order-2 lg:order-1 min-w-0 lg:sticky lg:top-16">
                 <StoreNewsPanel />
-                {store && <div className="mt-3"><StoreDriverIdPanel storeId={store.id} storeName={store.name} /></div>}
+                {store && <div className="mt-3"><div className={isNStore ? "rounded-xl ring-2 ring-violet-500/40 p-1 mb-3" : ""}>
+            <StoreDriverIdPanel storeId={store.id} storeName={store.name} />
+            </div></div>}
               </aside>
             )}
             <div className={`${!isNStore ? 'flex-1 min-w-0 px-3 md:px-5 md:py-1' : 'order-1 md:order-2 min-w-0'}`}>
@@ -576,7 +609,12 @@ export default function StoreApp() {
                   {placedCount > 0 && (
                     <Badge className="ml-1.5 h-5 min-w-5 px-1 text-[10px]">{placedCount}</Badge>
                   )}
-                </TabsTrigger>
+                
+                  {todayStats.pending > 0 && (
+                    <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold text-primary-foreground">
+                      {todayStats.pending}
+                    </span>
+                  )}</TabsTrigger>
                 <TabsTrigger value="external" className="flex-1 min-w-[90px] font-heading rounded-lg">
                   <PackagePlus className="h-4 w-4 mr-1.5" />
                   External
@@ -630,7 +668,24 @@ export default function StoreApp() {
               </TabsList>
 
               
-            {!online && (
+            
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <p className="text-[11px] text-muted-foreground font-heading">
+                Ενημέρωση: {new Date(lastUpdated).toLocaleTimeString('el-GR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                <span className="mx-1.5">·</span>
+                <span className="text-muted-foreground/80">A = αποδοχή · Shift+F = κουζίνα</span>
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant={kitchenFocus ? 'default' : 'outline'}
+                className="h-8 text-xs font-heading"
+                onClick={() => setKitchenFocus((v) => !v)}
+              >
+                {kitchenFocus ? 'Έξοδος κουζίνας' : 'Λειτουργία κουζίνας'}
+              </Button>
+            </div>
+{!online && (
               <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs font-heading font-semibold text-destructive mb-2">
                 Χωρίς σύνδεση — οι παραγγελίες μπορεί να μην ενημερώνονται.
               </div>
