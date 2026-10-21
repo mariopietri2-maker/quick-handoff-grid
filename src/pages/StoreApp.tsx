@@ -23,6 +23,7 @@ import StoreOrderPnl from '@/components/store/StoreOrderPnl';
 import StoreOrderHistory from '@/components/store/StoreOrderHistory';
 import { StoreOpennessToggle } from '@/components/store/StoreOpennessToggle';
 import { isStoreOpenNow } from '@/lib/store-hours';
+import { orderMoney, formatEuro } from '@/lib/money';
 import { StoreSupportButton } from '@/components/store/StoreSupportButton';
 import { OwnerStoresPortal } from '@/components/store/OwnerStoresPortal';
 import { Badge } from '@/components/ui/badge';
@@ -130,7 +131,10 @@ export default function StoreApp() {
     const pending = list.filter((o) => o.status === 'placed').length;
     const active = list.filter((o) => ['accepted', 'preparing'].includes(o.status)).length;
     const ready = list.filter((o) => o.status === 'ready').length;
-    return { pending, active, ready, total: list.length };
+    const revenue = list
+      .filter((o) => !['cancelled', 'rejected'].includes(String(o.status)))
+      .reduce((s, o) => s + orderMoney(o).total, 0);
+    return { pending, active, ready, total: list.length, revenue };
   }, [orders]);
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -148,6 +152,16 @@ export default function StoreApp() {
     isNStore ? null : (store?.id ?? null),
     { suppressSound: isNStore },
   );
+
+  const prevPendingRef = useRef(0);
+  useEffect(() => {
+    const n = (orders ?? []).filter((o) => o.status === 'placed').length;
+    if (n > prevPendingRef.current && prevPendingRef.current >= 0) {
+      try { navigator.vibrate?.(200); } catch { /* ignore */ }
+    }
+    prevPendingRef.current = n;
+  }, [orders]);
+
 
   // Kitchen shortcut: A = accept oldest pending order
   useEffect(() => {
@@ -551,7 +565,9 @@ export default function StoreApp() {
                 </Button>
               </div>
             )}
-            <StoreCallPanel storeId={store.id} storeName={store.name} disabled={!store.is_active} />
+            <div className={isNStore ? 'sticky top-14 z-20 -mx-1 px-1 pb-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80' : ''}>
+              <StoreCallPanel storeId={store.id} storeName={store.name} disabled={!store.is_active} />
+            </div>
             <p className="text-center text-xs text-muted-foreground px-4">
               Κράτα την οθόνη ανοιχτή ή εγκατέστησε την εφαρμογή για πιο αξιόπιστες ειδοποιήσεις.
             </p>
@@ -690,7 +706,7 @@ export default function StoreApp() {
                 Χωρίς σύνδεση — οι παραγγελίες μπορεί να μην ενημερώνονται.
               </div>
             )}
-            <div className={`grid grid-cols-3 gap-2 mb-3 ${isNStore ? 'md:grid-cols-3' : ''}`}>
+            <div className={`grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3 ${isNStore ? 'md:grid-cols-3' : ''}`}>
               <div className={`rounded-xl border px-3 py-2 text-center ${isNStore ? 'border-violet-500/30 bg-violet-500/5' : 'border-border bg-card'}`}>
                 <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Νέες</p>
                 <p className="text-lg font-extrabold tabular-nums text-foreground">{todayStats.pending}</p>
@@ -702,6 +718,10 @@ export default function StoreApp() {
               <div className={`rounded-xl border px-3 py-2 text-center ${isNStore ? 'border-violet-500/30 bg-violet-500/5' : 'border-border bg-card'}`}>
                 <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Έτοιμες</p>
                 <p className="text-lg font-extrabold tabular-nums text-foreground">{todayStats.ready}</p>
+              </div>
+              <div className={`rounded-xl border px-3 py-2 text-center ${isNStore ? 'border-violet-500/30 bg-violet-500/5' : 'border-border bg-card'}`}>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Τζίρος (live)</p>
+                <p className="text-lg font-extrabold tabular-nums text-foreground">{formatEuro(todayStats.revenue)}</p>
               </div>
             </div>
 <TabsContent value="orders">

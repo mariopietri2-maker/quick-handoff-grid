@@ -167,6 +167,7 @@ export function OrderQueue({
   const printedRef = useRef<Set<string>>(new Set());
   const printQueueRef = useRef<OrderWithItems[]>([]);
   const printRunningRef = useRef(false);
+  const lastPrintedIdRef = useRef<string | null>(null);
 
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'placed' | 'accepted' | 'preparing' | 'ready'>('all');
@@ -213,6 +214,16 @@ export function OrderQueue({
     const id = window.setInterval(() => setNow(Date.now()), 15_000);
     return () => window.clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    const n = (orders ?? []).filter((o) => o.status === 'placed').length;
+    const base = document.title.replace(/^\(\d+\)\s*/, '');
+    document.title = n > 0 ? `(${n}) ${base}` : base;
+    return () => {
+      document.title = base;
+    };
+  }, [orders]);
+
 
   useEffect(() => {
     const ids = [...new Set(orders.map((o) => o.driver_id).filter(Boolean))] as string[];
@@ -272,14 +283,26 @@ export function OrderQueue({
 
   const handleAdvance = async (order: OrderWithItems, nextStatus: string) => {
     if (isBusy(order.id)) return;
+    const from = order.status;
     setBusyLocal((p) => ({ ...p, [order.id]: true }));
     try {
       const opts = order.status === 'placed' ? { estimatedPrepTime: getPrep(order) } : undefined;
       await onStatusUpdate(order.id, nextStatus, opts);
+      setLastAction({ orderId: order.id, from, to: nextStatus });
       setExpanded((p) => {
         const next = { ...p };
         delete next[order.id];
         return next;
+      });
+      toast.success('Ενημερώθηκε', {
+        action: {
+          label: 'Αναίρεση',
+          onClick: () => {
+            void onStatusUpdate(order.id, from);
+            setLastAction(null);
+            toast.message('Αναιρέθηκε');
+          },
+        },
       });
     } finally {
       setBusyLocal((p) => {
@@ -288,6 +311,18 @@ export function OrderQueue({
         return next;
       });
     }
+  };
+
+  const acceptAllPending = async () => {
+    const pending = filteredOrders.filter((o) => o.status === 'placed');
+    if (!pending.length) {
+      toast.message('Δεν υπάρχουν νέες παραγγελίες');
+      return;
+    }
+    for (const o of pending) {
+      await handleAdvance(o, 'preparing');
+    }
+    toast.success(`Αποδοχή ${pending.length} παραγγελιών`);
   };
 
   useEffect(() => {
@@ -299,6 +334,7 @@ export function OrderQueue({
         !printedRef.current.has(order.id)
       ) {
         printedRef.current.add(order.id);
+        lastPrintedIdRef.current = order.id;
         printQueueRef.current.push(order);
       }
     }
@@ -377,9 +413,16 @@ export function OrderQueue({
               <button type="button" className="font-heading font-extrabold text-[17px] tabular-nums text-foreground text-left" onClick={copyOrderNo} title="Αντιγραφή αριθμού">
                   {formatOrderNumber(order)}
                 </button>
-              {order.source && order.source !== 'in_app' && (
-                <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                  {order.source}
+              {order.source && (
+                <span className={cn(
+                  'text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded',
+                  String(order.source).toLowerCase().includes('efood') && 'bg-red-600 text-white',
+                  String(order.source).toLowerCase().includes('wolt') && 'bg-sky-600 text-white',
+                  String(order.source).toLowerCase().includes('box') && 'bg-violet-600 text-white',
+                  (order.source === 'in_app' || order.source === 'fresh2go') && 'bg-orange-600 text-white',
+                  !String(order.source).toLowerCase().match(/efood|wolt|box|in_app|fresh2go/) && 'bg-muted text-muted-foreground',
+                )}>
+                  {order.source === 'in_app' ? 'Fresh2GO' : String(order.source)}
                 </span>
               )}
               <span
@@ -443,6 +486,36 @@ export function OrderQueue({
 
         {open && (
           <div className="mt-3 pt-3 border-t border-border/60 space-y-2">
+            {(() => {
+              const phone = String((order as any).customer_phone ?? (order as any).phone ?? '').trim();
+              const addr = String(order.delivery_address ?? '').trim();
+              if (!phone && !addr) return null;
+              return (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {phone && (
+                    <a
+                      href={`tel:${phone.replace(/\s/g, '')}`}
+                      className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-border text-[11px] font-heading font-semibold hover:bg-muted"
+                    >
+                      <Phone className="h-3.5 w-3.5" />
+                      {phone}
+                    </a>
+                  )}
+                  {addr && (
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-border text-[11px] font-heading font-semibold hover:bg-muted max-w-full"
+                    >
+                      <MapPin className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{addr}</span>
+                    </a>
+                  )}
+                </div>
+              );
+            })()}
+
             <div className="space-y-1">
               {items.map((item: any) => (
                 <div key={item.id} className="flex justify-between gap-2 text-[12px]">
@@ -607,6 +680,38 @@ export function OrderQueue({
           </Button>
           <Button type="button" size="sm" variant="outline" className="h-9 text-xs" disabled={!readyOrders.length} onClick={() => void printAllReady()}>
             <Printer className="h-3.5 w-3.5 mr-1" />Έτοιμες ({readyOrders.length})
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="default"
+            className="h-9 text-xs"
+            disabled={!filteredOrders.some((o) => o.status === 'placed')}
+            onClick={() => void acceptAllPending()}
+          >
+            <CheckCheck className="h-3.5 w-3.5 mr-1" />
+            Αποδοχή όλων
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-9 text-xs"
+            onClick={() => {
+              const id = lastPrintedIdRef.current;
+              const o = (orders ?? []).find((x) => x.id === id);
+              if (!o) {
+                toast.message('Δεν υπάρχει τελευταία εκτύπωση');
+                return;
+              }
+              void printOrderSafe(o, storeName, {
+                customerName: (o as any).customer_name ?? null,
+                customerPhone: (o as any).customer_phone ?? null,
+              }, storeId);
+            }}
+          >
+            <Printer className="h-3.5 w-3.5 mr-1" />
+            Επανεκτύπωση
           </Button>
           <Button
             type="button"
