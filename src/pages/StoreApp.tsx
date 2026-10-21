@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BarChart3, Tag,
   Package, Clock, Zap, PackagePlus, ArrowLeft, Power, ReceiptText,
@@ -119,6 +119,14 @@ export default function StoreApp() {
   // N stores are call-only: they never render orders, so skip the orders
   // fetch + realtime subscription entirely (faster load, less battery/data).
   const isNStore = store?.store_role === 'N';
+
+  const todayStats = useMemo(() => {
+    const list = orders ?? [];
+    const pending = list.filter((o) => o.status === 'placed').length;
+    const active = list.filter((o) => ['accepted', 'preparing'].includes(o.status)).length;
+    const ready = list.filter((o) => o.status === 'ready').length;
+    return { pending, active, ready, total: list.length };
+  }, [orders]);
   useEffect(() => {
     if (typeof document === 'undefined') return;
     if (isNStore && store?.name) {
@@ -138,6 +146,18 @@ export default function StoreApp() {
   const [newStore, setNewStore] = useState({ name: '', address: '', phone: '' });
   const [creating, setCreating] = useState(false);
   const [view, setView] = useState<ViewMode>('portal');
+  const [online, setOnline] = useState(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
+
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    return () => {
+      window.removeEventListener('online', on);
+      window.removeEventListener('offline', off);
+    };
+  }, []);
   const [activeTab, setActiveTab] = useState(() => {
     try {
       const t = new URLSearchParams(window.location.search).get('tab');
@@ -227,6 +247,9 @@ export default function StoreApp() {
                 isNStore ? (
                   <p className="font-heading font-extrabold text-[13px] leading-none tracking-tight text-violet-600">
                     Ghost Store
+                    <span className={`ml-2 inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-bold ${online ? 'bg-emerald-500/15 text-emerald-700' : 'bg-destructive/15 text-destructive'}`}>
+                      {online ? 'ONLINE' : 'OFFLINE'}
+                    </span>
                   </p>
                 ) : (
                   <p className="font-heading font-extrabold text-[13px] leading-none tracking-tight text-foreground">
@@ -566,37 +589,67 @@ export default function StoreApp() {
                   <UtensilsCrossed className="h-4 w-4 mr-1.5" />
                   Μενού
                 </TabsTrigger>
+                {!isNStore && (
                 <TabsTrigger value="inventory" className="flex-1 min-w-[90px] font-heading rounded-lg">
                   <Package className="h-4 w-4 mr-1.5" />
                   Απόθεμα
                 </TabsTrigger>
+                )}
                 <TabsTrigger value="hours" className="flex-1 min-w-[90px] font-heading rounded-lg">
                   <Clock className="h-4 w-4 mr-1.5" />
                   Ώρες
                 </TabsTrigger>
+                {!isNStore && (
                 <TabsTrigger value="analytics" className="flex-1 min-w-[90px] font-heading rounded-lg">
                   <BarChart3 className="h-4 w-4 mr-1.5" />
                   Stats
                 </TabsTrigger>
+                )}
+                {!isNStore && (
                 <TabsTrigger value="promos" className="flex-1 min-w-[90px] font-heading rounded-lg">
                   <Tag className="h-4 w-4 mr-1.5" />
                   Προσφορές
                 </TabsTrigger>
+                )}
+                {!isNStore && (
                 <TabsTrigger value="automation" className="flex-1 min-w-[90px] font-heading rounded-lg">
                   <Zap className="h-4 w-4 mr-1.5" />
                   Auto
                 </TabsTrigger>
+                )}
+                {!isNStore && (
                 <TabsTrigger value="pnl" className="flex-1 min-w-[90px] font-heading rounded-lg">
                   <ReceiptText className="h-4 w-4 mr-1.5" />
                   Κέρδη
                 </TabsTrigger>
+                )}
                 <TabsTrigger value="settings" className="flex-1 min-w-[90px] font-heading rounded-lg">
                   <Settings className="h-4 w-4 mr-1.5" />
                   Ρυθμίσεις
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="orders">
+              
+            {!online && (
+              <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs font-heading font-semibold text-destructive mb-2">
+                Χωρίς σύνδεση — οι παραγγελίες μπορεί να μην ενημερώνονται.
+              </div>
+            )}
+            <div className={`grid grid-cols-3 gap-2 mb-3 ${isNStore ? 'md:grid-cols-3' : ''}`}>
+              <div className={`rounded-xl border px-3 py-2 text-center ${isNStore ? 'border-violet-500/30 bg-violet-500/5' : 'border-border bg-card'}`}>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Νέες</p>
+                <p className="text-lg font-extrabold tabular-nums text-foreground">{todayStats.pending}</p>
+              </div>
+              <div className={`rounded-xl border px-3 py-2 text-center ${isNStore ? 'border-violet-500/30 bg-violet-500/5' : 'border-border bg-card'}`}>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Σε εξέλιξη</p>
+                <p className="text-lg font-extrabold tabular-nums text-foreground">{todayStats.active}</p>
+              </div>
+              <div className={`rounded-xl border px-3 py-2 text-center ${isNStore ? 'border-violet-500/30 bg-violet-500/5' : 'border-border bg-card'}`}>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Έτοιμες</p>
+                <p className="text-lg font-extrabold tabular-nums text-foreground">{todayStats.ready}</p>
+              </div>
+            </div>
+<TabsContent value="orders">
                 {loading ? (
                   <div className="text-center py-16">
                     <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Clock, Car, ChevronDown, ChevronRight, Timer, Plus, Minus, Trash2, Package, Ban,
-  User, ShoppingBag,
+  User, ShoppingBag, Search, Printer, Volume2, VolumeX,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -168,6 +168,43 @@ export function OrderQueue({
   const printQueueRef = useRef<OrderWithItems[]>([]);
   const printRunningRef = useRef(false);
 
+  const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'placed' | 'accepted' | 'preparing' | 'ready'>('all');
+  const [expandAll, setExpandAll] = useState(false);
+
+  const filteredOrders = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (orders ?? []).filter((o) => {
+      if (statusFilter !== 'all' && o.status !== statusFilter) return false;
+      if (!q) return true;
+      const no = formatOrderNumber(o).toLowerCase();
+      const addr = String(o.delivery_address ?? '').toLowerCase();
+      const names = (o.order_items ?? []).map((it) => String(it.name ?? '').toLowerCase()).join(' ');
+      return no.includes(q) || addr.includes(q) || names.includes(q) || String(o.id).toLowerCase().includes(q);
+    });
+  }, [orders, query, statusFilter]);
+
+  const readyOrders = useMemo(
+    () => (orders ?? []).filter((o) => o.status === 'ready'),
+    [orders],
+  );
+
+  const printAllReady = async () => {
+    if (!readyOrders.length) {
+      toast.message('Δεν υπάρχουν έτοιμες παραγγελίες');
+      return;
+    }
+    for (const o of readyOrders) {
+      try {
+        await printOrderSafe(o, storeName ?? 'Κατάστημα', {
+          customerName: (o as any).customer_name ?? null,
+          customerPhone: (o as any).customer_phone ?? null,
+        }, storeId);
+      } catch { /* continue */ }
+    }
+    toast.success(`Εκτύπωση ${readyOrders.length} έτοιμων`);
+  };
+
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 15_000);
     return () => window.clearInterval(id);
@@ -202,17 +239,18 @@ export function OrderQueue({
   }, [pendingIds]);
 
   const columns = useMemo(() => {
-    const neu = orders.filter((o) => o.status === 'placed').sort(sortForKitchen);
-    const accepted = orders
+    const src = filteredOrders;
+    const neu = src.filter((o) => o.status === 'placed').sort(sortForKitchen);
+    const accepted = src
       .filter((o) => o.status === 'accepted' || o.status === 'preparing')
       .sort(sortForKitchen);
-    const ready = orders.filter((o) => o.status === 'ready').sort(sortForKitchen);
+    const ready = src.filter((o) => o.status === 'ready').sort(sortForKitchen);
     return [
       { id: 'new' as const, label: 'Νέα', items: neu, accent: 'border-border bg-card' },
       { id: 'accepted' as const, label: 'Έγινε αποδεκτή', items: accepted, accent: 'border-border bg-card' },
       { id: 'ready' as const, label: 'Έτοιμες', items: ready, accent: 'border-border bg-card' },
     ];
-  }, [orders]);
+  }, [filteredOrders]);
 
   const setPrep = (orderId: string, value: number) => {
     setPrepTimes((prev) => ({ ...prev, [orderId]: Math.max(5, Math.min(120, value)) }));
@@ -288,7 +326,11 @@ export function OrderQueue({
   const renderCard = (order: OrderWithItems) => {
     const nextAction = getNextAction(order.status);
     const items = order.order_items || [];
-    const open = !!expanded[order.id];
+    const open = !!(expandAll || expanded[order.id]);
+    const copyOrderNo = () => {
+      const no = formatOrderNumber(order, { hash: false });
+      void navigator.clipboard?.writeText(no).then(() => toast.success(`Αντιγράφηκε #${no}`)).catch(() => {});
+    };
     const currentPrep = getPrep(order);
     const busy = isBusy(order.id);
     const nItems = itemCount(order);
@@ -322,9 +364,9 @@ export function OrderQueue({
             className="flex-1 min-w-0 text-left space-y-1"
           >
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-heading font-extrabold text-[17px] tabular-nums text-foreground">
-                {formatOrderNumber(order)}
-              </span>
+              <button type="button" className="font-heading font-extrabold text-[17px] tabular-nums text-foreground text-left" onClick={copyOrderNo} title="Αντιγραφή αριθμού">
+                  {formatOrderNumber(order)}
+                </button>
               {order.source && order.source !== 'in_app' && (
                 <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                   {order.source}
@@ -488,6 +530,53 @@ export function OrderQueue({
 
   return (
     <div className="space-y-3 relative">
+
+      <div className="flex flex-col gap-2 mb-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[140px]">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Αναζήτηση #, διεύθυνση, προϊόν…"
+              className="w-full h-9 rounded-lg border border-border bg-background pl-8 pr-3 text-xs font-heading"
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+            className="h-9 rounded-lg border border-border bg-background px-2 text-xs font-heading"
+          >
+            <option value="all">Όλες</option>
+            <option value="placed">Νέες</option>
+            <option value="accepted">Αποδεκτές</option>
+            <option value="preparing">Κουζίνα</option>
+            <option value="ready">Έτοιμες</option>
+          </select>
+          <Button type="button" size="sm" variant="outline" className="h-9 text-xs" onClick={() => setExpandAll((v) => !v)}>
+            {expandAll ? 'Κλείσιμο όλων' : 'Άνοιγμα όλων'}
+          </Button>
+          <Button type="button" size="sm" variant="outline" className="h-9 text-xs" disabled={!readyOrders.length} onClick={() => void printAllReady()}>
+            <Printer className="h-3.5 w-3.5 mr-1" />Έτοιμες ({readyOrders.length})
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={soundMuted ? 'default' : 'outline'}
+            className="h-9 text-xs"
+            onClick={() => {
+              const next = !soundMuted;
+              setSoundMuted(next);
+              localStorage.setItem('store_sound_muted', next ? '1' : '0');
+              toast.message(next ? 'Ήχος off' : 'Ήχος on');
+            }}
+          >
+            {soundMuted ? <VolumeX className="h-3.5 w-3.5 mr-1" /> : <Volume2 className="h-3.5 w-3.5 mr-1" />}
+            {soundMuted ? 'Σίγαση' : 'Ήχος'}
+          </Button>
+        </div>
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-heading font-extrabold text-xl md:text-2xl text-foreground tracking-tight">
           Live παραγγελίες
