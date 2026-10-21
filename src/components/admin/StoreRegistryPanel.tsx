@@ -263,7 +263,11 @@ export default function StoreRegistryPanel({ stores, profiles }: Props) {
                             ON
                           </Badge>
                         )}
-                        <span className="uppercase">{store.store_role || 'standard'}</span>
+                        <span className="uppercase">{
+                          (store.store_role === 'N' && 'Ghost') ||
+                          (store.store_role === 'K' && 'K') ||
+                          (store.store_role || 'Partner')
+                        }</span>
                       </div>
                     </td>
                     <td className="tabular-nums text-[12px]">{store.afm || '—'}</td>
@@ -393,13 +397,13 @@ export default function StoreRegistryPanel({ stores, profiles }: Props) {
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
                     <div className="space-y-1">
-                      <label className="text-[11px] text-muted-foreground">Ρόλος (standard / N / K)</label>
+                      <label className="text-[11px] text-muted-foreground">Ρόλος καταστήματος</label>
                       <Select value={form.store_role} onValueChange={(v) => setForm((f) => ({ ...f, store_role: v }))}>
                         <SelectTrigger className="h-9 text-[13px]"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="standard">standard — κανονικές παραγγελίες</SelectItem>
-                          <SelectItem value="N">N — call store</SelectItem>
-                          <SelectItem value="K">K — μόνο calls</SelectItem>
+                          <SelectItem value="standard">Fresh2GO Partner — κανονικές παραγγελίες</SelectItem>
+                          <SelectItem value="N">Ghost Store — κλήσεις οδηγών + εξωτερικές παραγγελίες</SelectItem>
+                          <SelectItem value="K">K — μόνο κλήσεις (legacy)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
