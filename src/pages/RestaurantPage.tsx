@@ -58,6 +58,7 @@ export default function RestaurantPage() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [showStickyHeader, setShowStickyHeader] = useState(false);
   const [visibleCatLimit, setVisibleCatLimit] = useState(5);
+  const [itemsPerCategoryLimit, setItemsPerCategoryLimit] = useState(12);
   const [modItem, setModItem] = useState<MenuItemRow | null>(null);
   const [modOpen, setModOpen] = useState(false);
   const [menuQuery, setMenuQuery] = useState('');
@@ -173,6 +174,7 @@ export default function RestaurantPage() {
   
   useEffect(() => {
     setVisibleCatLimit(5);
+    setItemsPerCategoryLimit(12);
   }, [normalizedQuery, id]);
 
   useEffect(() => {
@@ -230,7 +232,7 @@ export default function RestaurantPage() {
   };
 
   const cartForThisStore = itemCount > 0 && cartStoreId === store?.id;
-  const storeEta = useDeliveryEta(store?.prep_buffer_minutes ?? 0);
+  const storeEta = useDeliveryEta(store?.prep_buffer_minutes ?? 0, store?.id);
   const etaLow = Math.min(storeEta.min, etaCap);
   const etaHigh = Math.min(storeEta.max, etaCap);
   const etaLabel = store ? `${etaLow}–${etaHigh} λεπ` : null;
@@ -555,20 +557,42 @@ export default function RestaurantPage() {
                 {category}
               </h2>
               <div className="divide-y divide-[hsl(var(--c-border))]">
-                {filteredItems
-                  .filter((i) => (i.category ?? 'Άλλο') === category)
-                  .map((item) => {
-                    const qty = getItemQuantity(item.id);
-                    return (
-                      <MenuItemRow
-                        key={item.id}
-                        item={item}
-                        qty={qty}
-                        onAdd={() => handleAdd(item)} disabled={!storeOpen}
-                        onMinus={() => updateQuantity(item.id, qty - 1)}
-                      />
-                    );
-                  })}
+                {(() => {
+                  const catItems = filteredItems.filter(
+                    (i) => (i.category ?? 'Άλλο') === category,
+                  );
+                  const shown = normalizedQuery
+                    ? catItems
+                    : catItems.slice(0, itemsPerCategoryLimit);
+                  return (
+                    <>
+                      {shown.map((item) => {
+                        const qty = getItemQuantity(item.id);
+                        return (
+                          <MenuItemRow
+                            key={item.id}
+                            item={item}
+                            qty={qty}
+                            onAdd={() => handleAdd(item)}
+                            disabled={!storeOpen}
+                            onMinus={() => updateQuantity(item.id, qty - 1)}
+                          />
+                        );
+                      })}
+                      {!normalizedQuery && catItems.length > shown.length && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setItemsPerCategoryLimit((n) => n + 16)
+                          }
+                          className="w-full py-3 text-[13px] font-heading font-bold text-primary"
+                        >
+                          Περισσότερα ({catItems.length - shown.length})
+                        </button>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </section>
           ))

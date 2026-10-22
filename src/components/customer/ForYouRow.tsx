@@ -21,6 +21,7 @@ export function ForYouRow() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [items, setItems] = useState<Row[]>([]);
+  const [lastHint, setLastHint] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -32,12 +33,26 @@ export function ForYouRow() {
       try {
         const { data: orders } = await supabase
           .from('orders')
-          .select('store_id')
+          .select('id, store_id')
           .eq('customer_id', user.id)
           .order('created_at', { ascending: false })
           .limit(20);
         if (cancelled || !orders?.length) return;
         const storeIds = [...new Set(orders.map((o) => o.store_id).filter(Boolean))] as string[];
+        try {
+          const lastId = (orders[0] as any).id;
+          if (lastId) {
+            const { data: lastItems } = await supabase
+              .from('order_items')
+              .select('name')
+              .eq('order_id', lastId)
+              .limit(2);
+            if (lastItems?.length) {
+              const names = lastItems.map((x) => x.name).filter(Boolean);
+              if (names.length) setLastHint(names[0]);
+            }
+          }
+        } catch { /* ignore */ }
         if (!storeIds.length) return;
 
         const { data: menu } = await supabase
@@ -84,7 +99,11 @@ export function ForYouRow() {
           <h2 className="font-heading font-black text-[15px] c-ink leading-none tracking-tight">
             Για σένα
           </h2>
-          <p className="text-[11px] c-soft mt-0.5">Δημοφιλή από τα καταστήματά σου</p>
+          <p className="text-[11px] c-soft mt-0.5">
+            {lastHint
+              ? `Επειδή παράγγειλες ${lastHint.length > 28 ? lastHint.slice(0, 28) + '…' : lastHint}`
+              : 'Δημοφιλή από τα καταστήματά σου'}
+          </p>
         </div>
       </div>
       <div className="overflow-x-auto no-scrollbar">
