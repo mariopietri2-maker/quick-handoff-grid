@@ -131,7 +131,7 @@ function QuantityStepper({
 }
 
 
-const MenuItemCard = memo(function MenuItemCard({
+function MenuItemCard({
   item,
   qty,
   onAdd,
@@ -196,7 +196,7 @@ const MenuItemCard = memo(function MenuItemCard({
       </div>
     </div>
   );
-});
+}
 
 export default function RestaurantPage() {
   const { id } = useParams<{ id: string }>();
