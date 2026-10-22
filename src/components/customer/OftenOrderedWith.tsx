@@ -31,6 +31,7 @@ export function OftenOrderedWith({
 }: Props) {
   const { addItem } = useCart();
   const [suggestions, setSuggestions] = useState<Sug[]>([]);
+  const cartKey = cartMenuItemIds.slice().sort().join('|');
 
   useEffect(() => {
     if (!storeId || cartMenuItemIds.length === 0) {
@@ -117,7 +118,8 @@ export function OftenOrderedWith({
     return () => {
       cancelled = true;
     };
-  }, [storeId, cartMenuItemIds.join('|')]);
+  }, [storeId, cartKey]);
+
 
   if (suggestions.length === 0) return null;
 

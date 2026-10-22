@@ -45,6 +45,92 @@ const VISIBLE_ITEM_QUERY = (storeId: string) =>
     .order('category')
     .order('name');
 
+function AddButton({
+  onClick,
+  compact,
+}: {
+  onClick: () => void;
+  compact?: boolean;
+}) {
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label="Προσθήκη στο καλάθι"
+        className="h-9 min-w-9 px-3 rounded-full bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))] text-[12px] font-extrabold shadow-[0_6px_16px_-6px_hsl(0_0%_0%/0.45)] flex items-center justify-center gap-1 active:scale-95 transition-transform"
+      >
+        <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
+        Προσθήκη
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="h-9 px-3.5 rounded-full bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))] text-[12px] font-extrabold flex items-center gap-1 active:scale-95 transition-transform shadow-sm"
+    >
+      <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
+      Προσθήκη
+    </button>
+  );
+}
+
+
+function QuantityStepper({
+  qty,
+  onMinus,
+  onPlus,
+  onImage,
+}: {
+  qty: number;
+  onMinus: () => void;
+  onPlus: () => void;
+  onImage?: boolean;
+}) {
+  return (
+    <div
+      className={`flex items-center overflow-hidden shadow-[0_6px_16px_-6px_hsl(0_0%_0%/0.4)] ${
+        onImage
+          ? 'bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))] rounded-full'
+          : 'bg-[hsl(var(--c-surface))] border border-[hsl(var(--c-border))] rounded-full'
+      }`}
+    >
+      <button
+        type="button"
+        onClick={onMinus}
+        aria-label="Μείωση ποσότητας"
+        className={`h-9 w-9 flex items-center justify-center active:opacity-70 transition-opacity ${
+          onImage ? '' : 'c-ink'
+        }`}
+      >
+        <Minus className="h-3.5 w-3.5" strokeWidth={2.5} />
+      </button>
+      <span
+        className={`text-[13px] font-black w-6 text-center tabular-nums ${
+          onImage ? '' : 'c-ink'
+        }`}
+        aria-live="polite"
+      >
+        {qty}
+      </span>
+      <button
+        type="button"
+        onClick={onPlus}
+        aria-label="Αύξηση ποσότητας"
+        className={`h-9 w-9 flex items-center justify-center active:opacity-70 transition-opacity ${
+          onImage ? '' : 'c-accent'
+        }`}
+      >
+        <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
+      </button>
+    </div>
+  );
+}
+
+
 const MenuItemCard = memo(function MenuItemCard({
   item,
   qty,
@@ -801,87 +887,3 @@ export default function RestaurantPage() {
     );
 }
 
-
-function AddButton({
-  onClick,
-  compact,
-}: {
-  onClick: () => void;
-  compact?: boolean;
-}) {
-  if (compact) {
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        aria-label="Προσθήκη στο καλάθι"
-        className="h-9 min-w-9 px-3 rounded-full bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))] text-[12px] font-extrabold shadow-[0_6px_16px_-6px_hsl(0_0%_0%/0.45)] flex items-center justify-center gap-1 active:scale-95 transition-transform"
-      >
-        <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
-        Προσθήκη
-      </button>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="h-9 px-3.5 rounded-full bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))] text-[12px] font-extrabold flex items-center gap-1 active:scale-95 transition-transform shadow-sm"
-    >
-      <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
-      Προσθήκη
-    </button>
-  );
-}
-
-function QuantityStepper({
-  qty,
-  onMinus,
-  onPlus,
-  onImage,
-}: {
-  qty: number;
-  onMinus: () => void;
-  onPlus: () => void;
-  onImage?: boolean;
-}) {
-  return (
-    <div
-      className={`flex items-center overflow-hidden shadow-[0_6px_16px_-6px_hsl(0_0%_0%/0.4)] ${
-        onImage
-          ? 'bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))] rounded-full'
-          : 'bg-[hsl(var(--c-surface))] border border-[hsl(var(--c-border))] rounded-full'
-      }`}
-    >
-      <button
-        type="button"
-        onClick={onMinus}
-        aria-label="Μείωση ποσότητας"
-        className={`h-9 w-9 flex items-center justify-center active:opacity-70 transition-opacity ${
-          onImage ? '' : 'c-ink'
-        }`}
-      >
-        <Minus className="h-3.5 w-3.5" strokeWidth={2.5} />
-      </button>
-      <span
-        className={`text-[13px] font-black w-6 text-center tabular-nums ${
-          onImage ? '' : 'c-ink'
-        }`}
-        aria-live="polite"
-      >
-        {qty}
-      </span>
-      <button
-        type="button"
-        onClick={onPlus}
-        aria-label="Αύξηση ποσότητας"
-        className={`h-9 w-9 flex items-center justify-center active:opacity-70 transition-opacity ${
-          onImage ? '' : 'c-accent'
-        }`}
-      >
-        <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
-      </button>
-    </div>
-  );
-}
