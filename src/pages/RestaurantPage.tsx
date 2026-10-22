@@ -28,6 +28,7 @@ import { useDeliveryEta } from '@/hooks/useDeliveryEta';
 import { isStoreOpenNow, nextOpeningLabel } from '@/lib/store-hours';
 import { SafeImage } from '@/components/SafeImage';
 import { ModifierSheet, itemHasModifiers } from '@/components/customer/ModifierSheet';
+import { OftenOrderedWith } from '@/components/customer/OftenOrderedWith';
 
 type StoreRow = Database['public']['Tables']['stores']['Row'] & {
   fulfilment_mode?: 'platform' | 'store' | null;
@@ -596,6 +597,15 @@ export default function RestaurantPage() {
               </div>
             </section>
           ))
+        )}
+
+        {!normalizedQuery && cartForThisStore && (
+          <OftenOrderedWith
+            storeId={store.id}
+            storeName={store.name}
+            cartMenuItemIds={items.map((i) => i.menuItemId)}
+            storeOpen={storeOpen}
+          />
         )}
 
         {!normalizedQuery && (

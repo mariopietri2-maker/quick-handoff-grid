@@ -39,6 +39,7 @@ import { storeMatchesCategory } from '@/lib/category-match';
 import { openRealtimeChannel } from '@/lib/realtime-channel';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { useDeliveryEta } from '@/hooks/useDeliveryEta';
+import { useStoreEtas } from '@/hooks/useStoreEtas';
 import { isStoreOpenNow, nextOpeningLabel } from '@/lib/store-hours';
 import { isNativeShell } from '@/lib/pwa';
 import CustomerWebTopNav from '@/components/customer/CustomerWebTopNav';
@@ -543,6 +544,17 @@ const displayAddress = deliveryAddress
     });
   }, [filtered, recentStoreIds]);
 
+  const etaStores = useMemo(
+    () =>
+      (displayStores.length ? displayStores : stores).slice(0, 40).map((s) => ({
+        id: s.id,
+        prep_buffer_minutes: s.prep_buffer_minutes,
+      })),
+    [displayStores, stores],
+  );
+  const storeEtas = useStoreEtas(etaStores);
+
+
   // Store owners must not see customer shell
   if (isStore || profile?.role === 'store') {
     return <Navigate to="/store" replace />;
@@ -907,8 +919,9 @@ const displayAddress = deliveryAddress
               <div className={`${railInner} ${isWeb ? 'grid-cols-2 sm:grid-cols-3 xl:grid-cols-4' : ''}`}>
                 {freeDeliveryStores.slice(0, 10).map((store) => {
                   const cover = store.cover_image_url || store.image_url;
-                  const etaLow = Math.min(baseEta.min + (store.prep_buffer_minutes ?? 0), etaCap);
-                  const etaHigh = Math.min(baseEta.max + (store.prep_buffer_minutes ?? 0), etaCap);
+                  const se = storeEtas[store.id];
+                  const etaLow = Math.min((se?.min ?? baseEta.min + (store.prep_buffer_minutes ?? 0)), etaCap);
+                  const etaHigh = Math.min((se?.max ?? baseEta.max + (store.prep_buffer_minutes ?? 0)), etaCap);
                   const rating = ratings[store.id];
                   return (
                     <button
@@ -971,8 +984,9 @@ const displayAddress = deliveryAddress
                     const cover = store.cover_image_url || store.image_url;
                     const open = isStoreOpenNow(store.opening_hours, store.holiday_dates, store.status_override);
                     const closedLabel = open ? null : nextOpeningLabel(store.opening_hours);
-                    const etaLow = Math.min(baseEta.min + (store.prep_buffer_minutes ?? 0), etaCap);
-                    const etaHigh = Math.min(baseEta.max + (store.prep_buffer_minutes ?? 0), etaCap);
+                    const se = storeEtas[store.id];
+                    const etaLow = Math.min((se?.min ?? baseEta.min + (store.prep_buffer_minutes ?? 0)), etaCap);
+                    const etaHigh = Math.min((se?.max ?? baseEta.max + (store.prep_buffer_minutes ?? 0)), etaCap);
                     return (
                     <button
                       key={store.id}
@@ -1186,8 +1200,9 @@ const displayAddress = deliveryAddress
                   const closedLabel = open ? null : nextOpeningLabel(store.opening_hours);
                   const platformDelivers =
                     deliveryEnabled && (store.fulfilment_mode ?? 'platform') !== 'store';
-                  const etaLow = Math.min(baseEta.min + (store.prep_buffer_minutes ?? 0), etaCap);
-                  const etaHigh = Math.min(baseEta.max + (store.prep_buffer_minutes ?? 0), etaCap);
+                  const se = storeEtas[store.id];
+                  const etaLow = Math.min((se?.min ?? baseEta.min + (store.prep_buffer_minutes ?? 0)), etaCap);
+                  const etaHigh = Math.min((se?.max ?? baseEta.max + (store.prep_buffer_minutes ?? 0)), etaCap);
                   const fee = platformDelivers && !store.covers_delivery_fee ? 0.99 : 0;
                   const rating = ratings[store.id];
                   const cover = store.cover_image_url || store.image_url;
