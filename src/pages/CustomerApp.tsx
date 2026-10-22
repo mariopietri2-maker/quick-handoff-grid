@@ -172,6 +172,13 @@ export default function CustomerApp() {
   const etaCap = platformSettings.eta_max_cap_minutes;
 
   const [addressOpen, setAddressOpen] = useState(false);
+  const [showAddressTip, setShowAddressTip] = useState(() => {
+    try {
+      return !localStorage.getItem('customer_address_tip_seen') && !localStorage.getItem('customer_delivery_address');
+    } catch {
+      return false;
+    }
+  });
   const [deliveryAddress, setDeliveryAddress] = useState<string>(() => {
     try {
       return localStorage.getItem('customer_delivery_address') || '';
@@ -207,6 +214,10 @@ export default function CustomerApp() {
       );
     }
     setAddressOpen(false);
+    try {
+      localStorage.setItem('customer_address_tip_seen', '1');
+    } catch { /* ignore */ }
+    setShowAddressTip(false);
   };
 
   // On login: restore default saved address when this device has none yet.
@@ -759,6 +770,35 @@ const displayAddress = deliveryAddress
           selectedCategory === 'all' &&
           cfg.sections.show_promos &&
           !(cfg.hero_cards ?? []).some((c) => c.enabled && (c.placement ?? 'hero') === 'hero') && (
+            
+            {showAddressTip && (
+              <div className="mx-4 mb-3 rounded-2xl border border-primary/25 bg-primary/10 px-3.5 py-3 flex items-start gap-3">
+                <span className="text-xl leading-none" aria-hidden>📍</span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-heading font-extrabold text-[13px] c-ink">Βάλε τη διεύθυνσή σου</p>
+                  <p className="text-[12px] c-soft mt-0.5">Για ακριβή χρόνο παράδοσης και καταστήματα κοντά σου.</p>
+                  <button
+                    type="button"
+                    className="mt-2 text-[12px] font-heading font-bold text-primary"
+                    onClick={() => setAddressOpen(true)}
+                  >
+                    Επιλογή διεύθυνσης
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Κλείσιμο"
+                  className="text-muted-foreground text-sm px-1"
+                  onClick={() => {
+                    try { localStorage.setItem('customer_address_tip_seen', '1'); } catch {}
+                    setShowAddressTip(false);
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
             <PromoBannerCarousel />
           )}
         {!isSearching && selectedCategory === 'all' && cfg.sections.show_ai_spotlight && (

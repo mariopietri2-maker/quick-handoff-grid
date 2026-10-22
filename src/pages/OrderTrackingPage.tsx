@@ -267,7 +267,15 @@ export default function OrderTrackingPage() {
         >
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
-        <div className="bg-card/95 backdrop-blur-md shadow-lg rounded-full px-4 py-2 flex items-center gap-2">
+        <button
+          type="button"
+          className="bg-card/95 backdrop-blur-md shadow-lg rounded-full px-4 py-2 flex items-center gap-2 active:scale-95 transition-transform"
+          onClick={() => {
+            const no = formatOrderNumber(order as any);
+            void navigator.clipboard?.writeText(no).then(() => toast.success(`Αντιγράφηκε ${no}`)).catch(() => {});
+          }}
+          title="Αντιγραφή αριθμού"
+        >
           {!isCancelled && !isDelivered && (
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
@@ -275,7 +283,8 @@ export default function OrderTrackingPage() {
             </span>
           )}
           <span className="text-xs font-bold text-foreground tabular-nums">{formatOrderNumber(order as any)}</span>
-        </div>
+          <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+        </button>
       </header>
 
       {/* Bottom sheet */}

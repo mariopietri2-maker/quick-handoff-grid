@@ -415,8 +415,8 @@ export default function LiveTrackingMap({
         </div>
       )}
       {token && mapReady && !driverId && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 rounded-full bg-card/95 border border-border shadow px-3 py-1.5 text-[11px] font-heading font-semibold text-muted-foreground">
-          Αναζητούμε οδηγό…
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 rounded-full bg-card/95 border border-border shadow px-3 py-1.5 text-[11px] font-heading font-semibold text-muted-foreground max-w-[90%] text-center">
+          🏪 Κατάστημα · 📍 Η διεύθυνσή σου · Αναζητούμε οδηγό…
         </div>
       )}
       {token && mapReady && driverId && !driverPos && (

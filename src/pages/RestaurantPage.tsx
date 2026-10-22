@@ -56,6 +56,7 @@ export default function RestaurantPage() {
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [showStickyHeader, setShowStickyHeader] = useState(false);
+  const [visibleCatLimit, setVisibleCatLimit] = useState(5);
   const [menuQuery, setMenuQuery] = useState('');
   const categoryRefs = useRef<Record<string, HTMLElement | null>>({});
   const heroRef = useRef<HTMLDivElement>(null);
@@ -165,6 +166,23 @@ export default function RestaurantPage() {
       }
     });
   }, [activeCategory]);
+
+  
+  useEffect(() => {
+    setVisibleCatLimit(5);
+  }, [normalizedQuery, id]);
+
+  useEffect(() => {
+    if (visibleCatLimit >= visibleCategories.length) return;
+    const idler = (window as any).requestIdleCallback as undefined | ((cb: () => void) => number);
+    const grow = () => setVisibleCatLimit((n) => Math.min(n + 4, visibleCategories.length));
+    if (typeof idler === 'function') {
+      const h = idler(grow);
+      return () => (window as any).cancelIdleCallback?.(h);
+    }
+    const t = window.setTimeout(grow, 400);
+    return () => clearTimeout(t);
+  }, [visibleCatLimit, visibleCategories.length]);
 
   const scrollToCategory = (cat: string) => {
     setActiveCategory(cat);
@@ -437,7 +455,16 @@ export default function RestaurantPage() {
         )}
       </div>
 
-      {/* Category tabs — mobile */}
+            {/* closed-banner */}
+      {!storeOpen && (
+        <div className="sticky z-[45] bg-neutral-900 text-white text-center text-[12px] sm:text-[13px] font-heading font-bold py-2.5 px-3 shadow-md"
+          style={{ top: showStickyHeader ? 52 : 0 }}
+        >
+          Κλειστό τώρα{closedLabel ? ` · Ανοίγει ${closedLabel}` : ''} — μπορείς να δεις το μενού
+        </div>
+      )}
+
+{/* Category tabs — mobile */}
       {!normalizedQuery && visibleCategories.length > 1 && (
         <div
           className={`md:hidden sticky z-50 bg-[hsl(var(--c-surface)/0.98)] backdrop-blur-md border-b border-[hsl(var(--c-border))] mt-3 transition-[top] duration-200 ${
@@ -499,7 +526,7 @@ export default function RestaurantPage() {
             </p>
           </div>
         ) : (
-          visibleCategories.map((category) => (
+          visibleCategories.slice(0, visibleCatLimit).map((category) => (
             <section
               key={category}
               data-category={category}
