@@ -17,7 +17,7 @@ android {
         applicationId = "com.freshdelivery.customer"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7233200
+        versionCode = 7233202
         versionName = "1.0.0"
 
         buildConfigField(
@@ -80,7 +80,9 @@ android {
             buildConfigField("boolean", "PLAY_STORE_BUILD", "false")
         }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            isDebuggable = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
