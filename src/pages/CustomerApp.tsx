@@ -534,15 +534,27 @@ const displayAddress = deliveryAddress
   );
 
   const displayStores = useMemo(() => {
-    if (!recentStoreIds.length) return filtered;
     const rank = new Map(recentStoreIds.map((id, i) => [id, i]));
     return [...filtered].sort((a, b) => {
+      const openA = isStoreOpenNow(a.opening_hours, a.holiday_dates, a.status_override) ? 0 : 1;
+      const openB = isStoreOpenNow(b.opening_hours, b.holiday_dates, b.status_override) ? 0 : 1;
+      if (openA !== openB) return openA - openB;
+
       const ra = rank.has(a.id) ? rank.get(a.id)! : 999;
       const rb = rank.has(b.id) ? rank.get(b.id)! : 999;
       if (ra !== rb) return ra - rb;
+
+      const ratingA = ratings[a.id]?.avg ?? 0;
+      const ratingB = ratings[b.id]?.avg ?? 0;
+      if (ratingB !== ratingA) return ratingB - ratingA;
+
+      const etaA = (a.prep_buffer_minutes ?? 0);
+      const etaB = (b.prep_buffer_minutes ?? 0);
+      if (etaA !== etaB) return etaA - etaB;
+
       return a.name.localeCompare(b.name, 'el');
     });
-  }, [filtered, recentStoreIds]);
+  }, [filtered, recentStoreIds, ratings]);
 
   const etaStores = useMemo(
     () =>

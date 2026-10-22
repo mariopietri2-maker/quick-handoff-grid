@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Minus, Plus, Trash2, MapPin, ShoppingBag, Tag, CheckCircle2, X, Banknote, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { OftenOrderedWith } from '@/components/customer/OftenOrderedWith';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -177,6 +178,12 @@ export default function CheckoutPage() {
     : subtotalAfterDiscount * (tipOption / 100);
 
   const grandTotal = subtotalAfterDiscount + effectiveDeliveryFee + tipAmount;
+  const freeDeliveryThreshold = 15;
+  const freeDeliveryHint =
+    effectiveDeliveryFee > 0 && subtotalAfterDiscount < freeDeliveryThreshold
+      ? Math.max(0, freeDeliveryThreshold - subtotalAfterDiscount)
+      : 0;
+
 
   // VAT (ΦΠΑ) breakdown — Greek restaurant food is 13%, the delivery service
   // is 24%. Prices are inclusive (Greek consumer law). The split is display-only
@@ -579,6 +586,33 @@ export default function CheckoutPage() {
             ))}
           </CardContent>
         </Card>
+
+        {storeId && storeName && (
+          <div className="px-0">
+            <OftenOrderedWith
+              storeId={storeId}
+              storeName={storeName}
+              cartMenuItemIds={items.map((i) => i.menuItemId)}
+              storeOpen={true}
+            />
+          </div>
+        )}
+
+        {freeDeliveryHint > 0 && (
+          <div className="rounded-2xl border border-primary/25 bg-primary/10 px-3.5 py-2.5 text-[12px] font-heading">
+            <p className="font-bold text-foreground">
+              Ακόμα {freeDeliveryHint.toFixed(2)}€ για δωρεάν παράδοση*
+            </p>
+            <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-primary transition-all"
+                style={{ width: `${Math.min(100, (subtotalAfterDiscount / freeDeliveryThreshold) * 100)}%` }}
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">*Ενδεικτικό όριο προσφοράς · εξαρτάται από το κατάστημα</p>
+          </div>
+        )}
+
 
         {/* Delivery Address — hidden in marketplace-only mode */}
         {deliveryEnabled && (

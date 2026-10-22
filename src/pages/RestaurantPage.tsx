@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -715,7 +715,7 @@ export default function RestaurantPage() {
     );
 }
 
-function MenuItemRow({
+const MenuItemRow = memo(function MenuItemRow({
   item,
   qty,
   onAdd,
@@ -780,7 +780,7 @@ function MenuItemRow({
       </div>
     </div>
   );
-}
+});
 
 function AddButton({
   onClick,
