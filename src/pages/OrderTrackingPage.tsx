@@ -321,21 +321,44 @@ export default function OrderTrackingPage() {
               )}
             </div>
 
-            {/* Progress dots */}
+            {/* Progress timeline */}
             {!isCancelled && (
-              <div className="mt-4 flex items-center gap-1.5">
-                {STATUS_STEPS.map((s, i) => {
-                  const done = i <= currentIdx;
-                  const current = i === currentIdx;
-                  return (
-                    <div
-                      key={s.key}
-                      className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
-                        done ? 'bg-primary' : 'bg-muted'
-                      } ${current && !isDelivered ? 'animate-pulse' : ''}`}
-                    />
-                  );
-                })}
+              <div className="mt-4 space-y-2">
+                <div className="flex items-center gap-1.5">
+                  {STATUS_STEPS.map((s, i) => {
+                    const done = i <= currentIdx;
+                    const current = i === currentIdx;
+                    return (
+                      <div
+                        key={s.key}
+                        className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
+                          done ? 'bg-primary' : 'bg-muted'
+                        } ${current && !isDelivered ? 'animate-pulse' : ''}`}
+                        title={s.label}
+                      />
+                    );
+                  })}
+                </div>
+                <div className="flex justify-between gap-1">
+                  {STATUS_STEPS.map((s, i) => {
+                    const done = i <= currentIdx;
+                    const current = i === currentIdx;
+                    return (
+                      <span
+                        key={s.key}
+                        className={`flex-1 text-center text-[9px] sm:text-[10px] font-heading font-bold leading-tight ${
+                          current
+                            ? 'text-primary'
+                            : done
+                              ? 'text-foreground/70'
+                              : 'text-muted-foreground/60'
+                        }`}
+                      >
+                        {s.label}
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>

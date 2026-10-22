@@ -104,6 +104,7 @@ export default function CustomerApp() {
   const [stores, setStores] = useState<StoreRow[]>([]);
   const [promotedStores, setPromotedStores] = useState<StoreRow[]>([]);
   const [storeCategories, setStoreCategories] = useState<Record<string, string[]>>({});
+  const [itemSearchIndex, setItemSearchIndex] = useState<Record<string, string>>({});
   const [offerItems, setOfferItems] = useState<OfferItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -295,7 +296,7 @@ const displayAddress = deliveryAddress
       const nowIso = new Date().toISOString();
       const [storesRes, menuRes, promoRes, offerRes] = await Promise.all([
         (supabase as any).from('stores_public').select('*').eq('is_active', true).order('name'),
-        supabase.from('menu_items').select('store_id, category').eq('is_available', true),
+        supabase.from('menu_items').select('store_id, category, name').eq('is_available', true),
         (supabase as any)
           .from('stores_public')
           .select('*')
@@ -324,6 +325,13 @@ const displayAddress = deliveryAddress
         }
       });
       setStoreCategories(catMap);
+      const nameIndex: Record<string, string> = {};
+      (menuRes.data ?? []).forEach((item: any) => {
+        if (!item?.store_id || !item?.name) return;
+        const prev = nameIndex[item.store_id] ?? '';
+        nameIndex[item.store_id] = prev ? `${prev} ${item.name}` : String(item.name);
+      });
+      setItemSearchIndex(nameIndex);
 
       const storeMap = new Map(storeRows.map((s) => [s.id, s]));
       const offers: OfferItem[] = (offerRes.data ?? [])
@@ -444,7 +452,8 @@ const displayAddress = deliveryAddress
         const matchesSearch =
           !q ||
           s.name.toLowerCase().includes(q) ||
-          (s.address ?? '').toLowerCase().includes(q);
+          (s.address ?? '').toLowerCase().includes(q) ||
+          (itemSearchIndex[s.id] ?? '').toLowerCase().includes(q);
         if (!matchesSearch) return false;
         if (selectedCategory !== 'all') {
           const cats = storeCategories[s.id] ?? [];
@@ -463,6 +472,7 @@ const displayAddress = deliveryAddress
       debouncedSearch,
       selectedCategory,
       storeCategories,
+      itemSearchIndex,
       filterOffers,
       filterTopRated,
       filterFast,

@@ -155,6 +155,17 @@ export default function RestaurantPage() {
     return () => observer.disconnect();
   }, [visibleCategories, normalizedQuery, filteredItems.length]);
 
+  
+  useEffect(() => {
+    if (!activeCategory) return;
+    const nodes = document.querySelectorAll('[data-cat-tab]');
+    nodes.forEach((node) => {
+      if ((node as HTMLElement).dataset.catTab === activeCategory) {
+        node.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+    });
+  }, [activeCategory]);
+
   const scrollToCategory = (cat: string) => {
     setActiveCategory(cat);
     scrollingToCat.current = true;
@@ -417,6 +428,13 @@ export default function RestaurantPage() {
             </button>
           )}
         </label>
+        {normalizedQuery && (
+          <p className="text-[12px] c-soft mt-2 font-heading">
+            {filteredItems.length === 0
+              ? 'Κανένα αποτέλεσμα'
+              : `${filteredItems.length} ${filteredItems.length === 1 ? 'αποτέλεσμα' : 'αποτελέσματα'}`}
+          </p>
+        )}
       </div>
 
       {/* Category tabs — mobile */}
@@ -432,6 +450,7 @@ export default function RestaurantPage() {
                 <button
                   key={cat}
                   type="button"
+                  data-cat-tab={cat}
                   onClick={() => scrollToCategory(cat)}
                   className={`px-4 py-3 text-[13px] font-bold whitespace-nowrap border-b-2 transition-colors flex-shrink-0 ${
                     activeCategory === cat
@@ -638,18 +657,13 @@ function MenuItemRow({
 
       {/* Fixed right column so Προσθήκη aligns with or without photo */}
       <div className="relative flex-shrink-0 w-[104px] flex flex-col items-center">
-        {hasImage ? (
-          <img
-            src={item.image_url!}
-            alt={`Φωτογραφία ${item.name}`}
-            className="h-[104px] w-[104px] rounded-2xl object-cover bg-[hsl(var(--c-surface-muted))]"
-            loading="lazy"
-          />
-        ) : (
-          <div className="h-[104px] w-[104px] rounded-2xl bg-[hsl(var(--c-surface-muted))] flex items-center justify-center">
-            <span className="text-2xl opacity-40" aria-hidden>🍽️</span>
-          </div>
-        )}
+        <SafeImage
+          src={hasImage ? item.image_url : null}
+          alt={`Φωτογραφία ${item.name}`}
+          className="h-[104px] w-[104px] rounded-2xl object-cover bg-[hsl(var(--c-surface-muted))]"
+          fallbackClassName="h-[104px] w-[104px] rounded-2xl bg-[hsl(var(--c-surface-muted))] text-2xl opacity-40"
+          fallback="🍽️"
+        />
         {!disabled && (
           <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-max max-w-[112px]">
             {inCart ? (

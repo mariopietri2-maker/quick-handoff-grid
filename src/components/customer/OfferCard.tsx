@@ -1,3 +1,4 @@
+import { SafeImage } from '@/components/SafeImage';
 import { Bike, Plus, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/hooks/useCart';
@@ -63,7 +64,7 @@ export function OfferCard({ item, variant = 'default' }: { item: OfferItem; vari
       {/* Image */}
       <div className={`relative ${variant === 'wide' ? 'aspect-[5/4]' : 'aspect-square'} bg-[hsl(var(--c-surface-muted))] overflow-hidden`}>
         {item.image_url ? (
-          <img
+          <SafeImage
             src={item.image_url}
             alt={`Φωτογραφία ${item.name}`}
             loading="lazy"
