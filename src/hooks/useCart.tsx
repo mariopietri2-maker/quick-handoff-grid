@@ -1,10 +1,20 @@
 import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 
+export interface CartModifier {
+  groupName: string;
+  optionName: string;
+  priceDelta: number;
+}
+
 export interface CartItem {
   menuItemId: string;
   name: string;
   price: number;
   quantity: number;
+  /** Selected modifiers (custom crepe, extras, etc.) */
+  modifiers?: CartModifier[];
+  /** Unique line key when same item has different modifiers */
+  lineKey?: string;
 }
 
 interface CartContextType {
@@ -38,11 +48,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setStoreId(newStoreId);
     setStoreName(newStoreName);
     setItems(prev => {
-      const existing = prev.find(i => i.menuItemId === item.menuItemId);
+      const key = item.lineKey ?? item.menuItemId;
+      const existing = prev.find(i => (i.lineKey ?? i.menuItemId) === key);
       if (existing) {
-        return prev.map(i => i.menuItemId === item.menuItemId ? { ...i, quantity: i.quantity + 1 } : i);
+        return prev.map(i =>
+          (i.lineKey ?? i.menuItemId) === key ? { ...i, quantity: i.quantity + 1 } : i,
+        );
       }
-      return [...prev, { ...item, quantity: 1 }];
+      return [...prev, { ...item, quantity: 1, lineKey: key }];
     });
   }, [storeId]);
 

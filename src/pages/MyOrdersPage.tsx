@@ -122,10 +122,19 @@ export default function MyOrdersPage() {
             </button>
           </div>
         ) : orders.length === 0 ? (
-          <div className="text-center py-16">
-            <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="font-heading text-foreground">Δεν υπάρχουν παραγγελίες</p>
-            <p className="text-sm text-muted-foreground mt-1">Το ιστορικό παραγγελιών σας θα εμφανίζεται εδώ</p>
+          <div className="text-center py-16 px-6">
+            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <Package className="h-8 w-8 text-primary" />
+            </div>
+            <p className="font-heading font-extrabold text-lg text-foreground">Η πρώτη παραγγελία σε περιμένει</p>
+            <p className="text-sm text-muted-foreground mt-1.5 max-w-xs mx-auto">Διάλεξε κατάστημα, πρόσθεσε προϊόντα και παράδοση σε λίγα λεπτά.</p>
+            <button
+              type="button"
+              onClick={() => navigate('/order')}
+              className="mt-5 h-11 px-6 rounded-full bg-primary text-primary-foreground font-heading font-bold text-sm"
+            >
+              Δες καταστήματα
+            </button>
           </div>
         ) : (
           <div className="space-y-3">

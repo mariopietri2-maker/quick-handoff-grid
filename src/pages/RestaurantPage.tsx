@@ -27,6 +27,7 @@ import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { useDeliveryEta } from '@/hooks/useDeliveryEta';
 import { isStoreOpenNow, nextOpeningLabel } from '@/lib/store-hours';
 import { SafeImage } from '@/components/SafeImage';
+import { ModifierSheet, itemHasModifiers } from '@/components/customer/ModifierSheet';
 
 type StoreRow = Database['public']['Tables']['stores']['Row'] & {
   fulfilment_mode?: 'platform' | 'store' | null;
@@ -57,6 +58,8 @@ export default function RestaurantPage() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [showStickyHeader, setShowStickyHeader] = useState(false);
   const [visibleCatLimit, setVisibleCatLimit] = useState(5);
+  const [modItem, setModItem] = useState<MenuItemRow | null>(null);
+  const [modOpen, setModOpen] = useState(false);
   const [menuQuery, setMenuQuery] = useState('');
   const categoryRefs = useRef<Record<string, HTMLElement | null>>({});
   const heroRef = useRef<HTMLDivElement>(null);
@@ -198,11 +201,20 @@ export default function RestaurantPage() {
     [items],
   );
 
-  const handleAdd = (item: MenuItemRow) => {
+  const handleAdd = async (item: MenuItemRow) => {
     if (!store) return;
     if (!storeOpen) {
       toast('Το κατάστημα είναι κλειστό — δοκίμασε αργότερα', { duration: 3000 });
       return;
+    }
+    try {
+      if (await itemHasModifiers(item.id)) {
+        setModItem(item);
+        setModOpen(true);
+        return;
+      }
+    } catch {
+      /* fall through to simple add */
     }
     if (cartStoreId && cartStoreId !== store.id) {
       toast('Το καλάθι εκκαθαρίστηκε — αλλαγή εστιατορίου', { duration: 3000 });
@@ -212,6 +224,8 @@ export default function RestaurantPage() {
       name: item.name,
       price: Number(item.price),
     });
+    try { navigator.vibrate?.(12); } catch { /* ignore */ }
+    toast.success('Προστέθηκε στο καλάθι', { duration: 1500 });
   };
 
   const cartForThisStore = itemCount > 0 && cartStoreId === store?.id;
@@ -634,8 +648,35 @@ export default function RestaurantPage() {
           </div>
         </div>
       )}
+      {modItem && (
+        <ModifierSheet
+          open={modOpen}
+          menuItemId={modItem.id}
+          itemName={modItem.name}
+          basePrice={Number(modItem.price)}
+          onClose={() => { setModOpen(false); setModItem(null); }}
+          onConfirm={({ modifiers, unitPrice, labelSuffix }) => {
+            if (!store || !modItem) return;
+            if (cartStoreId && cartStoreId !== store.id) {
+              toast('Το καλάθι εκκαθαρίστηκε — αλλαγή εστιατορίου', { duration: 3000 });
+            }
+            const lineKey = `${modItem.id}::${modifiers.map((m) => m.optionName).join('|')}`;
+            addItem(store.id, store.name, {
+              menuItemId: modItem.id,
+              name: labelSuffix ? `${modItem.name} (${labelSuffix})` : modItem.name,
+              price: unitPrice,
+              modifiers,
+              lineKey,
+            });
+            setModOpen(false);
+            setModItem(null);
+            try { navigator.vibrate?.(12); } catch { /* ignore */ }
+            toast.success('Προστέθηκε στο καλάθι', { duration: 1500 });
+          }}
+        />
+      )}
     </div>
-  );
+    );
 }
 
 function MenuItemRow({

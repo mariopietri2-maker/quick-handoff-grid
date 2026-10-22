@@ -86,7 +86,7 @@ function OneAtATimeOfferCardInner({
   const isUrgent = secondsLeft <= 15;
 
   return (
-    <div className="flex flex-col select-none" data-testid="offer-price-card">
+    <div className="flex flex-col select-none animate-in slide-in-from-bottom-4 fade-in duration-300" data-testid="offer-price-card">
       <div className="flex items-start justify-between gap-2 px-1 pt-0.5">
         <p
           className="text-[10px] font-heading font-semibold uppercase tracking-[0.08em]"
