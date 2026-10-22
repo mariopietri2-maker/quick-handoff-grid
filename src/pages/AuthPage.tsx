@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { SEO } from '@/components/SEO';
 import { Logo } from '@/components/brand/Logo';
 import { mobileHomePath, useMobileFlavor, type MobileAppFlavor } from '@/lib/mobileApp';
+import { passwordErrorMessage, MIN_PASSWORD_LENGTH } from '@/lib/password-policy';
 
 type AuthMode = 'login' | 'signup' | 'forgot' | 'otp' | 'reset';
 
@@ -178,9 +179,12 @@ export default function AuthPage() {
       toast.error('Εισάγετε τον 6ψήφιο κωδικό');
       return;
     }
-    if (password.length < 6) {
-      toast.error('Ο κωδικός πρέπει να έχει τουλάχιστον 6 χαρακτήρες');
-      return;
+    {
+      const pwErr = passwordErrorMessage(password);
+      if (pwErr) {
+        toast.error(pwErr);
+        return;
+      }
     }
     if (password !== confirmPassword) {
       toast.error('Οι κωδικοί δεν ταιριάζουν');
@@ -221,9 +225,12 @@ export default function AuthPage() {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) {
-      toast.error('Ο κωδικός πρέπει να έχει τουλάχιστον 6 χαρακτήρες');
-      return;
+    {
+      const pwErr = passwordErrorMessage(password);
+      if (pwErr) {
+        toast.error(pwErr);
+        return;
+      }
     }
     if (password !== confirmPassword) {
       toast.error('Οι κωδικοί δεν ταιριάζουν');
@@ -277,10 +284,13 @@ export default function AuthPage() {
           toast.error('Παρακαλώ εισάγετε το όνομά σας');
           return;
         }
-        if (password.length < 6) {
-          toast.error('Ο κωδικός πρέπει να έχει τουλάχιστον 6 χαρακτήρες');
-          return;
-        }
+        {
+      const pwErr = passwordErrorMessage(password);
+      if (pwErr) {
+        toast.error(pwErr);
+        return;
+      }
+    }
         const { error, session } = await signUp(emailNorm, password, fullName, driverIntent ? 'driver' : 'customer');
         if (error) {
           toast.error(error.message);

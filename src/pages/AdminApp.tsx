@@ -166,6 +166,27 @@ export default function AdminApp() {
     if (findParentSection(activeSection) !== 'settings') setSettingsSearch('');
   }, [activeSection]);
 
+  // Security: sign out admin after 30 minutes of inactivity
+  useEffect(() => {
+    const ADMIN_IDLE_MS = 30 * 60 * 1000;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const bump = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        void supabase.auth.signOut().then(() => {
+          window.location.href = '/auth?reason=idle';
+        });
+      }, ADMIN_IDLE_MS);
+    };
+    const evs: Array<keyof WindowEventMap> = ['mousemove', 'keydown', 'click', 'touchstart', 'scroll'];
+    for (const e of evs) window.addEventListener(e, bump, { passive: true });
+    bump();
+    return () => {
+      if (timer) clearTimeout(timer);
+      for (const e of evs) window.removeEventListener(e, bump);
+    };
+  }, []);
+
   const driverCodeMap = new Map((driverProfiles.data ?? []).map(d => [d.user_id, d.driver_code]));
   const adminUserIds = new Set(userRoles.data?.filter(r => r.role === 'admin').map(r => r.user_id) ?? []);
 
