@@ -401,33 +401,48 @@ export default function CheckoutPage() {
       }
       const order = { id: orderId as string };
 
-      // Persist modifiers onto order_items when present (kitchen + receipts)
+      // Authoritative modifiers: server prices from menu_item_modifiers catalog
       try {
         const withMods = cartSnapshot.filter((i) => i.modifiers.length > 0);
         if (withMods.length) {
-          const { data: oItems } = await supabase
-            .from('order_items')
-            .select('id, menu_item_id')
-            .eq('order_id', order.id);
-          const used = new Set<string>();
-          const inserts: { order_item_id: string; group_name: string; option_name: string; price_delta: number }[] = [];
-          for (const ci of withMods) {
-            const row = (oItems ?? []).find(
-              (r) => r.menu_item_id === ci.menuItemId && !used.has(r.id),
-            );
-            if (!row) continue;
-            used.add(row.id);
-            for (const m of ci.modifiers) {
-              inserts.push({
-                order_item_id: row.id,
-                group_name: m.groupName,
-                option_name: m.optionName,
-                price_delta: m.priceDelta,
-              });
+          const lines = withMods.map((i) => ({
+            menu_item_id: i.menuItemId,
+            modifiers: i.modifiers.map((m) => ({
+              group_name: m.groupName,
+              option_name: m.optionName,
+            })),
+          }));
+          const { error: modErr } = await (supabase as any).rpc('attach_order_modifiers', {
+            p_order_id: order.id,
+            p_lines: lines,
+          });
+          if (modErr) {
+            console.warn('attach_order_modifiers', modErr);
+            // Fallback: client insert (notes already include choices)
+            const { data: oItems } = await supabase
+              .from('order_items')
+              .select('id, menu_item_id')
+              .eq('order_id', order.id);
+            const used = new Set<string>();
+            const inserts: { order_item_id: string; group_name: string; option_name: string; price_delta: number }[] = [];
+            for (const ci of withMods) {
+              const row = (oItems ?? []).find(
+                (r) => r.menu_item_id === ci.menuItemId && !used.has(r.id),
+              );
+              if (!row) continue;
+              used.add(row.id);
+              for (const m of ci.modifiers) {
+                inserts.push({
+                  order_item_id: row.id,
+                  group_name: m.groupName,
+                  option_name: m.optionName,
+                  price_delta: m.priceDelta,
+                });
+              }
             }
-          }
-          if (inserts.length) {
-            await (supabase as any).from('order_item_modifiers').insert(inserts);
+            if (inserts.length) {
+              await (supabase as any).from('order_item_modifiers').insert(inserts);
+            }
           }
         }
       } catch (e) {

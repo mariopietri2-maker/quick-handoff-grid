@@ -106,6 +106,7 @@ export default function CustomerApp() {
   const [storeCategories, setStoreCategories] = useState<Record<string, string[]>>({});
   const [itemSearchIndex, setItemSearchIndex] = useState<Record<string, string>>({});
   const [offerItems, setOfferItems] = useState<OfferItem[]>([]);
+  const [recentStoreIds, setRecentStoreIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
@@ -463,6 +464,37 @@ const displayAddress = deliveryAddress
     ];
   }, [storeCategories, cfg.tiles, t]);
 
+  
+  // Personalize home: boost stores the customer ordered from recently
+  useEffect(() => {
+    if (!user) {
+      setRecentStoreIds([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('orders')
+          .select('store_id')
+          .eq('customer_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(30);
+        if (cancelled || !data) return;
+        const ids: string[] = [];
+        for (const row of data) {
+          const sid = (row as any).store_id as string | null;
+          if (sid && !ids.includes(sid)) ids.push(sid);
+          if (ids.length >= 12) break;
+        }
+        setRecentStoreIds(ids);
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
   const filtered = useMemo(
     () =>
       stores.filter((s) => {
@@ -498,6 +530,17 @@ const displayAddress = deliveryAddress
       ratings,
     ],
   );
+
+  const displayStores = useMemo(() => {
+    if (!recentStoreIds.length) return filtered;
+    const rank = new Map(recentStoreIds.map((id, i) => [id, i]));
+    return [...filtered].sort((a, b) => {
+      const ra = rank.has(a.id) ? rank.get(a.id)! : 999;
+      const rb = rank.has(b.id) ? rank.get(b.id)! : 999;
+      if (ra !== rb) return ra - rb;
+      return a.name.localeCompare(b.name, 'el');
+    });
+  }, [filtered, recentStoreIds]);
 
   // Store owners must not see customer shell
   if (isStore || profile?.role === 'store') {
@@ -1124,7 +1167,7 @@ const displayAddress = deliveryAddress
                   Δοκίμασε ξανά
                 </button>
               </div>
-            ) : filtered.length === 0 ? (
+            ) : displayStores.length === 0 ? (
               <div className="text-center py-16">
                 <div className="h-14 w-14 rounded-full bg-[hsl(var(--c-surface-muted))] flex items-center justify-center mx-auto mb-3">
                   <MapPin className="h-6 w-6 c-soft" />
@@ -1136,7 +1179,7 @@ const displayAddress = deliveryAddress
               </div>
             ) : (
               <div className={feedGridClass}>
-                {filtered.map((store) => {
+                {displayStores.map((store) => {
                   const open = isStoreOpenNow(store.opening_hours, store.holiday_dates, store.status_override);
                   const closedLabel = open ? null : nextOpeningLabel(store.opening_hours);
                   const platformDelivers =

@@ -545,6 +545,7 @@ export default function RestaurantPage() {
             <section
               key={category}
               data-category={category}
+              style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 520px' }}
               ref={(el) => {
                 categoryRefs.current[category] = el;
               }}
