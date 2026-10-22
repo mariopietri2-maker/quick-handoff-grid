@@ -197,7 +197,8 @@ export default function RestaurantPage() {
   };
 
   const getItemQuantity = useCallback(
-    (menuItemId: string) => items.find((i) => i.menuItemId === menuItemId)?.quantity ?? 0,
+    (menuItemId: string) =>
+      items.filter((i) => i.menuItemId === menuItemId).reduce((s, i) => s + i.quantity, 0),
     [items],
   );
 

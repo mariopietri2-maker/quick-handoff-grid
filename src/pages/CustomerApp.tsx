@@ -179,6 +179,13 @@ export default function CustomerApp() {
       return false;
     }
   });
+  const [showWelcome, setShowWelcome] = useState(() => {
+    try {
+      return !localStorage.getItem('customer_welcome_seen');
+    } catch {
+      return false;
+    }
+  });
   const [deliveryAddress, setDeliveryAddress] = useState<string>(() => {
     try {
       return localStorage.getItem('customer_delivery_address') || '';
@@ -771,6 +778,41 @@ const displayAddress = deliveryAddress
           cfg.sections.show_promos &&
           !(cfg.hero_cards ?? []).some((c) => c.enabled && (c.placement ?? 'hero') === 'hero') && (
             
+            
+            {showWelcome && (
+              <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4">
+                <button type="button" className="absolute inset-0 bg-black/45" aria-label="Κλείσιμο"
+                  onClick={() => {
+                    try { localStorage.setItem('customer_welcome_seen', '1'); } catch {}
+                    setShowWelcome(false);
+                  }}
+                />
+                <div className="relative w-full max-w-md rounded-t-3xl sm:rounded-3xl bg-[hsl(var(--c-surface))] p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-2xl">
+                  <p className="text-3xl mb-2" aria-hidden>🍊</p>
+                  <h2 className="font-heading font-extrabold text-xl c-ink">Καλώς ήρθες στο Fresh2GO</h2>
+                  <p className="text-sm c-soft mt-2 leading-relaxed">
+                    Φρέσκα γεύματα από τα αγαπημένα σου καταστήματα στα Ιωάννινα — γρήγορα και απλά.
+                  </p>
+                  <ul className="mt-3 space-y-1.5 text-[13px] c-ink">
+                    <li>· Βάλε διεύθυνση για ακριβή χρόνο παράδοσης</li>
+                    <li>· Πρόσθεσε προϊόντα και επίλεξε επιλογές όπου υπάρχουν</li>
+                    <li>· Παρακολούθησε τον οδηγό ζωντανά στον χάρτη</li>
+                  </ul>
+                  <button
+                    type="button"
+                    className="mt-5 w-full h-12 rounded-2xl bg-primary text-primary-foreground font-heading font-extrabold"
+                    onClick={() => {
+                      try { localStorage.setItem('customer_welcome_seen', '1'); } catch {}
+                      setShowWelcome(false);
+                      if (!deliveryAddress) setAddressOpen(true);
+                    }}
+                  >
+                    Ξεκίνα
+                  </button>
+                </div>
+              </div>
+            )}
+
             {showAddressTip && (
               <div className="mx-4 mb-3 rounded-2xl border border-primary/25 bg-primary/10 px-3.5 py-3 flex items-start gap-3">
                 <span className="text-xl leading-none" aria-hidden>📍</span>

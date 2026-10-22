@@ -22,8 +22,8 @@ interface CartContextType {
   storeId: string | null;
   storeName: string | null;
   addItem: (storeId: string, storeName: string, item: Omit<CartItem, 'quantity'>) => void;
-  removeItem: (menuItemId: string) => void;
-  updateQuantity: (menuItemId: string, quantity: number) => void;
+  removeItem: (menuItemId: string, lineKey?: string) => void;
+  updateQuantity: (menuItemId: string, quantity: number, lineKey?: string) => void;
   clearCart: () => void;
   total: number;
   itemCount: number;
@@ -59,9 +59,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   }, [storeId]);
 
-  const removeItem = useCallback((menuItemId: string) => {
+  const removeItem = useCallback((menuItemId: string, lineKey?: string) => {
     setItems(prev => {
-      const next = prev.filter(i => i.menuItemId !== menuItemId);
+      const next = prev.filter(i => {
+        if (lineKey) return (i.lineKey ?? i.menuItemId) !== lineKey;
+        return i.menuItemId !== menuItemId;
+      });
       if (next.length === 0) {
         setStoreId(null);
         setStoreName(null);
@@ -70,12 +73,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const updateQuantity = useCallback((menuItemId: string, quantity: number) => {
+  const updateQuantity = useCallback((menuItemId: string, quantity: number, lineKey?: string) => {
+    const key = lineKey ?? menuItemId;
     if (quantity <= 0) {
-      removeItem(menuItemId);
+      removeItem(menuItemId, lineKey);
       return;
     }
-    setItems(prev => prev.map(i => i.menuItemId === menuItemId ? { ...i, quantity } : i));
+    setItems(prev =>
+      prev.map(i =>
+        (i.lineKey ?? i.menuItemId) === key ? { ...i, quantity } : i,
+      ),
+    );
   }, [removeItem]);
 
   const clearCart = useCallback(() => {

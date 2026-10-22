@@ -361,6 +361,26 @@ export default function CheckoutPage() {
       }
 
       // Server-side place_order: recomputes totals from authoritative menu prices.
+      const modNotes = items
+        .filter((i) => i.modifiers && i.modifiers.length > 0)
+        .map((i) => {
+          const opts = i.modifiers!.map((m) => m.optionName).join(', ');
+          return `${i.name}: ${opts}`;
+        })
+        .join(' · ');
+      const mergedNotes = [notes?.trim(), modNotes ? `Επιλογές: ${modNotes}` : '']
+        .filter(Boolean)
+        .join('\n') || null;
+
+      // Snapshot cart lines before place_order (clearCart may run soon after)
+      const cartSnapshot = items.map((i) => ({
+        menuItemId: i.menuItemId,
+        quantity: i.quantity,
+        modifiers: i.modifiers ?? [],
+        name: i.name,
+        price: i.price,
+      }));
+
       const { data: orderId, error: orderError } = await (supabase as any).rpc('place_order', {
         p_store_id: storeId,
         p_items: items.map(i => ({ menu_item_id: i.menuItemId, quantity: i.quantity })),
@@ -370,7 +390,7 @@ export default function CheckoutPage() {
         p_payment_method: paymentMethod,
         p_tip_amount: tipAmount,
         p_delivery_fee: effectiveDeliveryFee,
-        p_notes: notes || null,
+        p_notes: mergedNotes,
         p_scheduled_for: scheduledFor,
         p_distance_km: distanceKm,
         p_promo_code: [roulettePromo?.code, appliedPromo?.code].filter(Boolean).join('|') || null,
@@ -380,6 +400,39 @@ export default function CheckoutPage() {
         throw orderError || new Error('Αποτυχία δημιουργίας παραγγελίας');
       }
       const order = { id: orderId as string };
+
+      // Persist modifiers onto order_items when present (kitchen + receipts)
+      try {
+        const withMods = cartSnapshot.filter((i) => i.modifiers.length > 0);
+        if (withMods.length) {
+          const { data: oItems } = await supabase
+            .from('order_items')
+            .select('id, menu_item_id')
+            .eq('order_id', order.id);
+          const used = new Set<string>();
+          const inserts: { order_item_id: string; group_name: string; option_name: string; price_delta: number }[] = [];
+          for (const ci of withMods) {
+            const row = (oItems ?? []).find(
+              (r) => r.menu_item_id === ci.menuItemId && !used.has(r.id),
+            );
+            if (!row) continue;
+            used.add(row.id);
+            for (const m of ci.modifiers) {
+              inserts.push({
+                order_item_id: row.id,
+                group_name: m.groupName,
+                option_name: m.optionName,
+                price_delta: m.priceDelta,
+              });
+            }
+          }
+          if (inserts.length) {
+            await (supabase as any).from('order_item_modifiers').insert(inserts);
+          }
+        }
+      } catch (e) {
+        console.warn('modifier persist', e);
+      }
 
       // Remember this delivery address for next time + shared geocode cache.
       void import('@/lib/geocode').then(({ rememberMyDeliveryAddress }) =>
@@ -470,14 +523,19 @@ export default function CheckoutPage() {
           <CardContent className="p-4 space-y-3">
             <h2 className="font-heading font-semibold text-foreground">Τα Προϊόντα σας</h2>
             {items.map(item => (
-              <div key={item.menuItemId} className="flex items-center justify-between gap-2 py-2 border-b border-border last:border-0">
+              <div key={item.lineKey ?? item.menuItemId} className="flex items-center justify-between gap-2 py-2 border-b border-border last:border-0">
                 <div className="flex-1 min-w-0">
                   <p className="font-heading text-sm text-foreground truncate">{item.name}</p>
+                  {item.modifiers && item.modifiers.length > 0 && (
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {item.modifiers.map((m) => m.optionName).join(', ')}
+                    </p>
+                  )}
                   <p className="text-xs text-muted-foreground">{item.price.toFixed(2)}€ το τεμάχιο</p>
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <button
-                    onClick={() => updateQuantity(item.menuItemId, item.quantity - 1)}
+                    onClick={() => updateQuantity(item.menuItemId, item.quantity - 1, item.lineKey)}
                     className="h-8 w-8 rounded-full bg-muted flex items-center justify-center"
                     aria-label="Μείωση"
                   >
@@ -485,7 +543,7 @@ export default function CheckoutPage() {
                   </button>
                   <span className="font-heading font-bold text-sm w-5 text-center text-foreground tabular-nums">{item.quantity}</span>
                   <button
-                    onClick={() => updateQuantity(item.menuItemId, item.quantity + 1)}
+                    onClick={() => updateQuantity(item.menuItemId, item.quantity + 1, item.lineKey)}
                     className="h-8 w-8 rounded-full bg-[hsl(var(--c-text))] flex items-center justify-center"
                     aria-label="Αύξηση"
                   >
