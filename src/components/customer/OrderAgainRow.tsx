@@ -1,3 +1,4 @@
+import { SafeImage } from '@/components/SafeImage';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Repeat2 } from 'lucide-react';
@@ -50,9 +51,12 @@ export function OrderAgainRow() {
     <section className="pt-4">
       <div className="px-5 flex items-center gap-2 mb-2">
         <Repeat2 className="h-3.5 w-3.5 c-accent" strokeWidth={2.6} />
-        <h2 className="font-heading font-black text-[15px] c-ink leading-none tracking-tight">
-          Παράγγειλε ξανά
-        </h2>
+        <div className="min-w-0">
+          <h2 className="font-heading font-black text-[15px] c-ink leading-none tracking-tight">
+            Παράγγειλε ξανά
+          </h2>
+          <p className="text-[11px] c-soft mt-0.5">Από καταστήματα που διάλεξες πριν</p>
+        </div>
       </div>
       <div className="overflow-x-auto no-scrollbar">
         <div className="flex gap-2 px-5 pb-1 w-max">
@@ -63,11 +67,13 @@ export function OrderAgainRow() {
               className="w-[64px] shrink-0 text-center group active:scale-95 transition-transform"
             >
               <div className="h-[64px] w-[64px] rounded-xl overflow-hidden bg-[hsl(var(--c-surface-muted))] ring-1 ring-black/[0.04] shadow-[0_4px_10px_-6px_hsl(0_0%_0%/0.2)]">
-                {s.image_url ? (
-                  <img src={s.image_url} alt={s.name} loading="lazy" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center text-2xl emoji">🍽️</div>
-                )}
+                <SafeImage
+                  src={s.image_url}
+                  alt={s.name}
+                  className="h-full w-full object-cover"
+                  fallbackClassName="h-full w-full flex items-center justify-center text-2xl"
+                  fallback="🍽️"
+                />
               </div>
               <p className="mt-1 text-[10px] font-extrabold c-ink truncate">{s.name}</p>
             </button>

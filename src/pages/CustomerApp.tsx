@@ -22,6 +22,7 @@ import { FavoriteButton } from '@/components/customer/FavoriteButton';
 import { ActiveOrderTracker } from '@/components/customer/ActiveOrderTracker';
 import AppSplash from '@/components/customer/AppSplash';
 import OrderAgainRow from '@/components/customer/OrderAgainRow';
+import { ForYouRow } from '@/components/customer/ForYouRow';
 import { useStoreRatings } from '@/hooks/useStoreRatings';
 import { useT } from '@/lib/i18n';
 import { LanguageToggle } from '@/components/LanguageToggle';
@@ -707,7 +708,8 @@ const displayAddress = deliveryAddress
 
       <main className={isWeb ? 'w-full max-w-[1400px] mx-auto px-6' : 'max-w-6xl mx-auto'}>
         <ActiveOrderTracker />
-        {cfg.sections.show_order_again && <OrderAgainRow />}
+        {cfg.sections.show_order_again && <ForYouRow />
+            <OrderAgainRow />}
 
         {/* Προσφορές — first thing customers see */}
         {!isSearching && selectedCategory === 'all' && promotionOffers.length > 0 && (

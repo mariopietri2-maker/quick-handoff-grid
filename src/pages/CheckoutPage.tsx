@@ -383,7 +383,14 @@ export default function CheckoutPage() {
 
       const { data: orderId, error: orderError } = await (supabase as any).rpc('place_order', {
         p_store_id: storeId,
-        p_items: items.map(i => ({ menu_item_id: i.menuItemId, quantity: i.quantity })),
+        p_items: items.map(i => ({
+          menu_item_id: i.menuItemId,
+          quantity: i.quantity,
+          modifiers: (i.modifiers ?? []).map((m) => ({
+            group_name: m.groupName,
+            option_name: m.optionName,
+          })),
+        })),
         p_delivery_address: address,
         p_delivery_latitude: deliveryCoords?.lat ?? null,
         p_delivery_longitude: deliveryCoords?.lon ?? null,
