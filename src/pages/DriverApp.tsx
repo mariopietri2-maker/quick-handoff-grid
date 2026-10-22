@@ -91,6 +91,22 @@ export default function DriverApp() {
     if (isOnline) primeDriverAudio();
   }, [isOnline]);
 
+
+  useEffect(() => {
+    const on = () => {
+      if (isOnline) toast.success('Σύνδεση επανήλθε');
+    };
+    const off = () => {
+      if (isOnline) toast.message('Χωρίς σύνδεση — οι προσφορές μπορεί να καθυστερούν');
+    };
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    return () => {
+      window.removeEventListener('online', on);
+      window.removeEventListener('offline', off);
+    };
+  }, [isOnline]);
+
   // Sticky "Διαθέσιμος" shade notification whenever online (native APK only).
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;

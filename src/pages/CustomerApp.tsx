@@ -1,3 +1,4 @@
+import { SafeImage } from '@/components/SafeImage';
 import { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import {
   Search,
@@ -105,6 +106,8 @@ export default function CustomerApp() {
   const [storeCategories, setStoreCategories] = useState<Record<string, string[]>>({});
   const [offerItems, setOfferItems] = useState<OfferItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadTick, setReloadTick] = useState(0);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -287,6 +290,8 @@ const displayAddress = deliveryAddress
     let cancelled = false;
     let pending: ReturnType<typeof setTimeout> | null = null;
     async function load() {
+      setLoadError(null);
+      try {
       const nowIso = new Date().toISOString();
       const [storesRes, menuRes, promoRes, offerRes] = await Promise.all([
         (supabase as any).from('stores_public').select('*').eq('is_active', true).order('name'),
@@ -340,6 +345,11 @@ const displayAddress = deliveryAddress
         });
       setOfferItems(offers);
       setLoading(false);
+      } catch (e: any) {
+        console.error('customer feed load', e);
+        setLoadError(e?.message || 'Αποτυχία φόρτωσης');
+        setLoading(false);
+      }
     }
     load();
 
@@ -360,7 +370,7 @@ const displayAddress = deliveryAddress
       if (pending) clearTimeout(pending);
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [reloadTick]);
 
   const ratings = useStoreRatings(
     useMemo(
@@ -772,7 +782,7 @@ const displayAddress = deliveryAddress
                     >
                       <div className="relative h-[100px] rounded-2xl overflow-hidden mb-2 bg-[hsl(var(--c-surface-muted))] shadow-[0_10px_22px_-14px_hsl(25_39%_18%/0.25)]">
                         {cover ? (
-                          <img src={cover} alt={store.name} className="w-full h-full object-cover" loading="lazy" />
+                          <SafeImage src={cover} alt={store.name} className="w-full h-full object-cover" fallback="🍽️" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <Utensils className="h-7 w-7 text-[hsl(var(--c-text-muted))]" />
@@ -1010,6 +1020,18 @@ const displayAddress = deliveryAddress
                   </div>
                 ))}
               </div>
+            ) : loadError ? (
+              <div className="text-center py-16 px-4">
+                <p className="font-heading font-extrabold c-ink">Δεν φορτώθηκαν τα καταστήματα</p>
+                <p className="text-sm c-soft mt-1 mb-4">{loadError}</p>
+                <button
+                  type="button"
+                  className="h-10 px-5 rounded-full bg-primary text-primary-foreground font-heading font-bold text-sm"
+                  onClick={() => { setLoading(true); setReloadTick((n) => n + 1); }}
+                >
+                  Δοκίμασε ξανά
+                </button>
+              </div>
             ) : filtered.length === 0 ? (
               <div className="text-center py-16">
                 <div className="h-14 w-14 rounded-full bg-[hsl(var(--c-surface-muted))] flex items-center justify-center mx-auto mb-3">
@@ -1039,7 +1061,12 @@ const displayAddress = deliveryAddress
                       key={store.id}
                       type="button"
                       onClick={() => navigate(`/restaurant/${store.id}`)}
-                      className="w-full text-left group"
+                      onPointerEnter={() => {
+                        try {
+                          void import('@/pages/RestaurantPage');
+                        } catch { /* ignore */ }
+                      }}
+                      className="w-full text-left group active:opacity-95"
                     >
                       <div
                         className={`relative aspect-[16/10] rounded-[20px] overflow-hidden mb-2.5 bg-[hsl(var(--c-surface-muted))] shadow-[0_14px_30px_-16px_hsl(25_39%_18%/0.3)] transition-all duration-300 ${
@@ -1047,11 +1074,11 @@ const displayAddress = deliveryAddress
                         }`}
                       >
                         {cover ? (
-                          <img
+                          <SafeImage
                             src={cover}
                             alt={`Φωτογραφία εστιατορίου ${store.name}`}
                             className="w-full h-full object-cover transition-transform duration-500 group-active:scale-[1.02]"
-                            loading="lazy"
+                            fallback="🍽️"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
@@ -1060,11 +1087,11 @@ const displayAddress = deliveryAddress
                         )}
                         {store.image_url && (
                           <div className="absolute bottom-2.5 left-2.5 z-[2] h-14 w-14 rounded-2xl overflow-hidden border-[3px] border-white shadow-[0_6px_16px_-4px_rgba(0,0,0,0.35)] bg-white ring-1 ring-black/5">
-                            <img
+                            <SafeImage
                               src={store.image_url}
                               alt=""
                               className="h-full w-full object-cover"
-                              loading="lazy"
+                              fallback="🍴"
                             />
                           </div>
                         )}

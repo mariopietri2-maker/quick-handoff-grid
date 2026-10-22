@@ -48,8 +48,8 @@ const queryClient = new QueryClient({
       // Cost-aware defaults shared across all apps (customer, driver, store,
       // admin, support). Cuts duplicate fetches + auto-retries flaky requests
       // with backoff so a brief network blip doesn't surface as an error.
-      staleTime: 30_000,
-      gcTime: 5 * 60_000,
+      staleTime: 45_000,
+      gcTime: 10 * 60_000,
       refetchOnWindowFocus: false,
       refetchOnReconnect: true, // resync when the device comes back online
       retry: (failureCount, err: any) => {

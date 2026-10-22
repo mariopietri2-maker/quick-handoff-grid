@@ -70,12 +70,15 @@ export class RouteErrorBoundary extends Component<{ children: ReactNode }, State
                 : (this.state.error.message || 'Απρόσμενο σφάλμα στη σελίδα.')}
             </p>
           </div>
-          <div className="flex gap-2 justify-center">
+          <div className="flex flex-wrap gap-2 justify-center">
             {!stale && (
               <Button variant="outline" onClick={() => this.setState({ error: null })}>
                 Δοκίμασε ξανά
               </Button>
             )}
+            <Button variant="outline" onClick={() => { window.location.href = '/order'; }}>
+              Αρχική
+            </Button>
             <Button onClick={() => window.location.reload()}>Επαναφόρτωση</Button>
           </div>
         </div>
