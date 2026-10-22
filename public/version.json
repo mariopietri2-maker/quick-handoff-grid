@@ -1,0 +1,7 @@
+{
+  "app": "fresh2go",
+  "version": "1.0.0",
+  "commit": "c48f7fa",
+  "builtAt": "2026-10-22T13:08:40.000Z",
+  "fix": "tdz-cannot-access-before-initialization"
+}
