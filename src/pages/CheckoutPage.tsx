@@ -60,7 +60,9 @@ export default function CheckoutPage() {
         const row = Array.isArray(data) ? data[0] : data;
         if (!row) return;
         if (row.platform_service_fee != null) {
-          setDeliveryFee(Number(row.platform_service_fee));
+          const fee = Number(row.platform_service_fee);
+          setBaseDeliveryFee(fee);
+          setDeliveryFee((prev) => (prev === 0 && fee > 0 ? prev : fee));
         }
         if (typeof row.card_payments_enabled === 'boolean') {
           setCardPaymentsAllowed(row.card_payments_enabled);
@@ -79,21 +81,30 @@ export default function CheckoutPage() {
       });
   }, []);
 
-  // Prefetch store coords for map bias + driving distance (avoids a second round-trip on submit).
+  const [storeCoversDelivery, setStoreCoversDelivery] = useState(false);
+  const [baseDeliveryFee, setBaseDeliveryFee] = useState(0.99);
+
+  // Prefetch store coords + free-delivery flag
   useEffect(() => {
     if (!storeId) {
       setStoreCenter(null);
+      setStoreCoversDelivery(false);
       return;
     }
     let cancelled = false;
     supabase
       .from('stores')
-      .select('latitude, longitude')
+      .select('latitude, longitude, covers_delivery_fee')
       .eq('id', storeId)
       .maybeSingle()
       .then(({ data }) => {
-        if (cancelled || !data?.latitude || !data?.longitude) return;
-        setStoreCenter([Number(data.longitude), Number(data.latitude)]);
+        if (cancelled || !data) return;
+        if (data.latitude != null && data.longitude != null) {
+          setStoreCenter([Number(data.longitude), Number(data.latitude)]);
+        }
+        const covers = !!(data as any).covers_delivery_fee;
+        setStoreCoversDelivery(covers);
+        if (covers) setDeliveryFee(0);
       });
     return () => { cancelled = true; };
   }, [storeId]);
@@ -178,9 +189,13 @@ export default function CheckoutPage() {
     : subtotalAfterDiscount * (tipOption / 100);
 
   const grandTotal = subtotalAfterDiscount + effectiveDeliveryFee + tipAmount;
-  const freeDeliveryThreshold = 15;
+  // Soft upsell only when customer still pays delivery (store does not cover it)
+  const freeDeliveryThreshold = storeCoversDelivery ? 0 : 15;
   const freeDeliveryHint =
-    effectiveDeliveryFee > 0 && subtotalAfterDiscount < freeDeliveryThreshold
+    !storeCoversDelivery &&
+    effectiveDeliveryFee > 0 &&
+    freeDeliveryThreshold > 0 &&
+    subtotalAfterDiscount < freeDeliveryThreshold
       ? Math.max(0, freeDeliveryThreshold - subtotalAfterDiscount)
       : 0;
 
@@ -609,7 +624,11 @@ export default function CheckoutPage() {
                 style={{ width: `${Math.min(100, (subtotalAfterDiscount / freeDeliveryThreshold) * 100)}%` }}
               />
             </div>
-            <p className="text-[10px] text-muted-foreground mt-1">*Ενδεικτικό όριο προσφοράς · εξαρτάται από το κατάστημα</p>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              {storeCoversDelivery
+                ? 'Το κατάστημα καλύπτει την παράδοση'
+                : 'Ενδεικτικό · η τελική χρέωση φαίνεται στο σύνολο'}
+            </p>
           </div>
         )}
 

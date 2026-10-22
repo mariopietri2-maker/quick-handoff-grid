@@ -190,6 +190,24 @@ export default function RestaurantPage() {
     return () => clearTimeout(t);
   }, [visibleCatLimit, visibleCategories.length]);
 
+  
+  // Auto-expand items when user approaches bottom of current window
+  useEffect(() => {
+    const el = document.getElementById('menu-load-more-sentinel');
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setItemsPerCategoryLimit((n) => n + 12);
+          setVisibleCatLimit((n) => n + 2);
+        }
+      },
+      { root: null, rootMargin: '200px', threshold: 0 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [visibleCatLimit, itemsPerCategoryLimit, visibleCategories.length, filteredItems.length]);
+
   const scrollToCategory = (cat: string) => {
     setActiveCategory(cat);
     scrollingToCat.current = true;
