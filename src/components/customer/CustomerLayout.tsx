@@ -20,6 +20,24 @@ export default function CustomerLayout() {
   // Tab bar is a mobile-app affordance; the website uses the top nav.
   const showTabs = isNativeShell();
 
+  
+  // Warm critical routes when browser is idle (efood-like snappiness)
+  useEffect(() => {
+    const warm = () => {
+      void import('@/pages/RestaurantPage');
+      void import('@/pages/CheckoutPage');
+      void import('@/pages/MyOrdersPage');
+    };
+    let id: number | undefined;
+    const ric = (window as any).requestIdleCallback as undefined | ((cb: () => void, opts?: { timeout: number }) => number);
+    if (typeof ric === 'function') {
+      id = ric(warm, { timeout: 2500 });
+      return () => (window as any).cancelIdleCallback?.(id);
+    }
+    const t = window.setTimeout(warm, 1500);
+    return () => clearTimeout(t);
+  }, []);
+
   useEffect(() => {
     if (location.pathname !== '/order') return;
     if (location.hash === '#browse') {

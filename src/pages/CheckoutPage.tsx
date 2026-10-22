@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, Suspense, lazy } from 'react';
+import { useState, useEffect, useCallback, Suspense, lazy, useRef} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Minus, Plus, Trash2, MapPin, ShoppingBag, Tag, CheckCircle2, X, Banknote, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -132,6 +132,7 @@ export default function CheckoutPage() {
   const [notes, setNotes] = useState('');
   const [scheduledFor, setScheduledFor] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [promoCode, setPromoCode] = useState('');
   const [promoLoading, setPromoLoading] = useState(false);
   const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
@@ -279,6 +280,8 @@ export default function CheckoutPage() {
   };
 
   const handlePlaceOrder = async () => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     if (!user) {
       toast.error('Παρακαλώ συνδεθείτε για να κάνετε παραγγελία');
       navigate('/auth?next=/checkout');
@@ -340,7 +343,7 @@ export default function CheckoutPage() {
           const meters = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
           if (meters < 30) {
             toast.error('Η διεύθυνση παράδοσης ταυτίζεται με το κατάστημα. Διάλεξε διαφορετική.');
-            setSubmitting(false);
+            submittingRef.current = false; setSubmitting(false);
             return;
           }
           const token = mapboxToken || (import.meta.env.VITE_MAPBOX_TOKEN as string | undefined);

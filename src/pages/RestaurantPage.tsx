@@ -26,6 +26,7 @@ import { openRealtimeChannel } from '@/lib/realtime-channel';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { useDeliveryEta } from '@/hooks/useDeliveryEta';
 import { isStoreOpenNow, nextOpeningLabel } from '@/lib/store-hours';
+import { SafeImage } from '@/components/SafeImage';
 
 type StoreRow = Database['public']['Tables']['stores']['Row'] & {
   fulfilment_mode?: 'platform' | 'store' | null;
@@ -339,7 +340,7 @@ export default function RestaurantPage() {
         <div className="rounded-2xl bg-[hsl(var(--c-elevated))] border border-[hsl(var(--c-border))] shadow-[0_8px_24px_-12px_hsl(0_0%_0%/0.18)] px-4 py-4">
           <div className="flex items-center gap-3">
             {store.image_url && (
-              <img src={store.image_url} alt="" className="h-14 w-14 rounded-xl object-cover border border-[hsl(var(--c-border))] shadow-sm shrink-0 bg-white" />
+              <SafeImage src={store.image_url} alt="" className="h-14 w-14 rounded-xl object-cover border border-[hsl(var(--c-border))] shadow-sm shrink-0 bg-white" fallback="🍴" />
             )}
             <h1 className="font-heading font-black text-[22px] sm:text-[26px] leading-tight tracking-tight c-ink">
               {store.name}
@@ -421,7 +422,7 @@ export default function RestaurantPage() {
       {/* Category tabs — mobile */}
       {!normalizedQuery && visibleCategories.length > 1 && (
         <div
-          className={`md:hidden sticky z-40 bg-[hsl(var(--c-surface)/0.95)] backdrop-blur-md border-b border-[hsl(var(--c-border))] mt-3 transition-[top] duration-200 ${
+          className={`md:hidden sticky z-50 bg-[hsl(var(--c-surface)/0.98)] backdrop-blur-md border-b border-[hsl(var(--c-border))] mt-3 transition-[top] duration-200 ${
             showStickyHeader ? 'top-[52px]' : 'top-0'
           }`}
         >
