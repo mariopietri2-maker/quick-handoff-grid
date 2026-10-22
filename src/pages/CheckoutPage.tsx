@@ -53,6 +53,9 @@ export default function CheckoutPage() {
 
   const [cardPaymentsAllowed, setCardPaymentsAllowed] = useState(true);
   const [deliveryEnabled, setDeliveryEnabled] = useState(true);
+  const [storeCoversDelivery, setStoreCoversDelivery] = useState(false);
+  const [baseDeliveryFee, setBaseDeliveryFee] = useState(0.99);
+  const [vivaPaymentsAllowed, setVivaPaymentsAllowed] = useState(false);
 
   useEffect(() => {
     (supabase as any).rpc('get_platform_settings_public')
@@ -80,9 +83,6 @@ export default function CheckoutPage() {
         }
       });
   }, []);
-
-  const [storeCoversDelivery, setStoreCoversDelivery] = useState(false);
-  const [baseDeliveryFee, setBaseDeliveryFee] = useState(0.99);
 
   // Prefetch store coords + free-delivery flag
   useEffect(() => {
@@ -151,8 +151,7 @@ export default function CheckoutPage() {
   const [roulettePromo, setRoulettePromo] = useState<AppliedPromo | null>(null);
   const cardEnabled = cardPaymentsAllowed && isPaymentsConfigured();
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash' | 'viva'>('cash');
-  const [vivaPaymentsAllowed, setVivaPaymentsAllowed] = useState(false);
-  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
+    const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     if (cardEnabled) {

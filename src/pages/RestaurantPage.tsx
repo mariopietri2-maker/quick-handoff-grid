@@ -45,6 +45,73 @@ const VISIBLE_ITEM_QUERY = (storeId: string) =>
     .order('category')
     .order('name');
 
+const MenuItemCard = memo(function MenuItemCard({
+  item,
+  qty,
+  onAdd,
+  onMinus,
+  disabled = false,
+}: {
+  item: MenuItemRow;
+  qty: number;
+  onAdd: () => void;
+  onMinus: () => void;
+  disabled?: boolean;
+}) {
+  const hasImage = Boolean(item.image_url);
+  const inCart = qty > 0;
+
+  return (
+    <div
+      className={`flex gap-3.5 py-4 items-stretch ${inCart ? 'bg-[hsl(var(--c-accent-soft))] -mx-2 px-2 rounded-xl' : ''}`}
+    >
+      <div className="flex-1 min-w-0 flex flex-col">
+        <h3 className="font-heading font-extrabold text-[15px] c-ink leading-snug tracking-tight">
+          {item.name}
+        </h3>
+        {item.description && (
+          <p className="text-[12px] c-muted mt-1 line-clamp-2 leading-relaxed">
+            {item.description}
+          </p>
+        )}
+        <MenuItemBadges
+          isVegan={(item as any).is_vegan}
+          isVegetarian={(item as any).is_vegetarian}
+          isGlutenFree={(item as any).is_gluten_free}
+          spicyLevel={(item as any).spicy_level}
+          allergens={(item as any).allergens}
+          calories={(item as any).calories}
+        />
+        <div className="mt-auto pt-2.5">
+          <span className="text-[14px] font-extrabold c-ink tabular-nums">
+            {Number(item.price).toFixed(2)}€
+          </span>
+        </div>
+      </div>
+
+      {/* Fixed right column so Προσθήκη aligns with or without photo */}
+      <div className="relative flex-shrink-0 w-[104px] flex flex-col items-center">
+        <SafeImage
+          src={hasImage ? item.image_url : null}
+          alt={`Φωτογραφία ${item.name}`}
+          className="h-[104px] w-[104px] rounded-2xl object-cover bg-[hsl(var(--c-surface-muted))]"
+          fallbackClassName="h-[104px] w-[104px] rounded-2xl bg-[hsl(var(--c-surface-muted))] text-2xl opacity-40"
+          fallback="🍽️"
+        />
+        {!disabled && (
+          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-max max-w-[112px]">
+            {inCart ? (
+              <QuantityStepper qty={qty} onMinus={onMinus} onPlus={onAdd} onImage />
+            ) : (
+              <AddButton onClick={onAdd} compact />
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+
 export default function RestaurantPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -223,6 +290,13 @@ export default function RestaurantPage() {
     [items],
   );
 
+  const storeOpen = store
+    ? isStoreOpenNow((store as any).opening_hours, (store as any).holiday_dates, (store as any).status_override)
+    : true;
+  const closedLabel = store && !storeOpen ? nextOpeningLabel((store as any).opening_hours) : null;
+  const platformDelivers =
+    deliveryEnabled && ((store as any)?.fulfilment_mode ?? 'platform') !== 'store';
+
   const handleAdd = async (item: MenuItemRow) => {
     if (!store) return;
     if (!storeOpen) {
@@ -255,12 +329,6 @@ export default function RestaurantPage() {
   const etaLow = Math.min(storeEta.min, etaCap);
   const etaHigh = Math.min(storeEta.max, etaCap);
   const etaLabel = store ? `${etaLow}–${etaHigh} λεπ` : null;
-  const storeOpen = store
-    ? isStoreOpenNow((store as any).opening_hours, (store as any).holiday_dates, (store as any).status_override)
-    : true;
-  const closedLabel = store && !storeOpen ? nextOpeningLabel((store as any).opening_hours) : null;
-  const platformDelivers =
-    deliveryEnabled && ((store as any)?.fulfilment_mode ?? 'platform') !== 'store';
 
   if (loading) {
     return (
@@ -588,7 +656,7 @@ export default function RestaurantPage() {
                       {shown.map((item) => {
                         const qty = getItemQuantity(item.id);
                         return (
-                          <MenuItemRow
+                          <MenuItemCard
                             key={item.id}
                             item={item}
                             qty={qty}
@@ -733,72 +801,6 @@ export default function RestaurantPage() {
     );
 }
 
-const MenuItemRow = memo(function MenuItemRow({
-  item,
-  qty,
-  onAdd,
-  onMinus,
-  disabled = false,
-}: {
-  item: MenuItemRow;
-  qty: number;
-  onAdd: () => void;
-  onMinus: () => void;
-  disabled?: boolean;
-}) {
-  const hasImage = Boolean(item.image_url);
-  const inCart = qty > 0;
-
-  return (
-    <div
-      className={`flex gap-3.5 py-4 items-stretch ${inCart ? 'bg-[hsl(var(--c-accent-soft))] -mx-2 px-2 rounded-xl' : ''}`}
-    >
-      <div className="flex-1 min-w-0 flex flex-col">
-        <h3 className="font-heading font-extrabold text-[15px] c-ink leading-snug tracking-tight">
-          {item.name}
-        </h3>
-        {item.description && (
-          <p className="text-[12px] c-muted mt-1 line-clamp-2 leading-relaxed">
-            {item.description}
-          </p>
-        )}
-        <MenuItemBadges
-          isVegan={(item as any).is_vegan}
-          isVegetarian={(item as any).is_vegetarian}
-          isGlutenFree={(item as any).is_gluten_free}
-          spicyLevel={(item as any).spicy_level}
-          allergens={(item as any).allergens}
-          calories={(item as any).calories}
-        />
-        <div className="mt-auto pt-2.5">
-          <span className="text-[14px] font-extrabold c-ink tabular-nums">
-            {Number(item.price).toFixed(2)}€
-          </span>
-        </div>
-      </div>
-
-      {/* Fixed right column so Προσθήκη aligns with or without photo */}
-      <div className="relative flex-shrink-0 w-[104px] flex flex-col items-center">
-        <SafeImage
-          src={hasImage ? item.image_url : null}
-          alt={`Φωτογραφία ${item.name}`}
-          className="h-[104px] w-[104px] rounded-2xl object-cover bg-[hsl(var(--c-surface-muted))]"
-          fallbackClassName="h-[104px] w-[104px] rounded-2xl bg-[hsl(var(--c-surface-muted))] text-2xl opacity-40"
-          fallback="🍽️"
-        />
-        {!disabled && (
-          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-max max-w-[112px]">
-            {inCart ? (
-              <QuantityStepper qty={qty} onMinus={onMinus} onPlus={onAdd} onImage />
-            ) : (
-              <AddButton onClick={onAdd} compact />
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-});
 
 function AddButton({
   onClick,
