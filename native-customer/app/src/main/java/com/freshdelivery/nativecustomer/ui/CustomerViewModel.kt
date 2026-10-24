@@ -1618,26 +1618,14 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /**
+     * Platform does not offer fleet delivery — customer tracking shows store +
+     * customer pins only. Skip live driver location / phone.
+     */
     private fun refreshDriverLocation() {
-        val driverId = _state.value.trackingOrder?.order?.driver_id
-        if (driverId.isNullOrBlank()) {
-            stopWatchingDriver()
-            if (_state.value.driverLocation != null || _state.value.driverPhone != null) {
-                _state.value = _state.value.copy(driverLocation = null, driverName = null, driverPhone = null)
-            }
-            return
-        }
-        watchDriver(driverId)
-        viewModelScope.launch {
-            runCatching {
-                val loc = repo.fetchDriverLocation(driverId)
-                val profile = repo.fetchDriverProfile(driverId)
-                _state.value = _state.value.copy(
-                    driverLocation = loc,
-                    driverName = profile?.full_name?.takeIf { it.isNotBlank() },
-                    driverPhone = profile?.phone?.takeIf { it.isNotBlank() },
-                )
-            }
+        stopWatchingDriver()
+        if (_state.value.driverLocation != null || _state.value.driverName != null || _state.value.driverPhone != null) {
+            _state.value = _state.value.copy(driverLocation = null, driverName = null, driverPhone = null)
         }
     }
 

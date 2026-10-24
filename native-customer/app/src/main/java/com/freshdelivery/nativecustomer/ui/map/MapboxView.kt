@@ -30,9 +30,9 @@ private const val DEFAULT_LNG = 20.8537
  * Fixes the black screen on Track after order.
  *
  * Pins (from TrackTab):
- *  - Store  #F97316  as soon as tracking opens
- *  - Delivery #10B981 at geocoded / GPS address
- *  - Driver #7C6CFF only after accept (driverLocation set)
+ *  - Store  #F97316
+ *  - Customer delivery address #10B981
+ *  - No driver pin (platform does not operate delivery)
  */
 @Composable
 fun MapboxView(

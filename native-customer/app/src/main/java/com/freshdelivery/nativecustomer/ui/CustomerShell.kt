@@ -58,6 +58,7 @@ import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DirectionsBike
+import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Headset
 import androidx.compose.material.icons.outlined.Home
@@ -3521,8 +3522,7 @@ private fun OrdersTab(
 private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
     val order = state.trackingOrder
 
-    // Live driver pin + store + delivery pin. Order in the list also picks
-    // the map center: store → delivery → driver.
+    // Platform does not operate delivery fleet — map shows store + customer only.
     val deliveryPinLat = order?.order?.delivery_latitude ?: state.deliveryLat
     val deliveryPinLng = order?.order?.delivery_longitude ?: state.deliveryLng
     val storePinLat = order?.storeLat
@@ -3530,15 +3530,11 @@ private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
     val storePinLng = order?.storeLng
         ?: state.stores.firstOrNull { it.id == order?.order?.store_id }?.longitude
     val markers = buildList {
-        // Always show store + customer while waiting for driver (efood-style)
         if (storePinLat != null && storePinLng != null) {
             add(MapMarker(storePinLat, storePinLng, order?.storeName ?: "Κατάστημα", "#F97316"))
         }
         if (deliveryPinLat != null && deliveryPinLng != null) {
             add(MapMarker(deliveryPinLat, deliveryPinLng, "Εσύ", "#10B981"))
-        }
-        state.driverLocation?.let { d ->
-            add(MapMarker(d.latitude, d.longitude, "Οδηγός", "#7C6CFF"))
         }
     }
     val centerLat = deliveryPinLat ?: storePinLat ?: markers.firstOrNull()?.lat ?: 39.6650
@@ -3591,41 +3587,6 @@ private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
                             order.storeName ?: "Παραγγελία",
                             style = MaterialTheme.typography.titleLarge,
                         )
-                        if (state.driverLocation != null) {
-                            Text(
-                                buildString {
-                                    append("Οδηγός καθ' οδόν")
-                                    state.driverName?.let { append(" · $it") }
-                                },
-                                color = FreshGreenDark,
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                        } else if (order.order.driver_id != null) {
-                            Text(
-                                buildString {
-                                    append("Οδηγός ανατέθηκε")
-                                    state.driverName?.let { append(" · $it") }
-                                    append(" · αναμονή θέσης…")
-                                },
-                                color = FreshMuted,
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
-                        state.driverPhone?.let { phone ->
-                            val ctx = LocalContext.current
-                            TextButton(onClick = {
-                                runCatching {
-                                    val intent = android.content.Intent(
-                                        android.content.Intent.ACTION_DIAL,
-                                        android.net.Uri.parse("tel:$phone"),
-                                    )
-                                    ctx.startActivity(intent)
-                                }
-                            }) {
-                                Text("Κλήση οδηγού", color = FreshGreen, fontWeight = FontWeight.Bold)
-                            }
-                        }
                         order.order.delivery_address?.let {
                             Text(it, color = FreshMuted, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
@@ -3659,23 +3620,24 @@ private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
                 OrderStatusTimeline(status = order.order.status)
                 Spacer(Modifier.height(12.dp))
                 Surface(
-                    color = if (state.driverLocation != null) FreshGreenSoft else FreshVioletSoft,
+                    color = FreshTealSoft,
                     shape = RoundedCornerShape(18.dp),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            Icons.Outlined.DirectionsBike,
+                            Icons.Outlined.Storefront,
                             contentDescription = null,
-                            tint = if (state.driverLocation != null) FreshGreen else FreshViolet,
+                            tint = FreshTeal,
                         )
                         Spacer(Modifier.width(10.dp))
                         Text(
                             when {
-                                state.driverLocation != null -> "Ο οδηγός κινείται προς εσένα."
-                                !order.order.driver_id.isNullOrBlank() -> "Αναμονή θέσης οδηγού…"
                                 order.order.status == "pending" -> "Ολοκλήρωσε την πληρωμή με κάρτα αν χρειάζεται."
-                                else -> "Δεν έχει ανατεθεί οδηγός ακόμα."
+                                order.order.status in listOf("delivered") -> "Καλή όρεξη!"
+                                order.order.status in listOf("ready", "picked_up", "on_the_way", "in_transit", "arrived") ->
+                                    "Το κατάστημα ετοιμάζει / παραδίδει την παραγγελία."
+                                else -> "Το κατάστημα διαχειρίζεται την παράδοση."
                             },
                             color = FreshInk,
                             fontWeight = FontWeight.SemiBold,
@@ -3693,7 +3655,7 @@ private val TRACK_STEPS = listOf(
     "accepted" to "Αποδοχή",
     "preparing" to "Ετοιμασία",
     "ready" to "Έτοιμη",
-    "picked_up" to "Καθ' οδόν",
+    "picked_up" to "Παράδοση",
     "delivered" to "Παραδόθηκε",
 )
 
@@ -3752,10 +3714,9 @@ private fun trackHeadline(status: String, hasDriverLoc: Boolean): Pair<String, S
     "placed" -> "Στείλαμε την παραγγελία" to "Περιμένουμε επιβεβαίωση από το κατάστημα"
     "accepted", "confirmed" -> "Το κατάστημα αποδέχτηκε" to "Ξεκινάει η ετοιμασία"
     "preparing" -> "Ετοιμάζεται φρέσκο" to "Σύντομα θα είναι έτοιμη"
-    "ready" -> "Έτοιμη για παραλαβή" to "Ψάχνουμε ή αναθέτουμε οδηγό"
+    "ready" -> "Έτοιμη" to "Το κατάστημα ετοιμάζει την παράδοση"
     "picked_up", "on_the_way", "in_transit", "arrived" ->
-        if (hasDriverLoc) "Ο οδηγός έρχεται!" to "Ζωντανή θέση στον χάρτη"
-        else "Ο οδηγός παρέλαβε" to "Καθ' οδόν προς εσένα"
+        "Καθ' οδόν" to "Η παράδοση γίνεται από το κατάστημα"
     "delivered" -> "Παραδόθηκε" to "Καλή όρεξη!"
     "cancelled" -> "Ακυρώθηκε" to "Η παραγγελία ακυρώθηκε"
     else -> statusLabel(status) to ""
