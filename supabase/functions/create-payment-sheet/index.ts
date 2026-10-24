@@ -132,6 +132,8 @@ Deno.serve(async (req) => {
       amount: expectedCents,
       currency: "eur",
       customer: customerId,
+      // Allows PaymentSheet to offer "Save card" and attach PM for next orders
+      setup_future_usage: "off_session",
       automatic_payment_methods: { enabled: true },
       metadata: {
         orderId: order.id,

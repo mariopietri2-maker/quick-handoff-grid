@@ -58,10 +58,11 @@ class MainActivity : ComponentActivity() {
                         PaymentConfiguration.init(this@MainActivity, req.publishableKey)
                     }
                     val config = PaymentSheet.Configuration(
-                        merchantDisplayName = "fresh2go",
+                        merchantDisplayName = "Fresh2GO",
                         customer = if (req.customerId != null && req.ephemeralKey != null) {
                             PaymentSheet.CustomerConfiguration(req.customerId, req.ephemeralKey)
                         } else null,
+                        allowsRemovalOfLastPaymentMethod = true,
                     )
                     paymentSheet.presentWithPaymentIntent(req.clientSecret, config)
                 }
