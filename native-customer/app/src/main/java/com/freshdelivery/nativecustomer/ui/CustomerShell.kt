@@ -3605,13 +3605,33 @@ private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
                         Text(headline.second, color = FreshMuted, style = MaterialTheme.typography.bodySmall)
                     }
                     if (etaMin != null) {
+                        val prepLabel = storePrepMinutes(order.order)
                         Surface(color = FreshGreenSoft, shape = RoundedCornerShape(14.dp)) {
                             Column(
                                 Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
-                                Text("ETA", color = FreshMuted, style = MaterialTheme.typography.labelSmall)
-                                Text("~$etaMin΄", color = FreshGreen, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    if (order.order.status in listOf("ready", "picked_up", "on_the_way", "in_transit", "arrived"))
+                                        "Παράδοση"
+                                    else
+                                        "Ετοιμασία",
+                                    color = FreshMuted,
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
+                                Text(
+                                    "~$etaMin΄",
+                                    color = FreshGreen,
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                                if (prepLabel != null && order.order.status in listOf("accepted", "confirmed", "preparing")) {
+                                    Text(
+                                        "από $prepLabel΄",
+                                        color = FreshMuted,
+                                        style = MaterialTheme.typography.labelSmall,
+                                    )
+                                }
                             }
                         }
                     }
@@ -3632,12 +3652,23 @@ private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
                         )
                         Spacer(Modifier.width(10.dp))
                         Text(
-                            when {
-                                order.order.status == "pending" -> "Ολοκλήρωσε την πληρωμή με κάρτα αν χρειάζεται."
-                                order.order.status in listOf("delivered") -> "Καλή όρεξη!"
-                                order.order.status in listOf("ready", "picked_up", "on_the_way", "in_transit", "arrived") ->
-                                    "Το κατάστημα ετοιμάζει / παραδίδει την παραγγελία."
-                                else -> "Το κατάστημα διαχειρίζεται την παράδοση."
+                            run {
+                                val prep = storePrepMinutes(order.order)
+                                when {
+                                    order.order.status == "pending" ->
+                                        "Ολοκλήρωσε την πληρωμή με κάρτα αν χρειάζεται."
+                                    order.order.status == "delivered" ->
+                                        "Καλή όρεξη!"
+                                    order.order.status in listOf("accepted", "confirmed", "preparing") ->
+                                        if (prep != null)
+                                            "Το κατάστημα όρισε ~$prep λεπτά ετοιμασίας. Η παράδοση γίνεται από το κατάστημα."
+                                        else
+                                            "Το κατάστημα ετοιμάζει την παραγγελία. Η παράδοση γίνεται από το κατάστημα."
+                                    order.order.status in listOf("ready", "picked_up", "on_the_way", "in_transit", "arrived") ->
+                                        "Το κατάστημα παραδίδει με τον δικό του διανομέα."
+                                    else ->
+                                        "Το κατάστημα διαχειρίζεται την ετοιμασία και την παράδοση."
+                                }
                             },
                             color = FreshInk,
                             fontWeight = FontWeight.SemiBold,
@@ -3712,8 +3743,8 @@ private fun OrderStatusTimeline(status: String) {
 private fun trackHeadline(status: String, hasDriverLoc: Boolean): Pair<String, String> = when (status) {
     "pending" -> "Αναμονή πληρωμής" to "Ολοκλήρωσε την κάρτα για να σταλεί στο κατάστημα"
     "placed" -> "Στείλαμε την παραγγελία" to "Περιμένουμε επιβεβαίωση από το κατάστημα"
-    "accepted", "confirmed" -> "Το κατάστημα αποδέχτηκε" to "Ξεκινάει η ετοιμασία"
-    "preparing" -> "Ετοιμάζεται φρέσκο" to "Σύντομα θα είναι έτοιμη"
+    "accepted", "confirmed" -> "Το κατάστημα αποδέχτηκε" to "Χρόνος ετοιμασίας από το κατάστημα"
+    "preparing" -> "Ετοιμάζεται" to "Με βάση τον χρόνο που όρισε το κατάστημα"
     "ready" -> "Έτοιμη" to "Το κατάστημα ετοιμάζει την παράδοση"
     "picked_up", "on_the_way", "in_transit", "arrived" ->
         "Καθ' οδόν" to "Η παράδοση γίνεται από το κατάστημα"
@@ -3722,28 +3753,50 @@ private fun trackHeadline(status: String, hasDriverLoc: Boolean): Pair<String, S
     else -> statusLabel(status) to ""
 }
 
-/** Rough ETA minutes remaining — mirrors web prep(~30) + 15 buffer from created_at. */
+/** Minutes left until store says order is ready (store prep time, not fleet ETA). */
 private fun estimateEtaMinutes(order: com.freshdelivery.nativecustomer.data.OrderRow): Int? {
     if (order.status in listOf("delivered", "cancelled", "rejected", "refunded")) return null
-    if (order.status == "pending") return null
-    val created = order.created_at ?: return when (order.status) {
-        "picked_up", "on_the_way", "in_transit" -> 10
-        "ready" -> 14
-        "preparing", "accepted", "confirmed" -> 18
-        else -> 25
+    if (order.status == "pending" || order.status == "placed") return null
+
+    fun parseMs(iso: String?): Long? {
+        if (iso.isNullOrBlank()) return null
+        return runCatching { java.time.Instant.parse(iso).toEpochMilli() }.getOrNull()
+            ?: runCatching { java.time.OffsetDateTime.parse(iso).toInstant().toEpochMilli() }.getOrNull()
     }
-    val startMs = runCatching {
-        java.time.Instant.parse(created).toEpochMilli()
-    }.getOrElse {
-        // fallback ISO without Z
-        runCatching { java.time.OffsetDateTime.parse(created).toInstant().toEpochMilli() }.getOrNull()
-            ?: return 30
+
+    // Prefer explicit ready-at from store / system
+    parseMs(order.predicted_ready_at)?.let { readyMs ->
+        val remaining = ((readyMs - System.currentTimeMillis()) / 60_000.0).toInt()
+        return remaining.coerceAtLeast(0)
     }
-    val totalMin = 30 // ~15 prep + 15 delivery (Ioannina baseline)
-    val endMs = startMs + totalMin * 60_000L
-    val remaining = ((endMs - System.currentTimeMillis()) / 60_000.0).toInt()
-    return remaining.coerceIn(0, totalMin + 15)
+
+    val prepMin = order.estimated_prep_time?.takeIf { it > 0 }
+    val startMs = parseMs(order.accepted_at) ?: parseMs(order.created_at)
+
+    if (prepMin != null && startMs != null) {
+        val endMs = startMs + prepMin * 60_000L
+        val remaining = ((endMs - System.currentTimeMillis()) / 60_000.0).toInt()
+        // During kitchen statuses show remaining prep; once ready/out show small buffer for store delivery
+        return when (order.status) {
+            "ready", "picked_up", "on_the_way", "in_transit", "arrived" ->
+                remaining.coerceIn(0, (prepMin / 2).coerceAtLeast(5) + 10)
+            else -> remaining.coerceIn(0, prepMin + 10)
+        }
+    }
+
+    // Fallback if store has not set prep yet
+    return when (order.status) {
+        "accepted", "confirmed", "preparing" -> prepMin ?: 20
+        "ready" -> 15
+        "picked_up", "on_the_way", "in_transit", "arrived" -> 12
+        else -> prepMin
+    }
 }
+
+/** Total prep minutes the store set (for labels). */
+private fun storePrepMinutes(order: com.freshdelivery.nativecustomer.data.OrderRow): Int? =
+    order.estimated_prep_time?.takeIf { it > 0 }
+
 
 @Composable
 private fun ProfileTab(

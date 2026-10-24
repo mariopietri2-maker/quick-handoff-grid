@@ -102,6 +102,10 @@ data class OrderRow(
     val driver_id: String? = null,
     val created_at: String? = null,
     val store_order_number: Int? = null,
+    /** Minutes the store set when accepting (kitchen prep). */
+    val estimated_prep_time: Int? = null,
+    val predicted_ready_at: String? = null,
+    val accepted_at: String? = null,
 )
 
 @Serializable

@@ -690,6 +690,7 @@ class CustomerRepository(
                 "id", "store_id", "status", "customer_id", "driver_id",
                 "delivery_address", "delivery_latitude", "delivery_longitude",
                 "total_amount", "created_at", "store_order_number",
+                "estimated_prep_time", "predicted_ready_at", "accepted_at",
             )) {
                 filter { eq("customer_id", userId) }
                 order("created_at", Order.DESCENDING)
