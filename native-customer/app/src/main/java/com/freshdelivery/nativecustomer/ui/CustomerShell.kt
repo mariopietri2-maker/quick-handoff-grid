@@ -1474,6 +1474,7 @@ private fun FreshStoreCard(
     val badge = store.promo_badge?.trim().orEmpty()
     val avg = rating?.avg ?: 0.0
     val count = rating?.count ?: 0
+    val ratingLabel = storeRatingOrNewLabel(avg, count, store)
     val eta = storeDeliveryEstimate(store, deliveryLat, deliveryLng)
     val dist = storeDistanceLabel(store, deliveryLat, deliveryLng)
     val feeLabel = storeDeliveryFeeLabel(store)
@@ -1553,31 +1554,33 @@ private fun FreshStoreCard(
                     )
                 }
             }
-            // Rating pill over the photo (Deliveroo/Uber-style) — right side.
-            Surface(
-                color = Color.White.copy(alpha = 0.94f),
-                shape = RoundedCornerShape(999.dp),
-                modifier = Modifier.align(Alignment.BottomEnd).padding(10.dp),
-            ) {
-                Row(
-                    Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+            // Rating, or «Νέο» only for stores created in the last 30 days
+            if (ratingLabel != null) {
+                Surface(
+                    color = Color.White.copy(alpha = 0.94f),
+                    shape = RoundedCornerShape(999.dp),
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(10.dp),
                 ) {
-                    Icon(Icons.Outlined.Star, contentDescription = null, tint = FreshAmber, modifier = Modifier.size(13.dp))
-                    Spacer(Modifier.width(3.dp))
-                    Text(
-                        if (count > 0) "%.1f".format(avg) else "Νέο",
-                        color = FreshInk,
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.labelMedium,
-                    )
-                    if (count > 0) {
+                    Row(
+                        Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Outlined.Star, contentDescription = null, tint = FreshAmber, modifier = Modifier.size(13.dp))
+                        Spacer(Modifier.width(3.dp))
                         Text(
-                            " ($count)",
-                            color = FreshMuted,
-                            fontWeight = FontWeight.SemiBold,
-                            style = MaterialTheme.typography.labelSmall,
+                            ratingLabel,
+                            color = FreshInk,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelMedium,
                         )
+                        if (count > 0) {
+                            Text(
+                                " ($count)",
+                                color = FreshMuted,
+                                fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
                     }
                 }
             }
@@ -1731,19 +1734,21 @@ private fun StoreMiniCard(
                 store.cover_image_url?.takeIf { it.isNotBlank() } ?: store.image_url,
                 height = 88,
             )
-            Surface(
-                color = Color.White.copy(alpha = 0.92f),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp),
-            ) {
-                Row(Modifier.padding(horizontal = 6.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.Star, contentDescription = null, tint = FreshAmber, modifier = Modifier.size(11.dp))
-                    Spacer(Modifier.width(2.dp))
-                    Text(
-                        if ((rating?.count ?: 0) > 0) "%.1f".format(rating!!.avg) else "Νέο",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                    )
+            storeRatingOrNewLabel(rating?.avg ?: 0.0, rating?.count ?: 0, store)?.let { label ->
+                Surface(
+                    color = Color.White.copy(alpha = 0.92f),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp),
+                ) {
+                    Row(Modifier.padding(horizontal = 6.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.Star, contentDescription = null, tint = FreshAmber, modifier = Modifier.size(11.dp))
+                        Spacer(Modifier.width(2.dp))
+                        Text(
+                            label,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
                 }
             }
             if (badge.isNotEmpty()) {
@@ -2931,6 +2936,24 @@ private fun AddressPickerScreen(
             Spacer(Modifier.height(32.dp))
         }
     }
+}
+
+
+/** True when store was created within the last [days] days (default 30). Auto «Νέο» badge. */
+private fun isStoreNew(store: StoreRow, days: Int = 30): Boolean {
+    val iso = store.created_at ?: return false
+    val createdMs = runCatching { java.time.Instant.parse(iso).toEpochMilli() }.getOrNull()
+        ?: runCatching { java.time.OffsetDateTime.parse(iso).toInstant().toEpochMilli() }.getOrNull()
+        ?: return false
+    if (createdMs > System.currentTimeMillis()) return true
+    val ageMs = System.currentTimeMillis() - createdMs
+    return ageMs <= days * 24L * 60L * 60L * 1000L
+}
+
+/** Rating score, or «Νέο» only while the store is under 30 days old. Null = hide pill. */
+private fun storeRatingOrNewLabel(avg: Double, count: Int, store: StoreRow): String? {
+    if (count > 0) return "%.1f".format(avg)
+    return if (isStoreNew(store)) "Νέο" else null
 }
 
 // SummaryLine/status helpers → OrderStatusUi.kt

@@ -32,6 +32,8 @@ data class StoreRow(
     val holiday_dates: List<String>? = null,
     val fulfilment_mode: String? = "platform",
     val status_override: String? = null,
+    /** Used for automatic «Νέο» badge (first 30 days). */
+    val created_at: String? = null,
 )
 
 @Serializable
