@@ -846,13 +846,7 @@ const displayAddress = deliveryAddress
             </div>
           </section>
         )}
-        {!isSearching &&
-          selectedCategory === 'all' &&
-          cfg.sections.show_promos &&
-          !(cfg.hero_cards ?? []).some((c) => c.enabled && (c.placement ?? 'hero') === 'hero') && (
-            
-            
-            {showWelcome && (
+        {showWelcome && (
               <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4">
                 <button type="button" className="absolute inset-0 bg-black/45" aria-label="Κλείσιμο"
                   onClick={() => {
@@ -915,7 +909,7 @@ const displayAddress = deliveryAddress
             )}
 
             <PromoBannerCarousel />
-          )}
+
         {!isSearching && selectedCategory === 'all' && cfg.sections.show_ai_spotlight && (
           <AiSpotlightCard />
         )}
