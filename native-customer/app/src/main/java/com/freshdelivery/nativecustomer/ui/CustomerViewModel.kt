@@ -1649,7 +1649,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 ensureDeliveryCoordsOnTrack(tracked)
                 refreshLoyalty()
             }.onFailure { e ->
-                _state.value = _state.value.copy(error = e.message)
+                _state.value = _state.value.copy(error = userFacingError(e, "Δεν ήταν δυνατή η ανανέωση παραγγελιών"))
             }
         }
     }
@@ -2417,4 +2417,13 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         searchJob?.cancel()
         super.onCleared()
     }
+}
+
+
+private fun userFacingError(e: Throwable, fallback: String): String {
+    val m = e.message.orEmpty()
+    val lower = m.lowercase()
+    val dump = m.length > 180 || "headers:" in lower || "http method" in lower ||
+        "authorization" in lower || "apikey" in lower || "bearer " in lower || "supabase.co" in lower
+    return if (dump || m.isBlank()) fallback else m.take(160)
 }

@@ -191,6 +191,21 @@ private fun hslTriplet(value: String?): Pair<Color, Color>? {
 }
 
 @Composable
+
+private fun userFacingMessage(raw: String): String {
+    val lower = raw.lowercase()
+    val looksLikeRequest = raw.length > 180 ||
+        "headers:" in lower ||
+        "http method" in lower ||
+        "authorization" in lower ||
+        "apikey" in lower ||
+        "bearer " in lower ||
+        "supabase.co" in lower ||
+        raw.startsWith("http")
+    if (looksLikeRequest) return "Δεν ήταν δυνατή η ανανέωση. Δοκίμασε ξανά."
+    return raw.take(160)
+}
+
 fun CustomerShell(
     state: CustomerUiState,
     onTab: (CustomerTab) -> Unit,
@@ -253,7 +268,8 @@ fun CustomerShell(
     val snackbar = remember { SnackbarHostState() }
     var addressOpen by remember { mutableStateOf(false) }
     LaunchedEffect(state.info, state.error) {
-        val msg = state.error ?: state.info
+        val raw = state.error ?: state.info
+        val msg = raw?.let { userFacingMessage(it) }
         if (!msg.isNullOrBlank()) {
             snackbar.showSnackbar(msg)
             onClearMessages()
