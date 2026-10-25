@@ -23,6 +23,9 @@ export default function CallRolesPanel() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [q, setQ] = useState('');
+  const [completed, setCompleted] = useState<Record<string, number>>({});
+  const [ghostOrders, setGhostOrders] = useState<Record<string, { id: string; created_at: string; status: string; total_amount: number }[]>>({});
+  const [openOrdersFor, setOpenOrdersFor] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -30,7 +33,30 @@ export default function CallRolesPanel() {
     if (error) {
       toast.error(`Φόρτωση ρόλων απέτυχε: ${error.message}`);
     } else {
-      setRows((data ?? []) as unknown as CallRoleRow[]);
+      const list = (data ?? []) as unknown as CallRoleRow[];
+      setRows(list);
+      const ghostIds = list.filter((r) => r.kind === 'driver' && r.call_role === 'K').map((r) => r.id);
+      if (ghostIds.length) {
+        const { data: ords } = await supabase
+          .from('orders')
+          .select('id, driver_id, status, created_at, total_amount')
+          .in('driver_id', ghostIds)
+          .order('created_at', { ascending: false })
+          .limit(200);
+        const counts: Record<string, number> = {};
+        const recent: Record<string, { id: string; created_at: string; status: string; total_amount: number }[]> = {};
+        for (const o of (ords ?? []) as any[]) {
+          if (o.status === 'delivered') counts[o.driver_id] = (counts[o.driver_id] ?? 0) + 1;
+          const arr = recent[o.driver_id] ?? [];
+          if (arr.length < 8) arr.push({ id: o.id, created_at: o.created_at, status: o.status, total_amount: Number(o.total_amount) || 0 });
+          recent[o.driver_id] = arr;
+        }
+        setCompleted(counts);
+        setGhostOrders(recent);
+      } else {
+        setCompleted({});
+        setGhostOrders({});
+      }
     }
     setLoading(false);
   }, []);
@@ -45,6 +71,16 @@ export default function CallRolesPanel() {
     const { error } = await supabase.rpc('admin_set_store_call_role', { p_store_id: id, p_role: role });
     if (error) toast.error(error.message);
     else toast.success(role === 'N' ? 'Κατάστημα → Ghost Store' : 'Κατάστημα → standard');
+    await load();
+    setBusyId(null);
+  };
+
+  const removeGhostOrder = async (orderId: string) => {
+    if (!confirm('Αφαίρεση αυτής της παραγγελίας από τον Ghost Rider;')) return;
+    setBusyId(orderId);
+    const { error } = await supabase.rpc('admin_delete_ghost_order', { p_order_id: orderId });
+    if (error) toast.error(error.message);
+    else toast.success('Η παραγγελία αφαιρέθηκε');
     await load();
     setBusyId(null);
   };
@@ -142,19 +178,59 @@ export default function CallRolesPanel() {
           </CardHeader>
           <CardContent className="divide-y">
             {drivers.map((r) => (
-              <div key={r.id} className="flex items-center justify-between py-2 gap-2">
-                <div className="min-w-0">
-                  <div className="text-sm font-medium truncate">{r.label}</div>
-                  <div className="text-xs text-muted-foreground truncate">{r.sublabel}</div>
+              <div key={r.id} className="py-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium truncate">{r.label}</div>
+                    <div className="text-xs text-muted-foreground truncate">{r.sublabel}</div>
+                    {r.call_role === 'K' && (
+                      <div className="text-xs font-semibold text-foreground mt-1">
+                        Ολοκληρωμένες παραγγελίες: {completed[r.id] ?? 0}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {r.call_role === 'K' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-[11px]"
+                        onClick={() => setOpenOrdersFor(openOrdersFor === r.id ? null : r.id)}
+                      >
+                        Αφαίρεση παραγγελίας
+                      </Button>
+                    )}
+                    <span className="text-xs text-muted-foreground">{r.call_role === 'K' ? 'Ghost Rider' : 'standard'}</span>
+                    <Switch
+                      checked={r.call_role === 'K'}
+                      disabled={!isAdmin || busyId === r.id || loading}
+                      onCheckedChange={(v) => setDriverRole(r.id, v ? 'K' : 'standard')}
+                    />
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs text-muted-foreground">{r.call_role === 'K' ? 'Ghost Rider' : 'standard'}</span>
-                  <Switch
-                    checked={r.call_role === 'K'}
-                    disabled={!isAdmin || busyId === r.id || loading}
-                    onCheckedChange={(v) => setDriverRole(r.id, v ? 'K' : 'standard')}
-                  />
-                </div>
+                {r.call_role === 'K' && openOrdersFor === r.id && (
+                  <div className="mt-2 space-y-1 rounded-md border bg-muted/30 p-2">
+                    {(ghostOrders[r.id] ?? []).length === 0 && (
+                      <div className="text-xs text-muted-foreground">Δεν υπάρχουν παραγγελίες</div>
+                    )}
+                    {(ghostOrders[r.id] ?? []).map((o) => (
+                      <div key={o.id} className="flex items-center justify-between gap-2 text-xs">
+                        <span className="truncate">
+                          {o.id.slice(0, 8)} · {o.status} · €{o.total_amount.toFixed(2)}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-2 text-destructive"
+                          disabled={busyId === o.id}
+                          onClick={() => removeGhostOrder(o.id)}
+                        >
+                          Αφαίρεση
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
             {!loading && drivers.length === 0 && <div className="py-6 text-sm text-muted-foreground text-center">Κανένα αποτέλεσμα</div>}

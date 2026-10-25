@@ -9,11 +9,11 @@ import { SectionHeader } from './AdminSectionHeader';
 
 export function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, driverLocations, driverWallets, orders, filter, setFilter, onToggle, onResetCash, onResetWallet, onForceEndShift, onGrantBonus, onSuspend, onAdjustWallet, onClearCashDebt, onMessage }: any) {
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-  const ordersByDriver = new Map<string, { today: number; active: number }>();
+  const ordersByDriver = new Map<string, { today: number; active: number; total: number }>();
   for (const o of (orders ?? []) as any[]) {
     if (!o.driver_id) continue;
-    const slot = ordersByDriver.get(o.driver_id) ?? { today: 0, active: 0 };
-    if (new Date(o.created_at) >= todayStart && o.status === 'delivered') slot.today += 1;
+    const slot = ordersByDriver.get(o.driver_id) ?? { today: 0, active: 0, total: 0 };
+    if (o.status === 'delivered') { slot.total += 1; if (new Date(o.created_at) >= todayStart) slot.today += 1; }
     if (['accepted', 'preparing', 'ready', 'arrived', 'picked_up'].includes(o.status)) slot.active += 1;
     ordersByDriver.set(o.driver_id, slot);
   }
@@ -52,7 +52,7 @@ export function DriversSection({ drivers, allDrivers, driverProfiles, driverStat
       <div className="admin-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="admin-table">
-            <thead><tr><th>Κωδ.</th><th>Όνομα</th><th>Κατάσταση</th><th>Σήμερα</th><th>Ενεργές</th><th className="w-20">Ενεργός</th><th>Ταμείο</th><th>Πορτοφόλι</th><th className="text-right pr-3">Ενέργειες</th></tr></thead>
+            <thead><tr><th>Κωδ.</th><th>Όνομα</th><th>Κατάσταση</th><th>Ολοκληρωμένες</th><th>Ενεργές</th><th className="w-20">Ενεργός</th><th>Ταμείο</th><th>Πορτοφόλι</th><th className="text-right pr-3">Ενέργειες</th></tr></thead>
             <tbody>
               {drivers.map((driver: any) => {
                 const dp = driverProfiles?.find((d: any) => d.user_id === driver.user_id);
@@ -70,7 +70,7 @@ export function DriversSection({ drivers, allDrivers, driverProfiles, driverStat
                   status === 'online' ? <span className="inline-flex items-center gap-1 text-[11px] font-medium text-success"><span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" /> Online</span>
                   : status === 'break' ? <span className="inline-flex items-center gap-1 text-[11px] font-medium text-warning"><span className="h-1.5 w-1.5 rounded-full bg-warning" /> Διάλειμμα</span>
                   : <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground"><span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60" /> Offline</span>;
-                const counts = ordersByDriver.get(driver.user_id) ?? { today: 0, active: 0 };
+                const counts = ordersByDriver.get(driver.user_id) ?? { today: 0, active: 0, total: 0 };
                 const isSuspended = !!dp?.suspended_at;
                 const name = driver.full_name || 'οδηγό';
                 return (
