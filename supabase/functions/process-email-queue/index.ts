@@ -231,26 +231,7 @@ Deno.serve(async (req) => {
       }
 
       try {
-        throw new Error('Email provider not configured (set RESEND_API_KEY)'); /* removed Lovable */ (
-          {
-            run_id: payload.run_id,
-            to: payload.to,
-            from: payload.from,
-            sender_domain: payload.sender_domain,
-            subject: payload.subject,
-            html: payload.html,
-            text: payload.text,
-            purpose: payload.purpose,
-            label: payload.label,
-            idempotency_key: payload.idempotency_key,
-            unsubscribe_token: payload.unsubscribe_token,
-            message_id: payload.message_id,
-          },
-          // sendUrl is optional — when LOVABLE_SEND_URL is not set, the library
-          // falls back to the default email API endpoint.
-          // Set LOVABLE_SEND_URL / EMAIL_SEND_URL as a Supabase secret to override.
-          { apiKey, sendUrl: Deno.env.get('LOVABLE_SEND_URL') }
-        )
+        throw new Error('Email provider not configured (set RESEND_API_KEY)');
 
         // Log success
         await supabase.from('email_send_log').insert({
