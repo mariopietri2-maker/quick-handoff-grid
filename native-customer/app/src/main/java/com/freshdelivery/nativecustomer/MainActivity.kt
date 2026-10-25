@@ -154,6 +154,7 @@ class MainActivity : ComponentActivity() {
                             onApplyPromoCode = vm::applyPromoCode,
                             onClearPromoCode = vm::clearPromoCode,
                             onClearCart = vm::clearCart,
+                            onRefreshSavedCards = vm::refreshSavedCards,
                             onPlaceOrder = vm::placeOrder,
                             onToggleOrderDetail = vm::toggleOrderDetail,
                             onTrack = vm::trackOrder,

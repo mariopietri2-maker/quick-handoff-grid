@@ -1406,6 +1406,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     fun onPaymentSheetResult(success: Boolean, message: String?) {
         clearPaymentSheetRequest()
         if (success) {
+            refreshSavedCards()
             _state.value = _state.value.copy(
                 info = "Η πληρωμή ολοκληρώθηκε! Στέλνουμε την παραγγελία στο κατάστημα…",
                 busy = true,

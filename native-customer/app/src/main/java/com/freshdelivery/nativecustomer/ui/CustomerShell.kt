@@ -229,6 +229,7 @@ fun CustomerShell(
     onApplyPromoCode: () -> Unit = {},
     onClearPromoCode: () -> Unit = {},
     onClearCart: () -> Unit = {},
+    onRefreshSavedCards: () -> Unit = {},
     onPlaceOrder: () -> Unit,
     onTrack: (OrderUi?) -> Unit,
     onPayOrder: (String) -> Unit = {},
@@ -343,6 +344,7 @@ fun CustomerShell(
             onSetNotes, onSetTip, onSetPayment, onPlaceOrder, onUseLocation, onGeocode, onPickSuggestion,
             onPromoCodeInput, onApplyPromoCode, onClearPromoCode,
             onClearCart,
+            onRefreshSavedCards,
         )
         return
     }
@@ -2128,9 +2130,11 @@ private fun CartCheckoutScreen(
     onApplyPromoCode: () -> Unit = {},
     onClearPromoCode: () -> Unit = {},
     onClearCart: () -> Unit = {},
+    onRefreshSavedCards: () -> Unit = {},
 ) {
     var address by remember(state.deliveryAddress) { mutableStateOf(state.deliveryAddress) }
     var tipText by remember { mutableStateOf(state.tipAmount.toString()) }
+    LaunchedEffect(Unit) { onRefreshSavedCards() }
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = FreshGreen,
         focusedLabelColor = FreshGreen,
@@ -2543,13 +2547,31 @@ item {
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             Column(Modifier.padding(12.dp)) {
-                                Text("Πληρωμή με κάρτα", fontWeight = FontWeight.SemiBold, color = FreshInk)
+                                Text("Αποθήκευση κάρτας", fontWeight = FontWeight.SemiBold, color = FreshInk)
                                 Spacer(Modifier.height(4.dp))
                                 Text(
-                                    "Δεν αποθηκεύουμε την κάρτα. Μετά την παραγγελία ανοίγει ασφαλές παράθυρο για Visa, Mastercard ή Google Pay.",
+                                    "Στο παράθυρο πληρωμής μπορείς να αποθηκεύσεις την κάρτα για την επόμενη φορά. Visa, Mastercard ή Google Pay.",
                                     color = FreshMuted,
                                     style = MaterialTheme.typography.bodySmall,
                                 )
+                                if (state.savedCards.isNotEmpty()) {
+                                    Spacer(Modifier.height(10.dp))
+                                    state.savedCards.take(3).forEach { card ->
+                                        Text(
+                                            "${card.brand?.uppercase() ?: "Κάρτα"} ···· ${card.last4 ?: "••••"}" +
+                                                if (card.is_default == true) "  · προεπιλογή" else "",
+                                            fontWeight = FontWeight.SemiBold,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = FreshInk,
+                                        )
+                                    }
+                                    Text(
+                                        "Οι αποθηκευμένες κάρτες εμφανίζονται στο παράθυρο πληρωμής.",
+                                        color = FreshMuted,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        modifier = Modifier.padding(top = 4.dp),
+                                    )
+                                }
                             }
                         }
                     }
