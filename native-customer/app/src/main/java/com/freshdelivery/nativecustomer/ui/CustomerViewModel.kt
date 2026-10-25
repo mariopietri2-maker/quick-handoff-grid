@@ -709,12 +709,17 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun selectTab(tab: CustomerTab) {
         refreshNetworkStatus()
+        // Always clear store menu / cart overlays so bottom-nav Home is never "stuck"
         _state.value = _state.value.copy(
             tab = tab,
             showCart = false,
             selectedStore = null,
             menu = emptyList(),
+            menuModifiers = emptyMap(),
+            modifierPickerItem = null,
             error = null,
+            // Leave live tracking when user explicitly opens another main tab
+            trackingOrder = if (tab == CustomerTab.Track) _state.value.trackingOrder else null,
         )
         when (tab) {
             CustomerTab.Orders, CustomerTab.Track -> refreshOrders()

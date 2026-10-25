@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -341,17 +342,6 @@ fun CustomerShell(
         )
     }
 
-    if (state.selectedStore != null) {
-        MenuScreen(
-            state = state,
-            onBack = onCloseStore,
-            onAdd = onAddToCart,
-            onOpenCart = { onToggleCart(true) },
-            isFavorite = state.favoriteStoreIds.contains(state.selectedStore.id),
-            onToggleFavorite = { onToggleFavorite(state.selectedStore.id) },
-        )
-        return
-    }
     if (state.adminOpen) {
         AdminPanel(
             state = state,
@@ -388,7 +378,9 @@ fun CustomerShell(
                 NavigationBar(
                     containerColor = FreshSurface,
                     tonalElevation = 0.dp,
+                    windowInsets = WindowInsets.navigationBars,
                     modifier = Modifier
+                        .zIndex(20f)
                         .shadow(10.dp, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
                         .border(
                             width = 0.5.dp,
@@ -397,10 +389,19 @@ fun CustomerShell(
                         ),
                 ) {
                     tabs.forEach { (tab, label, icon) ->
-                        val selected = state.tab == tab
+                        // Track is not a bottom tab — highlight Παραγγελίες while tracking
+                        val selected = when {
+                            state.tab == CustomerTab.Track && tab == CustomerTab.Orders -> true
+                            state.tab == tab -> true
+                            else -> false
+                        }
                         NavigationBarItem(
                             selected = selected,
-                            onClick = { onTab(tab) },
+                            alwaysShowLabel = true,
+                            onClick = {
+                                // Always navigate (including re-tap Home to close store / leave Track)
+                                onTab(tab)
+                            },
                             icon = {
                                 val activeOrders = state.activeOrders.size
                                 Box {
@@ -447,7 +448,16 @@ fun CustomerShell(
         },
     ) { padding ->
         Box(Modifier.padding(padding).fillMaxSize()) {
-            when (state.tab) {
+            if (state.selectedStore != null) {
+                MenuScreen(
+                    state = state,
+                    onBack = onCloseStore,
+                    onAdd = onAddToCart,
+                    onOpenCart = { onToggleCart(true) },
+                    isFavorite = state.favoriteStoreIds.contains(state.selectedStore!!.id),
+                    onToggleFavorite = { onToggleFavorite(state.selectedStore!!.id) },
+                )
+            } else when (state.tab) {
                 CustomerTab.Home -> HomeTab(
                     state, onOpenStore, onOpenStoreHighlight, onSearch,
                     onRefresh = onRefresh,
