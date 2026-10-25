@@ -2095,8 +2095,7 @@ private fun MenuScreen(
             Box(
                 Modifier
                     .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(12.dp),
+                    .padding(start = 12.dp, end = 12.dp, bottom = 4.dp),
             ) {
                 FreshCartBar(
                     count = state.cartCount,
