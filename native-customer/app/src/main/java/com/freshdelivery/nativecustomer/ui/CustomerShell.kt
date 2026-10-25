@@ -190,8 +190,6 @@ private fun hslTriplet(value: String?): Pair<Color, Color>? {
     return accent to dark
 }
 
-@Composable
-
 private fun userFacingMessage(raw: String): String {
     val lower = raw.lowercase()
     val looksLikeRequest = raw.length > 180 ||
@@ -206,6 +204,7 @@ private fun userFacingMessage(raw: String): String {
     return raw.take(160)
 }
 
+@Composable
 fun CustomerShell(
     state: CustomerUiState,
     onTab: (CustomerTab) -> Unit,
