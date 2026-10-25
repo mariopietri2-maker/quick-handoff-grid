@@ -57,13 +57,13 @@ class MainActivity : ComponentActivity() {
                     runCatching {
                         PaymentConfiguration.init(this@MainActivity, req.publishableKey)
                     }
-                    val config = PaymentSheet.Configuration(
-                        merchantDisplayName = "Fresh2GO",
-                        customer = if (req.customerId != null && req.ephemeralKey != null) {
-                            PaymentSheet.CustomerConfiguration(req.customerId, req.ephemeralKey)
-                        } else null,
-                        allowsRemovalOfLastPaymentMethod = true,
-                    )
+                    val configBuilder = PaymentSheet.Configuration.Builder("Fresh2GO")
+                    if (req.customerId != null && req.ephemeralKey != null) {
+                        configBuilder.customer(
+                            PaymentSheet.CustomerConfiguration(req.customerId, req.ephemeralKey),
+                        )
+                    }
+                    val config = configBuilder.build()
                     paymentSheet.presentWithPaymentIntent(req.clientSecret, config)
                 }
                 var splashMinElapsed by remember { mutableStateOf(false) }

@@ -159,7 +159,7 @@ import com.freshdelivery.nativecustomer.ui.theme.FreshMuted
 import com.freshdelivery.nativecustomer.ui.theme.FreshRose
 import com.freshdelivery.nativecustomer.ui.theme.FreshRoseSoft
 import com.freshdelivery.nativecustomer.ui.theme.FreshSurface
-import com.freshdelivery.nativecustomer.ui.theme.FreshTealDark
+import com.freshdelivery.nativecustomer.ui.theme.FreshGreenDark
 import com.freshdelivery.nativecustomer.ui.theme.FreshViolet
 import com.freshdelivery.nativecustomer.ui.theme.FreshVioletSoft
 import java.time.DayOfWeek
@@ -1633,12 +1633,12 @@ private fun FreshStoreCard(
                     }
                 }
                 Surface(
-                    color = if (isPlatformFulfilment(store)) FreshTealDark.copy(alpha = 0.12f) else FreshChip,
+                    color = if (isPlatformFulfilment(store)) FreshGreenDark.copy(alpha = 0.12f) else FreshChip,
                     shape = RoundedCornerShape(12.dp),
                 ) {
                     Text(
                         storeFulfilmentLabel(store),
-                        color = if (isPlatformFulfilment(store)) FreshTealDark else FreshMuted,
+                        color = if (isPlatformFulfilment(store)) FreshGreenDark else FreshMuted,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -1769,7 +1769,7 @@ private fun StoreMiniCard(
             )
             Text(
                 storeFulfilmentLabelShort(store),
-                color = if (isPlatformFulfilment(store)) FreshTealDark else FreshMuted,
+                color = if (isPlatformFulfilment(store)) FreshGreenDark else FreshMuted,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
@@ -1965,7 +1965,7 @@ private fun MenuScreen(
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             store?.let { s ->
                                 Surface(
-                                    color = if (isPlatformFulfilment(s)) FreshTealDark else Color.White.copy(alpha = 0.22f),
+                                    color = if (isPlatformFulfilment(s)) FreshGreenDark else Color.White.copy(alpha = 0.22f),
                                     shape = RoundedCornerShape(10.dp),
                                 ) {
                                     Text(
@@ -2505,7 +2505,7 @@ item {
                             Text(
                                 storeFulfilmentLabel(cartStore),
                                 fontWeight = FontWeight.SemiBold,
-                                color = if (isPlatformFulfilment(cartStore)) FreshTealDark else FreshInk,
+                                color = if (isPlatformFulfilment(cartStore)) FreshGreenDark else FreshInk,
                             )
                         }
                     }
@@ -3640,7 +3640,7 @@ private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
                 OrderStatusTimeline(status = order.order.status)
                 Spacer(Modifier.height(12.dp))
                 Surface(
-                    color = FreshTealSoft,
+                    color = FreshGreenSoft,
                     shape = RoundedCornerShape(18.dp),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
@@ -3648,7 +3648,7 @@ private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
                         Icon(
                             Icons.Outlined.Storefront,
                             contentDescription = null,
-                            tint = FreshTeal,
+                            tint = FreshGreen,
                         )
                         Spacer(Modifier.width(10.dp))
                         Text(
