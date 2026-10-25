@@ -732,8 +732,12 @@ const displayAddress = deliveryAddress
 
       <main className={isWeb ? 'w-full max-w-[1400px] mx-auto px-6' : 'max-w-6xl mx-auto'}>
         <ActiveOrderTracker />
-        {cfg.sections.show_order_again && <ForYouRow />
-            <OrderAgainRow />}
+        {cfg.sections.show_order_again && (
+          <>
+            <ForYouRow />
+            <OrderAgainRow />
+          </>
+        )}
 
         {/* Προσφορές — first thing customers see */}
         {!isSearching && selectedCategory === 'all' && promotionOffers.length > 0 && (
