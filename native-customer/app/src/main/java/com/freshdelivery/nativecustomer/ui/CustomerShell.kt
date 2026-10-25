@@ -2135,6 +2135,8 @@ private fun CartCheckoutScreen(
         focusedBorderColor = FreshGreen,
         focusedLabelColor = FreshGreen,
         cursorColor = FreshGreen,
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = Color.White,
     )
     Column(
         Modifier
@@ -2143,7 +2145,6 @@ private fun CartCheckoutScreen(
             .statusBarsPadding()
             .navigationBarsPadding(),
     ) {
-        SnackbarHost(snackbar)
         Row(
             Modifier
                 .fillMaxWidth()
@@ -2153,11 +2154,14 @@ private fun CartCheckoutScreen(
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", tint = FreshInk)
             }
-            Text(
-                "Καλάθι",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.weight(1f),
-            )
+            Column(Modifier.weight(1f)) {
+                Text("Καλάθι", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    "${state.cartCount} προϊόντα",
+                    color = FreshMuted,
+                    style = MaterialTheme.typography.labelSmall,
+                )
+            }
             Surface(
                 color = FreshGreenSoft,
                 shape = RoundedCornerShape(10.dp),
@@ -2433,6 +2437,8 @@ private fun CartCheckoutScreen(
                 Spacer(Modifier.height(12.dp))
             }
 item {
+                val cartStoreForNotes = state.stores.find { it.id == state.cartStoreId } ?: state.selectedStore
+                val ownDelivery = cartStoreForNotes != null && !isPlatformFulfilment(cartStoreForNotes)
                 Column(
                     Modifier
                         .fillMaxWidth()
@@ -2444,7 +2450,7 @@ item {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Outlined.Notifications, contentDescription = null, tint = FreshViolet, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Σημειώσεις για τον οδηγό", fontWeight = FontWeight.SemiBold)
+                        Text(if (ownDelivery) "Σημειώσεις για το κατάστημα" else "Σημειώσεις για τον οδηγό", fontWeight = FontWeight.SemiBold)
                     }
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
@@ -2647,7 +2653,7 @@ item {
                 address.isBlank() -> "Πρόσθεσε διεύθυνση παράδοσης"
                 !pinned -> "Επίλεξε σημείο στον χάρτη / εύρεση"
                 !minOk -> "Ακόμα €" + "%.2f".format(cartMinSticky - state.cartSubtotal) + " για ελάχιστη"
-                else -> "Τοποθέτηση παραγγελίας · €" + "%.2f".format(state.grandTotal)
+                else -> "Παράγγειλε ${state.cartCount} · €" + "%.2f".format(state.grandTotal)
             }
             Column(
                 Modifier
@@ -2712,6 +2718,8 @@ private fun AddressPickerScreen(
         focusedBorderColor = FreshGreen,
         focusedLabelColor = FreshGreen,
         cursorColor = FreshGreen,
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = Color.White,
     )
     Column(
         Modifier
@@ -3893,6 +3901,8 @@ private fun ProfileTab(
         focusedBorderColor = FreshGreen,
         focusedLabelColor = FreshGreen,
         cursorColor = FreshGreen,
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = Color.White,
     )
     Column(
         Modifier
