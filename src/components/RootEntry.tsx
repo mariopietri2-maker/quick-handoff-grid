@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import React, { Suspense } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { useAuth } from '@/hooks/useAuth';
@@ -28,6 +28,11 @@ export default function RootEntry() {
   const { user, profile, loading, isAdmin, isSupport, isStore } = useAuth();
   const { flavor, ready: flavorReady } = useMobileFlavor();
   const native = isCapacitorNative();
+  const [bootTimedOut, setBootTimedOut] = React.useState(false);
+  React.useEffect(() => {
+    const t = window.setTimeout(() => setBootTimedOut(true), 6000);
+    return () => window.clearTimeout(t);
+  }, []);
 
   // Store role always wins over wrong flavor / deep links into /order.
   if (!loading && user && (profile?.role === 'store' || isStore)) {
@@ -39,7 +44,7 @@ export default function RootEntry() {
     return <Navigate to={mobileHomePath(flavor)} replace />;
   }
 
-  if (!flavorReady || loading || (user && !profile)) {
+  if (!bootTimedOut && (!flavorReady || loading || (user && !profile))) {
     return <BootSpinner />;
   }
 
