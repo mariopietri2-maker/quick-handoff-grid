@@ -175,8 +175,14 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname.startsWith('/apk/')) {
       const name = pathname.slice('/apk/'.length).replace(/[^a-zA-Z0-9._-]/g, '');
-      if (name.endsWith('.apk')) {
-        await serveApk(name, res);
+      if (name.endsWith('.apk') && APK_NAMES.has(name)) {
+        // Redirect to GitHub release — avoids Railway egress for large APKs
+        const gh = `https://github.com/${GH_OWNER}/${GH_REPO}/releases/download/${GH_TAG}/${name}`;
+        res.writeHead(302, {
+          location: gh,
+          'cache-control': 'public, max-age=300',
+        });
+        res.end();
         return;
       }
       res.writeHead(404, { 'content-type': 'text/plain' });
@@ -188,13 +194,22 @@ const server = http.createServer(async (req, res) => {
     const filePath = normalize(join(DIST, pathname));
     if (!filePath.startsWith(normalize(DIST + sep))) throw new Error('escape');
     const body = await readFile(filePath);
+    const ext = extname(filePath).toLowerCase();
     const immutable = pathname.startsWith('/assets/');
+    const longCacheMedia = [
+      '.png', '.jpg', '.jpeg', '.webp', '.avif', '.gif', '.svg', '.ico',
+      '.woff', '.woff2', '.ttf', '.mp4', '.webm',
+    ].includes(ext);
+    // HTML / version manifests must stay fresh; hashed assets + media can cache hard
+    let cacheControl = 'no-cache';
+    if (immutable) cacheControl = 'public, max-age=31536000, immutable';
+    else if (longCacheMedia) cacheControl = 'public, max-age=604800, stale-while-revalidate=86400'; // 7 days
     const cors = (pathname === '/version.json' || pathname === '/native-versions.json')
       ? { 'access-control-allow-origin': '*' }
       : {};
     res.writeHead(200, {
-      'content-type': MIME[extname(filePath).toLowerCase()] ?? 'application/octet-stream',
-      'cache-control': immutable ? 'public, max-age=31536000, immutable' : 'no-cache',
+      'content-type': MIME[ext] ?? 'application/octet-stream',
+      'cache-control': cacheControl,
       ...cors,
     });
     res.end(body);

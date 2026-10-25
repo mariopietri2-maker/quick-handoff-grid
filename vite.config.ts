@@ -49,6 +49,21 @@ export default defineConfig({
     target: "es2020",
     sourcemap: false,
     minify: "terser",
+    cssCodeSplit: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (id.includes("mapbox")) return "mapbox";
+            if (id.includes("@supabase")) return "supabase";
+            if (id.includes("react-dom") || id.includes("/react/")) return "react-vendor";
+            if (id.includes("@tanstack")) return "query";
+            if (id.includes("lucide-react")) return "icons";
+            return "vendor";
+          }
+        },
+      },
+    },
     commonjsOptions: {
       include: [/node_modules/],
       // Ensure CJS deps that require("react") resolve to the same instance
