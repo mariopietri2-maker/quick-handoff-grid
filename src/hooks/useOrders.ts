@@ -163,7 +163,16 @@ export function useStoreOrders(
       p_estimated_prep_time: estimatedPrepTime ?? null,
     } as never);
     if (error) {
-      toast.error(error.message ?? 'Failed to update status');
+      const msg = error.message ?? '';
+      const friendly =
+        msg.includes('card payment') || msg.includes('waiting for card')
+          ? 'Η παραγγελία περιμένει πληρωμή με κάρτα'
+          : msg.includes('Not authorized')
+            ? 'Δεν έχεις δικαίωμα για αυτή την παραγγελία'
+            : msg.includes('Not authenticated')
+              ? 'Ξανασυνδέσου στο κατάστημα'
+              : (msg || 'Αποτυχία ενημέρωσης κατάστασης');
+      toast.error(friendly);
       return false;
     }
     setPendingIds((prev) => prev.filter((id) => id !== orderId));

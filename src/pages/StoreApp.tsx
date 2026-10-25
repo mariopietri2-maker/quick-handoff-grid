@@ -117,14 +117,19 @@ export default function StoreApp() {
   const {
     store, stores, selectedStoreId, selectStore, loading: storeLoading, createStore, updateStore,
   } = useStore();
-  // N stores are call-only: they never render orders, so skip the orders
-  // fetch + realtime subscription entirely (faster load, less battery/data).
+  // Ghost branding (N). Call-only UI only when not platform fulfilment.
   const isNStore = store?.store_role === 'N';
+  const isCallOnlyGhost = isNStore && store?.fulfilment_mode !== 'platform';
+
+  // Must be declared before any effect/memo that reads `orders`
+  const { orders, loading: ordersLoading, updateStatus, pendingIds } = useStoreOrders(
+    store?.id ?? null,
+    { suppressSound: false },
+  );
 
   useEffect(() => {
     setLastUpdated(Date.now());
   }, [orders]);
-
 
   const todayStats = useMemo(() => {
     const list = orders ?? [];
@@ -136,6 +141,7 @@ export default function StoreApp() {
       .reduce((s, o) => s + orderMoney(o).total, 0);
     return { pending, active, ready, total: list.length, revenue };
   }, [orders]);
+
   useEffect(() => {
     if (typeof document === 'undefined') return;
     if (isNStore && store?.name) {
@@ -145,13 +151,8 @@ export default function StoreApp() {
     } else {
       document.title = isNStore ? 'Ghost Store' : 'Fresh2GO Store';
     }
-    // Browser install dialog reads the web manifest — switch away from Fresh2GO for Ghost Stores
     setPwaManifest(isNStore ? 'ghost-store' : 'store');
   }, [isNStore, store?.name]);
-  const { orders, loading: ordersLoading, updateStatus, pendingIds } = useStoreOrders(
-    isNStore ? null : (store?.id ?? null),
-    { suppressSound: isNStore },
-  );
 
   const prevPendingRef = useRef(0);
   useEffect(() => {
@@ -522,7 +523,7 @@ export default function StoreApp() {
               </aside>
             )}
             <div className={`${!isNStore ? 'flex-1 min-w-0 px-3 md:px-5 md:py-1' : 'order-1 md:order-2 min-w-0'}`}>
-              {store.store_role === 'N' ? (
+              {isCallOnlyGhost ? (
                 <div className="py-6 max-w-lg mx-auto space-y-4">
             <AnnouncementsBanner audience="store_owners" />
             <div className="flex items-center justify-between rounded-2xl border border-violet-500/30 bg-card px-4 py-3 shadow-sm">
