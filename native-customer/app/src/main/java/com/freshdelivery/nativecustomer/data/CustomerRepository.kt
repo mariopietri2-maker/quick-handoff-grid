@@ -373,6 +373,17 @@ class CustomerRepository(
         )
     }
 
+
+    suspend fun fetchSavedCards(): List<SavedCardRow> {
+        return runCatching {
+            client.from("customer_payment_methods")
+                .select(Columns.list("id", "brand", "last4", "exp_month", "exp_year", "is_default")) {
+                    order("is_default", Order.DESCENDING)
+                    limit(10L)
+                }.decodeList<SavedCardRow>()
+        }.getOrDefault(emptyList())
+    }
+
     suspend fun submitReview(orderId: String, storeId: String, rating: Int, comment: String?): Boolean {
         val uid = client.auth.currentUserOrNull()?.id ?: return false
         return runCatching {
@@ -691,6 +702,7 @@ class CustomerRepository(
                 "delivery_address", "delivery_latitude", "delivery_longitude",
                 "total_amount", "created_at", "store_order_number",
                 "estimated_prep_time", "predicted_ready_at", "accepted_at",
+                "payment_method",
             )) {
                 filter { eq("customer_id", userId) }
                 order("created_at", Order.DESCENDING)

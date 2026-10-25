@@ -216,6 +216,7 @@ fun CustomerShell(
     onClearCart: () -> Unit = {},
     onPlaceOrder: () -> Unit,
     onTrack: (OrderUi?) -> Unit,
+    onPayOrder: (String) -> Unit = {},
     onToggleOrderDetail: (String?) -> Unit = {},
     onRefresh: () -> Unit,
     onSignOut: () -> Unit,
@@ -479,8 +480,9 @@ fun CustomerShell(
                         state.stores.firstOrNull { it.id == storeId }?.let { onOpenStore(it) }
                     },
                     onReorderOrder = onReorderOrder,
+                    onPayOrder = onPayOrder,
                 )
-                CustomerTab.Track -> TrackTab(state, onRefresh = onRefresh)
+                CustomerTab.Track -> TrackTab(state, onRefresh = onRefresh, onPay = onPayOrder)
                 CustomerTab.Profile -> ProfileTab(state, onSaveProfile, onSignOut, onOpenSupport, onBackToHome = { onTab(CustomerTab.Home) })
             }
         }
@@ -3294,6 +3296,7 @@ private fun OrdersTab(
     onBackToHome: () -> Unit = {},
     onReorderStore: (String) -> Unit = {},
     onReorderOrder: (String, String) -> Unit = { _, _ -> },
+    onPayOrder: (String) -> Unit = {},
 ) {
     var refreshing by remember { mutableStateOf(false) }
     val pullState = rememberPullToRefreshState()
@@ -3500,6 +3503,19 @@ private fun OrdersTab(
                     }
                 }
                 HorizontalDivider(Modifier.padding(vertical = 12.dp), color = FreshDivider)
+                if (item.order.status == "pending" && item.order.payment_method == "card") {
+                    Button(
+                        onClick = { onPayOrder(item.order.id) },
+                        colors = ButtonDefaults.buttonColors(containerColor = FreshGreen),
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Outlined.CreditCard, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Πλήρωσε με κάρτα", fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
                 Row {
                     Button(
                         onClick = { onTrack(item) },
@@ -3519,7 +3535,7 @@ private fun OrdersTab(
 }
 
 @Composable
-private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
+private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}, onPay: (String) -> Unit = {}) {
     val order = state.trackingOrder
 
     // Platform does not operate delivery fleet — map shows store + customer only.
@@ -3674,6 +3690,19 @@ private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
                             fontWeight = FontWeight.SemiBold,
                             style = MaterialTheme.typography.bodyMedium,
                         )
+                    }
+                }
+                if (order.order.status == "pending" && order.order.payment_method == "card") {
+                    Spacer(Modifier.height(10.dp))
+                    Button(
+                        onClick = { onPay(order.order.id) },
+                        colors = ButtonDefaults.buttonColors(containerColor = FreshGreen),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Outlined.CreditCard, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Πλήρωσε τώρα με κάρτα", fontWeight = FontWeight.Bold)
                     }
                 }
             }

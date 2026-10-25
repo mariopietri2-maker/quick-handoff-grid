@@ -136,6 +136,7 @@ data class CustomerUiState(
     val driverLocation: DriverLocationRow? = null,
     val driverName: String? = null,
     val driverPhone: String? = null,
+    val savedCards: List<com.freshdelivery.nativecustomer.data.SavedCardRow> = emptyList(),
     val busy: Boolean = false,
     val locating: Boolean = false,
     val savingProfile: Boolean = false,
@@ -718,7 +719,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         when (tab) {
             CustomerTab.Orders, CustomerTab.Track -> refreshOrders()
             CustomerTab.Home, CustomerTab.Browse -> refreshStores()
-            CustomerTab.Profile -> Unit
+            CustomerTab.Profile -> refreshSavedCards()
         }
     }
 
@@ -1349,6 +1350,18 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
 
+    /** Pay or retry a pending card order (checkout + Track/Orders). */
+    fun payForOrder(orderId: String) {
+        launchNativePaymentSheet(orderId)
+    }
+
+    fun refreshSavedCards() {
+        viewModelScope.launch {
+            val cards = runCatching { repo.fetchSavedCards() }.getOrDefault(emptyList())
+            _state.value = _state.value.copy(savedCards = cards)
+        }
+    }
+
     private fun launchNativePaymentSheet(orderId: String) {
         viewModelScope.launch {
             _state.value = _state.value.copy(busy = true, error = null)
@@ -1388,10 +1401,36 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     fun onPaymentSheetResult(success: Boolean, message: String?) {
         clearPaymentSheetRequest()
         if (success) {
-            _state.value = _state.value.copy(info = "Η πληρωμή ολοκληρώθηκε!")
-            refreshOrders()
+            _state.value = _state.value.copy(
+                info = "Η πληρωμή ολοκληρώθηκε! Στέλνουμε την παραγγελία στο κατάστημα…",
+                busy = true,
+            )
+            viewModelScope.launch {
+                // Webhook may lag a second — poll a few times
+                repeat(6) {
+                    kotlinx.coroutines.delay(800)
+                    refreshOrders()
+                    val pending = _state.value.orders.any {
+                        it.order.id == _state.value.trackingOrder?.order?.id &&
+                            it.order.status == "pending" &&
+                            it.order.payment_method == "card"
+                    }
+                    if (!pending) return@repeat
+                }
+                refreshSavedCards()
+                _state.value = _state.value.copy(
+                    busy = false,
+                    info = "Η πληρωμή ολοκληρώθηκε!",
+                )
+            }
         } else if (!message.isNullOrBlank()) {
-            _state.value = _state.value.copy(error = message)
+            val friendly = when {
+                message.contains("cancel", ignoreCase = true) ||
+                    message.contains("ακυρ", ignoreCase = true) ->
+                    "Η πληρωμή ακυρώθηκε. Μπορείς να δοκιμάσεις ξανά."
+                else -> message
+            }
+            _state.value = _state.value.copy(error = friendly)
         }
     }
 

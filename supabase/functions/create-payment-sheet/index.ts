@@ -1,5 +1,4 @@
-// Native PaymentSheet: create a PaymentIntent for a pending card order.
-// Webhook payment_intent.succeeded flips pending → placed (same as Checkout).
+// Native PaymentSheet: create or reuse a PaymentIntent for a pending card order.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { type StripeEnv, createStripeClient, resolveStripeEnv } from "../_shared/stripe.ts";
 
@@ -35,7 +34,6 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } },
     );
 
-    // Prefer getUser (stable); fall back to getClaims for newer clients
     let userId: string | null = null;
     let userEmail: string | undefined;
     const { data: userData, error: userErr } = await supabase.auth.getUser();
@@ -46,7 +44,6 @@ Deno.serve(async (req) => {
       const token = authHeader.replace("Bearer ", "");
       const { data: claims, error: claimsErr } = await supabase.auth.getClaims(token);
       if (claimsErr || !claims?.claims?.sub) {
-        console.error("auth failed", userErr?.message, claimsErr?.message);
         return jsonError("Unauthorized", 401);
       }
       userId = claims.claims.sub as string;
@@ -68,16 +65,14 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Load order with service role after ownership check via customer_id
     const { data: order, error: orderErr } = await admin
       .from("orders")
-      .select("id, customer_id, store_id, total_amount, delivery_fee, tip_amount, status, payment_method")
+      .select(
+        "id, customer_id, store_id, total_amount, delivery_fee, tip_amount, status, payment_method, stripe_payment_intent_id",
+      )
       .eq("id", body.orderId)
       .maybeSingle();
-    if (orderErr || !order) {
-      console.error("order load", orderErr?.message);
-      return jsonError("Order not found", 404);
-    }
+    if (orderErr || !order) return jsonError("Order not found", 404);
     if (order.customer_id !== userId) return jsonError("Forbidden", 403);
     if (order.payment_method !== "card") return jsonError("Order is not card-payment", 400);
     if (order.status !== "pending") {
@@ -89,23 +84,10 @@ Deno.serve(async (req) => {
     );
     if (expectedCents < 50) return jsonError("Amount too small", 400);
 
-    // profiles may key on user_id or id depending on schema
     let profile: { full_name?: string | null; stripe_customer_id?: string | null } | null = null;
     {
-      const byUser = await admin
-        .from("profiles")
-        .select("full_name, stripe_customer_id")
-        .eq("user_id", userId)
-        .maybeSingle();
-      if (byUser.data) profile = byUser.data;
-      else {
-        const byId = await admin
-          .from("profiles")
-          .select("full_name, stripe_customer_id")
-          .eq("id", userId)
-          .maybeSingle();
-        profile = byId.data;
-      }
+      const byUser = await admin.from("profiles").select("full_name, stripe_customer_id").eq("user_id", userId).maybeSingle();
+      profile = byUser.data ?? (await admin.from("profiles").select("full_name, stripe_customer_id").eq("id", userId).maybeSingle()).data;
     }
 
     const stripe = createStripeClient(environment);
@@ -118,7 +100,6 @@ Deno.serve(async (req) => {
         metadata: { userId },
       });
       customerId = customer.id;
-      // best-effort profile update
       await admin.from("profiles").update({ stripe_customer_id: customerId }).eq("user_id", userId);
       await admin.from("profiles").update({ stripe_customer_id: customerId }).eq("id", userId);
     }
@@ -128,20 +109,38 @@ Deno.serve(async (req) => {
       { apiVersion: "2024-11-20.acacia" },
     );
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: expectedCents,
-      currency: "eur",
-      customer: customerId,
-      // Allows PaymentSheet to offer "Save card" and attach PM for next orders
-      setup_future_usage: "off_session",
-      automatic_payment_methods: { enabled: true },
-      metadata: {
-        orderId: order.id,
-        userId,
-        storeId: order.store_id,
-        expectedChargeCents: String(expectedCents),
-      },
-    });
+    // Reuse open PaymentIntent when possible (retry pay without double charge setup)
+    let paymentIntent: any = null;
+    if (order.stripe_payment_intent_id) {
+      try {
+        const existing = await stripe.paymentIntents.retrieve(order.stripe_payment_intent_id);
+        const reusable = ["requires_payment_method", "requires_confirmation", "requires_action"].includes(existing.status);
+        if (reusable && existing.amount === expectedCents && existing.currency === "eur") {
+          paymentIntent = existing;
+        }
+      } catch {
+        /* create new below */
+      }
+    }
+
+    if (!paymentIntent) {
+      paymentIntent = await stripe.paymentIntents.create({
+        amount: expectedCents,
+        currency: "eur",
+        customer: customerId,
+        setup_future_usage: "off_session",
+        automatic_payment_methods: { enabled: true },
+        description: `Fresh2GO order ${order.id.slice(0, 8)}`,
+        statement_descriptor_suffix: "FRESH2GO",
+        receipt_email: userEmail || undefined,
+        metadata: {
+          orderId: order.id,
+          userId,
+          storeId: order.store_id,
+          expectedChargeCents: String(expectedCents),
+        },
+      });
+    }
 
     await admin.from("orders").update({
       expected_charge_cents: expectedCents,
@@ -156,13 +155,15 @@ Deno.serve(async (req) => {
       Deno.env.get(environment === "live" ? "STRIPE_LIVE_PUBLISHABLE_KEY" : "STRIPE_SANDBOX_PUBLISHABLE_KEY") ||
       "";
 
-    if (!publishableKey) {
-      console.error("missing publishable key");
-      return jsonError("Stripe publishable key missing", 500);
-    }
-    if (!paymentIntent.client_secret) {
-      return jsonError("Stripe did not return client secret", 500);
-    }
+    if (!publishableKey) return jsonError("Stripe publishable key missing", 500);
+    if (!paymentIntent.client_secret) return jsonError("Stripe did not return client secret", 500);
+
+    // How many cards already saved (for client UX)
+    const { count: savedCount } = await admin
+      .from("customer_payment_methods")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("stripe_env", environment);
 
     return new Response(
       JSON.stringify({
@@ -172,6 +173,7 @@ Deno.serve(async (req) => {
         publishableKey,
         environment,
         amountCents: expectedCents,
+        savedCards: savedCount ?? 0,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );

@@ -106,6 +106,17 @@ data class OrderRow(
     val estimated_prep_time: Int? = null,
     val predicted_ready_at: String? = null,
     val accepted_at: String? = null,
+    val payment_method: String? = null,
+)
+
+@Serializable
+data class SavedCardRow(
+    val id: String,
+    val brand: String? = null,
+    val last4: String? = null,
+    val exp_month: Int? = null,
+    val exp_year: Int? = null,
+    val is_default: Boolean? = false,
 )
 
 @Serializable

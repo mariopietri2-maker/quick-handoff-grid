@@ -63,6 +63,16 @@ class MainActivity : ComponentActivity() {
                             PaymentSheet.CustomerConfiguration(req.customerId, req.ephemeralKey),
                         )
                     }
+                    // Google Pay (EUR) when device supports it
+                    runCatching {
+                        configBuilder.googlePay(
+                            PaymentSheet.GooglePayConfiguration(
+                                environment = PaymentSheet.GooglePayConfiguration.Environment.Production,
+                                countryCode = "GR",
+                                currencyCode = "EUR",
+                            ),
+                        )
+                    }
                     val config = configBuilder.build()
                     paymentSheet.presentWithPaymentIntent(req.clientSecret, config)
                 }
@@ -147,6 +157,7 @@ class MainActivity : ComponentActivity() {
                             onPlaceOrder = vm::placeOrder,
                             onToggleOrderDetail = vm::toggleOrderDetail,
                             onTrack = vm::trackOrder,
+                            onPayOrder = vm::payForOrder,
                             onRefresh = vm::refreshAll,
                             onSignOut = vm::signOut,
                             onSearch = vm::setSearchQuery,
