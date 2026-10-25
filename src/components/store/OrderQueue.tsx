@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Clock, Car, ChevronDown, ChevronRight, Timer, Plus, Minus, Trash2, Package, Ban,
   User, ShoppingBag, Search, Printer, Volume2, VolumeX, ArrowUpDown, StickyNote, Rows3,
+  CheckCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
