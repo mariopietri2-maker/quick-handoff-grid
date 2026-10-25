@@ -374,6 +374,24 @@ class CustomerRepository(
     }
 
 
+    suspend fun createSetupIntent(): PaymentSheetPayload {
+        val env = getStripeEnvironment()
+        val raw = client.functions.invoke(
+            function = "create-setup-intent",
+            body = buildJsonObject { put("environment", env) },
+        )
+        val text = raw.bodyAsText()
+        val el = Json.parseToJsonElement(text).jsonObject
+        el["error"]?.jsonPrimitive?.contentOrNull?.let { error(it) }
+        return PaymentSheetPayload(
+            paymentIntentClientSecret = el["setupIntent"]?.jsonPrimitive?.content
+                ?: error("missing setupIntent"),
+            ephemeralKey = el["ephemeralKey"]?.jsonPrimitive?.content,
+            customerId = el["customer"]?.jsonPrimitive?.content,
+            publishableKey = el["publishableKey"]?.jsonPrimitive?.content.orEmpty(),
+        )
+    }
+
     suspend fun fetchSavedCards(): List<SavedCardRow> {
         return runCatching {
             client.from("customer_payment_methods")

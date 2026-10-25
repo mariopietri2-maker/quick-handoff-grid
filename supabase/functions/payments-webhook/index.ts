@@ -189,6 +189,11 @@ async function handleWebhook(req: Request, env: StripeEnv) {
       if (event.type === "payment_intent.succeeded") await persistSavedCard(env, obj);
       break;
     }
+    case "setup_intent.succeeded": {
+      const obj = event.data.object;
+      await persistSavedCard(env, { ...obj, payment_method: obj?.payment_method, customer: obj?.customer, metadata: obj?.metadata });
+      break;
+    }
     case "payment_intent.payment_failed":
     case "transaction.payment_failed": {
       const orderId = event.data.object?.metadata?.orderId;

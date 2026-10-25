@@ -230,6 +230,9 @@ fun CustomerShell(
     onClearPromoCode: () -> Unit = {},
     onClearCart: () -> Unit = {},
     onRefreshSavedCards: () -> Unit = {},
+    onOpenPayments: () -> Unit = {},
+    onClosePayments: () -> Unit = {},
+    onAddCard: () -> Unit = {},
     onPlaceOrder: () -> Unit,
     onTrack: (OrderUi?) -> Unit,
     onPayOrder: (String) -> Unit = {},
@@ -335,6 +338,14 @@ fun CustomerShell(
             onSubmitTicket = onSubmitTicket,
             onSendTicket = onSendTicket,
             snackbar = snackbar,
+        )
+        return
+    }
+    if (state.paymentsOpen) {
+        PaymentMethodsScreen(
+            state = state,
+            onBack = onClosePayments,
+            onAddCard = onAddCard,
         )
         return
     }
@@ -2111,6 +2122,78 @@ private fun MenuScreen(
 // FreshMenuRow extracted
 
 @Composable
+
+@Composable
+private fun PaymentMethodsScreen(
+    state: CustomerUiState,
+    onBack: () -> Unit,
+    onAddCard: () -> Unit,
+) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(FreshBg)
+            .statusBarsPadding()
+            .navigationBarsPadding(),
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", tint = FreshInk)
+            }
+            Text("Τρόποι πληρωμής", style = MaterialTheme.typography.titleLarge)
+        }
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(
+                "Αποθηκευμένες κάρτες",
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleMedium,
+            )
+            if (state.savedCards.isEmpty()) {
+                Text("Δεν έχεις αποθηκευμένη κάρτα ακόμα.", color = FreshMuted)
+            } else {
+                state.savedCards.forEach { card ->
+                    Surface(
+                        color = Color.White,
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            "${card.brand?.uppercase() ?: "Κάρτα"} ···· ${card.last4 ?: "••••"}" +
+                                if (card.is_default == true) "  · προεπιλογή" else "",
+                            modifier = Modifier.padding(16.dp),
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Button(
+                onClick = onAddCard,
+                enabled = !state.busy,
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(26.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = FreshGreen),
+            ) {
+                if (state.busy) {
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp))
+                } else {
+                    Icon(Icons.Outlined.CreditCard, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Προσθήκη κάρτας", fontWeight = FontWeight.Bold)
+                }
+            }
+            Text(
+                "Η κάρτα αποθηκεύεται με ασφάλεια στη Stripe και χρησιμοποιείται στην επόμενη πληρωμή.",
+                color = FreshMuted,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+    }
+}
+
 private fun CartCheckoutScreen(
     state: CustomerUiState,
     snackbar: SnackbarHostState,
@@ -4072,6 +4155,32 @@ private fun ProfileTab(
             Column(Modifier.weight(1f)) {
                 Text("Βοήθεια & Υποστήριξη", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                 Text("Live chat με την ομάδα μας — 24/7", color = FreshMuted, style = MaterialTheme.typography.bodySmall)
+            }
+            Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = FreshMuted)
+        }
+        Spacer(Modifier.height(12.dp))
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .shadow(4.dp, RoundedCornerShape(22.dp))
+                .clip(RoundedCornerShape(22.dp))
+                .background(Color.White)
+                .clickable(onClick = onOpenPayments)
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                Modifier
+                    .size(44.dp)
+                    .background(FreshGreenSoft, RoundedCornerShape(14.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Outlined.CreditCard, contentDescription = null, tint = FreshGreen, modifier = Modifier.size(22.dp))
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Τρόποι πληρωμής", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                Text("Αποθήκευσε κάρτα για την επόμενη παραγγελία", color = FreshMuted, style = MaterialTheme.typography.bodySmall)
             }
             Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = FreshMuted)
         }

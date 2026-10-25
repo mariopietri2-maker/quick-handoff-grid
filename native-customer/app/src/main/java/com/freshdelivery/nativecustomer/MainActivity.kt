@@ -74,7 +74,11 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     val config = configBuilder.build()
-                    paymentSheet.presentWithPaymentIntent(req.clientSecret, config)
+                    if (req.orderId == "setup") {
+                        paymentSheet.presentWithSetupIntent(req.clientSecret, config)
+                    } else {
+                        paymentSheet.presentWithPaymentIntent(req.clientSecret, config)
+                    }
                 }
                 var splashMinElapsed by remember { mutableStateOf(false) }
                 val permissionLauncher = rememberLauncherForActivityResult(
@@ -155,6 +159,9 @@ class MainActivity : ComponentActivity() {
                             onClearPromoCode = vm::clearPromoCode,
                             onClearCart = vm::clearCart,
                             onRefreshSavedCards = vm::refreshSavedCards,
+                            onOpenPayments = vm::openPayments,
+                            onClosePayments = vm::closePayments,
+                            onAddCard = vm::startAddCard,
                             onPlaceOrder = vm::placeOrder,
                             onToggleOrderDetail = vm::toggleOrderDetail,
                             onTrack = vm::trackOrder,

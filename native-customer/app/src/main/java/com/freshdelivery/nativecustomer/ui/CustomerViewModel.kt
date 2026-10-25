@@ -137,6 +137,7 @@ data class CustomerUiState(
     val driverName: String? = null,
     val driverPhone: String? = null,
     val savedCards: List<com.freshdelivery.nativecustomer.data.SavedCardRow> = emptyList(),
+    val paymentsOpen: Boolean = false,
     val busy: Boolean = false,
     val locating: Boolean = false,
     val savingProfile: Boolean = false,
@@ -1358,6 +1359,41 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     /** Pay or retry a pending card order (checkout + Track/Orders). */
     fun payForOrder(orderId: String) {
         launchNativePaymentSheet(orderId)
+    }
+
+    fun startAddCard() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(busy = true, error = null)
+            runCatching { repo.createSetupIntent() }
+                .onSuccess { payload ->
+                    if (payload.publishableKey.isBlank() || payload.paymentIntentClientSecret.isBlank()) {
+                        _state.value = _state.value.copy(busy = false, error = "Stripe δεν είναι ρυθμισμένο.")
+                        return@onSuccess
+                    }
+                    _state.value = _state.value.copy(
+                        busy = false,
+                        paymentSheetRequest = PaymentSheetRequest(
+                            orderId = "setup",
+                            clientSecret = payload.paymentIntentClientSecret,
+                            publishableKey = payload.publishableKey,
+                            ephemeralKey = payload.ephemeralKey,
+                            customerId = payload.customerId,
+                        ),
+                        info = "Πρόσθεσε την κάρτα στο ασφαλές παράθυρο.",
+                    )
+                }
+                .onFailure { e ->
+                    _state.value = _state.value.copy(busy = false, error = e.message ?: "Αποτυχία αποθήκευσης κάρτας")
+                }
+        }
+    }
+
+    fun openPayments() {
+        _state.value = _state.value.copy(paymentsOpen = true)
+        refreshSavedCards()
+    }
+    fun closePayments() {
+        _state.value = _state.value.copy(paymentsOpen = false)
     }
 
     fun refreshSavedCards() {
