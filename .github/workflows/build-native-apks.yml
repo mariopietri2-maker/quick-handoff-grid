@@ -112,25 +112,42 @@ jobs:
 
       - name: Stage APKs and AABs
         run: |
+          set -euo pipefail
           mkdir -p dist
-          cp native-driver/app/build/outputs/apk/debug/app-debug.apk dist/fresh2go-driver-native-debug.apk
-          if [ -f native-driver/app/build/outputs/bundle/debug/app-debug.aab ]; then
-            cp native-driver/app/build/outputs/bundle/debug/app-debug.aab dist/fresh2go-driver-native-debug.aab
-          fi
-          if [ ! -f native-customer/app/build/outputs/apk/debug/app-debug.apk ]; then
-            echo "::error::customer APK missing - compile failed"
-            exit 1
-          fi
-          cp native-customer/app/build/outputs/apk/debug/app-debug.apk dist/fresh2go-customer-native-debug.apk
-          if [ -f native-customer/app/build/outputs/bundle/debug/app-debug.aab ]; then
-            cp native-customer/app/build/outputs/bundle/debug/app-debug.aab dist/fresh2go-customer-native-debug.aab
-          fi
-          if [ ! -f native-admin/app/build/outputs/apk/debug/app-debug.apk ]; then
-            echo "::error::admin APK missing"
-            exit 1
-          fi
-          cp native-admin/app/build/outputs/apk/debug/app-debug.apk dist/fresh2go-admin-native-debug.apk
-          ls -lah dist/fresh2go-admin-native-debug.apk
+          # Resolve APK paths robustly (Gradle output layout can vary slightly)
+          find_apk() {
+            local dir="$1"
+            local found
+            found=$(find "$dir" -path '*/outputs/apk/debug/*.apk' -type f 2>/dev/null | head -1 || true)
+            if [ -z "$found" ]; then
+              found=$(find "$dir" -name 'app-debug.apk' -type f 2>/dev/null | head -1 || true)
+            fi
+            echo "$found"
+          }
+          find_aab() {
+            local dir="$1"
+            find "$dir" -path '*/outputs/bundle/debug/*.aab' -type f 2>/dev/null | head -1 || true
+          }
+
+          DRIVER_APK=$(find_apk native-driver)
+          CUST_APK=$(find_apk native-customer)
+          ADMIN_APK=$(find_apk native-admin)
+          echo "driver=$DRIVER_APK"
+          echo "customer=$CUST_APK"
+          echo "admin=$ADMIN_APK"
+          [ -n "$DRIVER_APK" ] || { echo "::error::driver APK missing"; exit 1; }
+          [ -n "$CUST_APK" ] || { echo "::error::customer APK missing - compile failed"; find native-customer -name '*.apk' 2>/dev/null | head; exit 1; }
+          [ -n "$ADMIN_APK" ] || { echo "::error::admin APK missing"; exit 1; }
+
+          cp "$DRIVER_APK" dist/fresh2go-driver-native-debug.apk
+          cp "$CUST_APK" dist/fresh2go-customer-native-debug.apk
+          cp "$ADMIN_APK" dist/fresh2go-admin-native-debug.apk
+
+          DRIVER_AAB=$(find_aab native-driver)
+          CUST_AAB=$(find_aab native-customer)
+          [ -n "$DRIVER_AAB" ] && cp "$DRIVER_AAB" dist/fresh2go-driver-native-debug.aab || true
+          [ -n "$CUST_AAB" ] && cp "$CUST_AAB" dist/fresh2go-customer-native-debug.aab || true
+
           ls -lah dist/
 
       - name: Upload build artifacts
