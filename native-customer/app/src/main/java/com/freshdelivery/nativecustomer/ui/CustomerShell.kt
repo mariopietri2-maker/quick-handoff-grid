@@ -2531,7 +2531,25 @@ item {
                             Spacer(Modifier.width(6.dp))
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(if (state.paymentMethod == "card") "Κάρτα ✓" else "Κάρτα", fontWeight = FontWeight.Bold)
-                                Text("Online πληρωμή", style = MaterialTheme.typography.labelSmall, color = if (state.paymentMethod == "card") Color.White.copy(alpha=0.9f) else FreshMuted)
+                                Text("Πληρωμή τώρα", style = MaterialTheme.typography.labelSmall, color = if (state.paymentMethod == "card") Color.White.copy(alpha=0.9f) else FreshMuted)
+                            }
+                        }
+                    }
+                    if (state.paymentMethod == "card") {
+                        Spacer(Modifier.height(10.dp))
+                        Surface(
+                            color = Color(0xFFFFF4EC),
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Column(Modifier.padding(12.dp)) {
+                                Text("Πληρωμή με κάρτα", fontWeight = FontWeight.SemiBold, color = FreshInk)
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    "Δεν αποθηκεύουμε την κάρτα. Μετά την παραγγελία ανοίγει ασφαλές παράθυρο για Visa, Mastercard ή Google Pay.",
+                                    color = FreshMuted,
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
                             }
                         }
                     }
@@ -2672,7 +2690,7 @@ item {
                 address.isBlank() -> "Πρόσθεσε διεύθυνση παράδοσης"
                 !pinned -> "Επίλεξε σημείο στον χάρτη / εύρεση"
                 !minOk -> "Ακόμα €" + "%.2f".format(cartMinSticky - state.cartSubtotal) + " για ελάχιστη"
-                else -> "Παράγγειλε ${state.cartCount} · €" + "%.2f".format(state.grandTotal)
+                else -> if (state.paymentMethod == "card") "Πλήρωσε με κάρτα · €" + "%.2f".format(state.grandTotal) else "Παράγγειλε ${state.cartCount} · €" + "%.2f".format(state.grandTotal)
             }
             Column(
                 Modifier
