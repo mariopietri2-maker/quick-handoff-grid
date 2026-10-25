@@ -17,8 +17,8 @@ android {
         applicationId = "com.freshdelivery.customer"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7233204
-        versionName = "1.0.2"
+        versionCode = 7233205
+        versionName = "1.0.3"
 
         buildConfigField(
             "String",

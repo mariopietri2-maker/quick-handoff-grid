@@ -383,7 +383,7 @@ fun CustomerShell(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
             Column {
-                if (state.cartCount > 0 && (state.tab == CustomerTab.Home || state.tab == CustomerTab.Browse)) {
+                if (state.cartCount > 0 && state.selectedStore == null && (state.tab == CustomerTab.Home || state.tab == CustomerTab.Browse)) {
                     FreshCartBar(
                         count = state.cartCount,
                         total = state.cartSubtotal,
