@@ -191,7 +191,7 @@ Deno.serve(async (req) => {
     console.warn("recover email failed", e);
   }
 
-  // Enqueue HTML email with action link for Lovable/Resend worker if configured.
+  // Enqueue HTML email with action link for Resend worker if configured.
   if (actionLink) {
     try {
       await admin.rpc("enqueue_email", {

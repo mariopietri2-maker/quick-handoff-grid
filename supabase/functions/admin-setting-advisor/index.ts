@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const AI_GATEWAY_API_KEY = Deno.env.get("AI_GATEWAY_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
+    const AI_GATEWAY_API_KEY = Deno.env.get("AI_GATEWAY_API_KEY");
     if (!AI_GATEWAY_API_KEY) throw new Error("AI_GATEWAY_API_KEY missing");
 
     // --- AUTH: require admin role ---
@@ -86,7 +86,7 @@ ${body.context ? `Συμπληρωματικά: ${JSON.stringify(body.context)}`
 
 Δώσε ανάλυση για να αποφασίσει ο admin αν θα προχωρήσει.`;
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResp = await fetch(`${Deno.env.get("AI_GATEWAY_BASE") || ""}/v1/chat/completions`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${AI_GATEWAY_API_KEY}`,

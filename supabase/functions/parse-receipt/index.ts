@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const AI_GATEWAY_API_KEY = Deno.env.get("AI_GATEWAY_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
+const AI_GATEWAY_API_KEY = Deno.env.get("AI_GATEWAY_API_KEY");
 
 const ORDER_SYSTEM_PROMPT = `You extract structured delivery-order data from raw receipt or notification text from food-delivery platforms (eFood, Wolt, Box) or any plain text the operator pastes.
 
@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
 
     const SYSTEM_PROMPT = body?.mode === "menu" ? MENU_SYSTEM_PROMPT : ORDER_SYSTEM_PROMPT;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch(`${Deno.env.get("AI_GATEWAY_BASE") || ""}/v1/chat/completions`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${AI_GATEWAY_API_KEY}`,
