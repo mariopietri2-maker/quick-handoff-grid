@@ -1796,7 +1796,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 label = if (seg.freeDelivery) "Δωρεάν παράδοση" else "${seg.label} έκπτωση",
             )
             val nRec = cur.appConfig.games.wheelRecommendCount.coerceIn(4, 24)
-            val pool = cur.stores.filter { it.is_open != false }
+            val pool = cur.stores.filter { it.is_active != false && it.status_override != "closed" }
                 .ifEmpty { cur.stores }
             val recommended = pool.shuffled().take(nRec)
             _state.value = cur.copy(
