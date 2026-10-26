@@ -3,6 +3,8 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - "native-customer/**"
+      - "native-driver/**"
       - ".github/workflows/rebuild-all-native-apks-resilient.yml"
 jobs:
   build:
@@ -12,86 +14,6 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-
-      - name: Inline fix GOOGLE field + cart + versions
-        run: |
-          python3 <<'PY'
-          from pathlib import Path
-          import re
-
-          p = Path("native-customer/app/build.gradle.kts")
-          t = p.read_text()
-          lines = t.splitlines(True)
-          out = []
-          i = 0
-          while i < len(lines):
-              if "Web client ID for Google" in lines[i]:
-                  while i < len(lines) and "SUPABASE_URL" not in lines[i]:
-                      i += 1
-                  continue
-              if "GOOGLE_WEB_CLIENT_ID" in lines[i] and "buildConfigField" in lines[i]:
-                  while i < len(lines) and "SUPABASE_URL" not in lines[i]:
-                      i += 1
-                  continue
-              if '""" + (project.findProperty' in lines[i]:
-                  i += 1
-                  continue
-              out.append(lines[i])
-              i += 1
-          t = "".join(out)
-          if "GOOGLE_WEB_CLIENT_ID" not in t:
-              insert = (
-                  "\n\n        val googleWebClientId = (project.findProperty(\"GOOGLE_WEB_CLIENT_ID\") as String?)\n"
-                  "            ?: System.getenv(\"GOOGLE_WEB_CLIENT_ID\")\n"
-                  "            ?: \"\"\n"
-                  "        buildConfigField(\"String\", \"GOOGLE_WEB_CLIENT_ID\", \"\\\"$googleWebClientId\\\"\")\n"
-              )
-              t = re.sub(r'(versionName\s*=\s*"[^"]+")', r"\1" + insert, t, count=1)
-          t = re.sub(r"versionCode\s*=\s*\d+", "versionCode = 7233212", t, count=1)
-          t = re.sub(r'versionName\s*=\s*"[^"]+"', 'versionName = "1.0.10"', t, count=1)
-          p.write_text(t)
-          print("customer gradle fixed")
-
-          p = Path("native-driver/app/build.gradle.kts")
-          t = p.read_text()
-          m = re.search(r"versionCode\s*=\s*(\d+)", t)
-          if m:
-              t = t.replace(m.group(0), f"versionCode = {int(m.group(1)) + 1}", 1)
-          t = re.sub(r'versionName\s*=\s*"[^"]+"', 'versionName = "1.0.2"', t, count=1)
-          p.write_text(t)
-          print("driver bumped")
-
-          p = Path("native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt")
-          t = p.read_text()
-          t = t.replace('"Προστέθηκε στο καλάθι"', "null", 1)
-          t = t.replace(
-              "fun scheduleBannerClear() {\n        viewModelScope.launch {\n            delay(4500)",
-              "fun scheduleBannerClear(ms: Long = 4500) {\n        viewModelScope.launch {\n            delay(ms)",
-              1,
-          )
-          p.write_text(t)
-          print("vm cart fixed")
-
-          p = Path("supabase/functions/create-viva-checkout/index.ts")
-          if p.exists():
-              p.write_text(p.read_text().replace("let sourceCode: string | null =", "const sourceCode: string | null ="))
-
-          p = Path("src/lib/apk-downloads.ts")
-          t = p.read_text()
-          t = re.sub(r"APK_NATIVE_CUSTOMER_VERSION = '[^']+'", "APK_NATIVE_CUSTOMER_VERSION = '1.0.10'", t)
-          t = re.sub(r"APK_NATIVE_DRIVER_VERSION = '[^']+'", "APK_NATIVE_DRIVER_VERSION = '1.0.2'", t)
-          p.write_text(t)
-          print("done")
-          PY
-
-      - name: Commit non-fatal
-        continue-on-error: true
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "fix+chore: native 1.0.10/1.0.2 rebuild prep" || true
-          git push || true
 
       - uses: actions/setup-java@v4
         with:
@@ -163,4 +85,4 @@ jobs:
             [ -n "${id:-}" ] && gh api -X DELETE "repos/${{ github.repository }}/releases/assets/$id" || true
           done
           gh release upload "$TAG" dist-apks/*.apk --clobber
-          echo OK
+          echo OK customer+driver uploaded
