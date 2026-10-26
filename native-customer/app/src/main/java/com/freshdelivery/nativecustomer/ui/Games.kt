@@ -69,10 +69,12 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.freshdelivery.nativecustomer.data.MysteryCardDef
+import com.freshdelivery.nativecustomer.data.StoreRow
 import com.freshdelivery.nativecustomer.ui.theme.FreshBg
 import com.freshdelivery.nativecustomer.ui.theme.FreshDivider
 import com.freshdelivery.nativecustomer.ui.theme.FreshGold
@@ -94,6 +96,8 @@ import kotlin.math.sin
 fun LuckyWheelCard(
     state: CustomerUiState,
     onSpin: () -> Unit,
+    onOpenStore: (StoreRow) -> Unit = {},
+    onBrowseDeals: () -> Unit = {},
 ) {
     val rotation = remember { Animatable(0f) }
     val textMeasurer = rememberTextMeasurer()
@@ -284,25 +288,77 @@ fun LuckyWheelCard(
         }
         AnimatedVisibility(visible = state.wheelResult != null) {
             state.wheelResult?.let { res ->
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(top = 12.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(Color(0xFFF7B955).copy(alpha = 0.95f), Color(0xFFFB923C).copy(alpha = 0.95f)),
-                            ),
+                Column(Modifier.fillMaxWidth().padding(top = 12.dp)) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(Color(0xFFF7B955).copy(alpha = 0.95f), Color(0xFFFB923C).copy(alpha = 0.95f)),
+                                ),
+                            )
+                            .padding(12.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            res.label,
+                            color = Color(0xFF431407),
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center,
                         )
-                        .padding(12.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
+                    }
+                    Spacer(Modifier.height(10.dp))
                     Text(
-                        res.label,
-                        color = Color(0xFF431407),
-                        fontWeight = FontWeight.ExtraBold,
+                        "Χρησιμοποίησε το κωδικό σε κατάστημα:",
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontWeight = FontWeight.SemiBold,
                         fontSize = 12.sp,
-                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    val picks = state.wheelRecommendStores.ifEmpty { state.stores.take(4) }
+                    picks.take(8).chunked(2).forEach { row ->
+                        Row(
+                            Modifier.fillMaxWidth().padding(bottom = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            row.forEach { store ->
+                                Box(
+                                    Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(Color.White.copy(alpha = 0.12f))
+                                        .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(12.dp))
+                                        .clickable { onOpenStore(store) }
+                                        .padding(horizontal = 10.dp, vertical = 10.dp),
+                                ) {
+                                    Column {
+                                        Text(
+                                            store.name ?: "Κατάστημα",
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp,
+                                            maxLines = 1,
+                                        )
+                                        Text(
+                                            "Πάτα για μενού · έκπτωση ενεργή",
+                                            color = Color.White.copy(alpha = 0.7f),
+                                            fontSize = 10.sp,
+                                            maxLines = 1,
+                                        )
+                                    }
+                                }
+                            }
+                            if (row.size == 1) Spacer(Modifier.weight(1f))
+                        }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "Ή άνοιξε οποιοδήποτε κατάστημα — ο κωδικός ${res.code} εφαρμόζεται στο ταμείο.",
+                        color = Color.White.copy(alpha = 0.65f),
+                        fontSize = 10.sp,
+                        modifier = Modifier.clickable(onClick = onBrowseDeals),
                     )
                 }
             }

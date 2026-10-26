@@ -300,6 +300,8 @@ data class GameConfig(
     val active: String = "wheel",
     val wheelSegments: List<WheelSegment> = WHEEL_SEGMENTS,
     val cards: List<MysteryCardDef> = defaultMysteryCards(),
+    /** How many stores to suggest after a wheel win (admin can raise this). */
+    val wheelRecommendCount: Int = 4,
 )
 
 fun defaultGameConfig(): GameConfig = GameConfig()

@@ -166,6 +166,8 @@ data class CustomerUiState(
     val wheelPendingTarget: Int? = null,
     val spinLocked: Boolean = false,
     val wheelResult: GamePrize? = null,
+    /** Stores suggested after a wheel win so the customer can use the discount. */
+    val wheelRecommendStores: List<StoreRow> = emptyList(),
     val cardClaimed: Boolean = false,
     val claimedCardIndex: Int? = null,
     val openedCards: Set<Int> = emptySet(),
@@ -1776,6 +1778,10 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 freeDelivery = seg.freeDelivery,
                 label = if (seg.freeDelivery) "Δωρεάν παράδοση" else "${seg.label} έκπτωση",
             )
+            val nRec = cur.appConfig.games.wheelRecommendCount.coerceIn(4, 24)
+            val pool = cur.stores.filter { it.is_open != false }
+                .ifEmpty { cur.stores }
+            val recommended = pool.shuffled().take(nRec)
             _state.value = cur.copy(
                 spinning = false,
                 wheelPendingTarget = null,
@@ -1787,6 +1793,13 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     freeDelivery = seg.freeDelivery,
                 ),
                 appliedDeal = deal,
+                // Auto-apply won code at checkout
+                promoCodeInput = seg.sub,
+                promoCodeApplied = seg.sub,
+                promoCodeMessage = if (seg.freeDelivery) "Δωρεάν παράδοση ενεργή" else "${seg.label} έκπτωση ενεργή",
+                wheelRecommendStores = recommended,
+                info = null,
+                error = null,
             )
             persistWonAt()
             persistSpinDay()
