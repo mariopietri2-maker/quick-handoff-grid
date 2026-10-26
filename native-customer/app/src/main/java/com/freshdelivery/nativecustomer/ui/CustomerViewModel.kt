@@ -837,7 +837,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             info = if (switched) {
                 "Νέο καλάθι · ${s.selectedStore?.name ?: "κατάστημα"} (το προηγούμενο καθαρίστηκε)"
             } else {
-                "Προστέθηκε στο καλάθι"
+                null
             },
         )
         tickHaptic()
@@ -1230,9 +1230,9 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Auto-dismiss error/info so sticky banners do not linger. */
-    fun scheduleBannerClear() {
+    fun scheduleBannerClear(ms: Long = 4500) {
         viewModelScope.launch {
-            delay(4500)
+            delay(ms)
             val s = _state.value
             if (s.error != null || s.info != null) {
                 _state.value = s.copy(error = null, info = null)

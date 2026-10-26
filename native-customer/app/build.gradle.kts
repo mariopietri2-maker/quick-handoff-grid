@@ -17,15 +17,15 @@ android {
         applicationId = "com.freshdelivery.customer"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7233211
-        versionName = "1.0.9"
+        versionCode = 7233212
+        versionName = "1.0.10"
 
-        // Web client ID for Google Sign-In (Supabase Google provider). Set in CI or local.properties.
-        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", """ + (project.findProperty("GOOGLE_WEB_CLIENT_ID") ?: System.getenv("GOOGLE_WEB_CLIENT_ID") ?: "") + """) ?: System.getenv("GOOGLE_WEB_CLIENT_ID") ?: "\"\"\"}\"",
-        )
+        val googleWebClientId = (project.findProperty("GOOGLE_WEB_CLIENT_ID") as String?)
+            ?: System.getenv("GOOGLE_WEB_CLIENT_ID")
+            ?: ""
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
 
-        buildConfigField(
-            "String",
+
             "SUPABASE_URL",
             "\"https://ojkesspghyqmjmupybva.supabase.co\"",
         )

@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    let sourceCode: string | null = Deno.env.get("VIVA_SOURCE_CODE") ?? null;
+    const sourceCode: string | null = Deno.env.get("VIVA_SOURCE_CODE") ?? null;
 
     const orderCode = await createVivaOrder(environment, {
       amountCents,
