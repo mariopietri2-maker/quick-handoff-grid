@@ -199,9 +199,22 @@ private fun userFacingMessage(raw: String): String {
         "apikey" in lower ||
         "bearer " in lower ||
         "supabase.co" in lower ||
+        "postgrest" in lower ||
+        "jwt" in lower ||
+        "row level security" in lower ||
+        "rls" in lower ||
         raw.startsWith("http")
-    if (looksLikeRequest) return "Δεν ήταν δυνατή η ανανέωση. Δοκίμασε ξανά."
-    return raw.take(160)
+    if (looksLikeRequest) return "Προσωρινό πρόβλημα σύνδεσης. Δοκίμασε ξανά."
+    if ("refreshorders" in lower || "fetchorders" in lower || "orders" in lower && "fail" in lower) {
+        return "Δεν ήταν δυνατή η ανανέωση παραγγελιών. Δοκίμασε ξανά."
+    }
+    if ("fetchstores" in lower || "refreshstores" in lower) {
+        return "Δεν ήταν δυνατή η φόρτωση καταστημάτων. Δοκίμασε ξανά."
+    }
+    // Drop empty / noise
+    val trimmed = raw.trim()
+    if (trimmed.isEmpty() || trimmed.equals("null", ignoreCase = true)) return ""
+    return trimmed.take(160)
 }
 
 @Composable
@@ -272,11 +285,12 @@ fun CustomerShell(
     var addressOpen by remember { mutableStateOf(false) }
     LaunchedEffect(state.info, state.error) {
         val raw = state.error ?: state.info
-        val msg = raw?.let { userFacingMessage(it) }
-        if (!msg.isNullOrBlank()) {
+        val msg = raw?.let { userFacingMessage(it) }?.trim().orEmpty()
+        if (msg.isNotBlank()) {
             snackbar.showSnackbar(msg)
-            onClearMessages()
         }
+        // Always clear so a failed background refresh cannot re-fire the banner.
+        if (raw != null) onClearMessages()
     }
     // System back: close overlays / leave store / leave non-Home tabs — never exit until Home root.
     val onNonRootScreen = addressOpen ||

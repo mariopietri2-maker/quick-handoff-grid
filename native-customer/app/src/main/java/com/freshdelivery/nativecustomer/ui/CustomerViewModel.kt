@@ -1617,7 +1617,14 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     storeRatings = ratings,
                 )
             }.onFailure { e ->
-                _state.value = _state.value.copy(error = e.message)
+                // Background catalogue refresh — never spam Home with a snackbar.
+                android.util.Log.w("CustomerVM", "refreshStores failed", e)
+                if (_state.value.stores.isEmpty() && allStoresCache.isEmpty()) {
+                    _state.value = _state.value.copy(
+                        error = "Δεν ήταν δυνατή η φόρτωση καταστημάτων. Δοκίμασε ξανά.",
+                    )
+                    scheduleBannerClear()
+                }
             }
         }
     }
@@ -1686,8 +1693,19 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 ensureDeliveryCoordsOnTrack(tracked)
                 refreshLoyalty()
             }.onFailure { e ->
-                // Background refresh — keep existing orders, don't banner the home screen.
+                // Background refresh — keep existing orders, never banner Home.
                 android.util.Log.w("CustomerVM", "refreshOrders failed", e)
+                // Only surface when user is looking at Orders and we have none.
+                val tab = _state.value.tab
+                if (
+                    (tab == CustomerTab.Orders || tab == CustomerTab.Track) &&
+                    _state.value.orders.isEmpty()
+                ) {
+                    _state.value = _state.value.copy(
+                        error = "Δεν ήταν δυνατή η ανανέωση παραγγελιών. Δοκίμασε ξανά.",
+                    )
+                    scheduleBannerClear()
+                }
             }
         }
     }
