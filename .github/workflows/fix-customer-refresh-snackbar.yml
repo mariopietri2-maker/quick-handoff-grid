@@ -1,0 +1,81 @@
+name: Fix customer refresh snackbar
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/fix-customer-refresh-snackbar.py"
+      - ".github/workflows/fix-customer-refresh-snackbar.yml"
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply fix
+        run: python3 scripts/fix-customer-refresh-snackbar.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt \
+                  native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt
+          if git diff --staged --quiet; then echo no change; else
+            git commit -m "fix(customer-native): no home snackbar on background store/orders refresh fail"
+            git push
+          fi
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v4
+      - name: Install SDK 36
+        run: sdkmanager --install "platforms;android-36" "build-tools;36.0.0" "platform-tools" || true
+      - name: Restore keystore
+        env:
+          PLAY_CUSTOMER_KEYSTORE_B64: ${{ secrets.PLAY_CUSTOMER_KEYSTORE_B64 }}
+          PLAY_STORE_PASSWORD: ${{ secrets.PLAY_STORE_PASSWORD }}
+        run: |
+          mkdir -p mobile-signing
+          if [ -n "${PLAY_CUSTOMER_KEYSTORE_B64:-}" ]; then
+            echo "$PLAY_CUSTOMER_KEYSTORE_B64" | base64 -d > mobile-signing/fresh2go-customer-upload.jks
+          fi
+      - name: Compile + AAB
+        working-directory: native-customer
+        env:
+          PLAY_KEYSTORE_FILE: ${{ github.workspace }}/mobile-signing/fresh2go-customer-upload.jks
+          PLAY_KEY_ALIAS: fresh2go-customer
+          PLAY_STORE_PASSWORD: ${{ secrets.PLAY_STORE_PASSWORD }}
+          PLAY_KEY_PASSWORD: ${{ secrets.PLAY_KEY_PASSWORD }}
+        run: |
+          cp -R ../native-driver/gradle . 2>/dev/null || true
+          cp ../native-driver/gradlew . 2>/dev/null || true
+          chmod +x gradlew
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path("app/build.gradle.kts")
+          t = p.read_text()
+          t = re.sub(r"compileSdk\s*=\s*\d+", "compileSdk = 36", t)
+          t = re.sub(r"targetSdk\s*=\s*\d+", "targetSdk = 36", t)
+          t = re.sub(r'\n\s*implementation\("com\.google\.maps\.android:maps-compose:[^"]+"\)\s*', "\n", t)
+          p.write_text(t)
+          PY
+          ./gradlew :app:compileDebugKotlin :app:bundleRelease --no-daemon --stacktrace
+      - name: Publish AAB
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p store-bundles
+          cp native-customer/app/build/outputs/bundle/release/app-release.aab \
+            store-bundles/fresh2go-customer-native-release-api36.aab
+          TAG=native-customer-aab-api36
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "Fresh2GO Customer AAB" --notes "refresh snackbar fix"
+          gh api "repos/${{ github.repository }}/releases/tags/$TAG" --jq '.assets[] | select(.name|test("aab";"i")) | .id' | while read -r id; do
+            [ -n "$id" ] && gh api -X DELETE "repos/${{ github.repository }}/releases/assets/$id" || true
+          done
+          gh release upload "$TAG" store-bundles/*.aab --clobber
+          echo "https://github.com/${{ github.repository }}/releases/download/$TAG/fresh2go-customer-native-release-api36.aab"
