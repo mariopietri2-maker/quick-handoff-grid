@@ -77,7 +77,7 @@ export function ForYouRow() {
           price: Number(m.price),
           image_url: m.image_url,
           store_id: m.store_id,
-          store_name: nameMap.get(m.store_id) ?? 'Κατάστημα',
+          store_name: String(nameMap.get(m.store_id) ?? 'Κατάστημα'),
         }));
         setItems(rows);
       } catch {

@@ -119,7 +119,7 @@ export default function StoreApp() {
   } = useStore();
   // Ghost branding (N). Call-only UI only when not platform fulfilment.
   const isNStore = store?.store_role === 'N';
-  const isCallOnlyGhost = isNStore && store?.fulfilment_mode !== 'platform';
+  const isCallOnlyGhost = isNStore && (store as { fulfilment_mode?: string } | null)?.fulfilment_mode !== 'platform';
 
   // Must be declared before any effect/memo that reads `orders`
   const { orders, loading: ordersLoading, updateStatus, pendingIds } = useStoreOrders(

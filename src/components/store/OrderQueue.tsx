@@ -3,6 +3,7 @@ import {
   Clock, Car, ChevronDown, ChevronRight, Timer, Plus, Minus, Trash2, Package, Ban,
   User, ShoppingBag, Search, Printer, Volume2, VolumeX, ArrowUpDown, StickyNote, Rows3,
   CheckCheck,
+  Phone, MapPin,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -162,6 +163,7 @@ export function OrderQueue({
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [prepTimes, setPrepTimes] = useState<Record<string, number>>({});
   const [busyLocal, setBusyLocal] = useState<Record<string, boolean>>({});
+  const [lastAction, setLastAction] = useState<{ orderId: string; from: string; to: string } | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [driverCodes, setDriverCodes] = useState<Record<string, string>>({});
   const [soundMuted, setSoundMuted] = useState(() => localStorage.getItem('store_sound_muted') === '1');

@@ -35,7 +35,26 @@ const COUPON_CARDS = [
   { tier: '5', euro: 5, points: 50, label: '€5 κουπόνι' },
 ] as const;
 
-export function RewardsCard({ rewards, onUpdated }: { rewards: Rewards; onUpdated?: () => void }) {
+export function RewardsCard({ rewards: rewardsProp, onUpdated }: { rewards?: Rewards; onUpdated?: () => void }) {
+  const [internalRewards, setInternalRewards] = useState<Rewards>({ points: 0, lifetime_points: 0, tier: 'bronze' });
+  const rewards = rewardsProp ?? internalRewards;
+  useEffect(() => {
+    if (rewardsProp) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await (supabase as any).rpc('my_loyalty_status');
+        if (!cancelled && data) {
+          setInternalRewards({
+            points: Number(data.points ?? 0),
+            lifetime_points: Number(data.lifetime_points ?? 0),
+            tier: String(data.tier ?? 'bronze'),
+          });
+        }
+      } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, [rewardsProp]);
   const [redeeming, setRedeeming] = useState<string | null>(null);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [copied, setCopied] = useState<string | null>(null);

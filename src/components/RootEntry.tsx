@@ -27,6 +27,11 @@ function isCapacitorNative(): boolean {
 export default function RootEntry() {
   const { user, profile, loading, isAdmin, isSupport, isStore } = useAuth();
   const { flavor, ready: flavorReady } = useMobileFlavor();
+  // Explicit store entry (PWA / deep link / query) — never show marketing site.
+  const queryApp = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('app')
+    : null;
+  const forceStore = queryApp === 'store' || flavor === 'store';
   const native = isCapacitorNative();
   const [bootTimedOut, setBootTimedOut] = React.useState(false);
   React.useEffect(() => {
@@ -34,9 +39,12 @@ export default function RootEntry() {
     return () => window.clearTimeout(t);
   }, []);
 
-  // Store role always wins over wrong flavor / deep links into /order.
-  if (!loading && user && (profile?.role === 'store' || isStore)) {
+  // Store role / store PWA always wins over marketing homepage.
+  if (!loading && user && (profile?.role === 'store' || isStore || forceStore)) {
     return <Navigate to="/store" replace />;
+  }
+  if (forceStore && !loading && !user) {
+    return <Navigate to="/auth?next=/store" replace />;
   }
 
   // Dedicated app flavors always go to their home (customer/driver/store shells).

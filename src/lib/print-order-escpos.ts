@@ -184,8 +184,9 @@ export function buildOrderEscPos(
       enc.text(escpad(`  (${money(unit)} x ${qty})`, cols, 'right').trimEnd());
       enc.line();
     }
-    const mods = Array.isArray((item as { order_item_modifiers?: unknown }).order_item_modifiers)
-      ? ((item as { order_item_modifiers: { option_name?: string; group_name?: string; price_delta?: number }[] }).order_item_modifiers)
+    const modsRaw = (item as { order_item_modifiers?: unknown }).order_item_modifiers;
+    const mods = Array.isArray(modsRaw)
+      ? (modsRaw as { option_name?: string; group_name?: string; price_delta?: number }[])
       : [];
     for (const m of mods) {
       const label = [m.group_name, m.option_name].filter(Boolean).join(': ') || m.option_name || '';

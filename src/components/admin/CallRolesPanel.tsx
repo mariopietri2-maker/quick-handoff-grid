@@ -78,7 +78,7 @@ export default function CallRolesPanel() {
   const removeGhostOrder = async (orderId: string) => {
     if (!confirm('Αφαίρεση αυτής της παραγγελίας από τον Ghost Rider;')) return;
     setBusyId(orderId);
-    const { error } = await supabase.rpc('admin_delete_ghost_order', { p_order_id: orderId });
+    const { error } = await (supabase as any).rpc('admin_delete_ghost_order', { p_order_id: orderId });
     if (error) toast.error(error.message);
     else toast.success('Η παραγγελία αφαιρέθηκε');
     await load();
