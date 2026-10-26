@@ -1,0 +1,23 @@
+name: Sanitize setup-intent errors
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/fix-sanitize-setup-errors.py"
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/fix-sanitize-setup-errors.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/
+          if git diff --staged --quiet; then echo no change; else
+            git commit -m "fix(customer-native): friendly error when create-setup-intent missing"
+            git push
+          fi
