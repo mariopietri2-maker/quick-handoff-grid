@@ -2163,6 +2163,17 @@ private fun PaymentMethodsScreen(
             Text("Τρόποι πληρωμής", style = MaterialTheme.typography.titleLarge)
         }
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (!state.error.isNullOrBlank()) {
+                Text(state.error!!, color = Color(0xFFB91C1C), fontWeight = FontWeight.SemiBold)
+            }
+            if (!state.info.isNullOrBlank()) {
+                Text(state.info!!, color = FreshGreenDark, fontWeight = FontWeight.Medium)
+            }
+            Text(
+                "Μετρητά στο checkout. Εδώ αποθηκεύεις κάρτα για πιο γρήγορη πληρωμή.",
+                color = FreshMuted,
+                style = MaterialTheme.typography.bodySmall,
+            )
             Text(
                 "Αποθηκευμένες κάρτες",
                 fontWeight = FontWeight.Bold,
@@ -4184,7 +4195,7 @@ private fun ProfileTab(
                 .shadow(4.dp, RoundedCornerShape(22.dp))
                 .clip(RoundedCornerShape(22.dp))
                 .background(Color.White)
-                .clickable(onClick = onOpenPayments)
+                .clickable(enabled = true, onClick = { onOpenPayments() })
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {

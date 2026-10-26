@@ -1408,7 +1408,13 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun openPayments() {
-        _state.value = _state.value.copy(paymentsOpen = true)
+        _state.value = _state.value.copy(
+            paymentsOpen = true,
+            error = null,
+            supportOpen = false,
+            showCart = false,
+            adminOpen = false,
+        )
         refreshSavedCards()
     }
     fun closePayments() {
