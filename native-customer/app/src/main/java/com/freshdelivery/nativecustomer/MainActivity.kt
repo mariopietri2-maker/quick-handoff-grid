@@ -2,6 +2,15 @@ package com.freshdelivery.nativecustomer
 
 import android.os.Build
 import android.os.Bundle
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.CustomCredential
+import androidx.credentials.exceptions.GetCredentialException
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.freshdelivery.nativecustomer.BuildConfig
+import kotlinx.coroutines.launch
+import androidx.lifecycle.lifecycleScope
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -130,6 +139,51 @@ class MainActivity : ComponentActivity() {
                             onToggleSignup = vm::toggleSignupMode,
                             onLogin = vm::signIn,
                             onSignUp = vm::signUp,
+                            onGoogleSignIn = {
+                                lifecycleScope.launch {
+                                    try {
+                                        val webClientId = BuildConfig.GOOGLE_WEB_CLIENT_ID
+                                        if (webClientId.isBlank()) {
+                                            // Fallback message — configure GOOGLE_WEB_CLIENT_ID in CI
+                                            android.widget.Toast.makeText(
+                                                this@MainActivity,
+                                                "Ρύθμισε Google Sign-In (WEB client ID)",
+                                                android.widget.Toast.LENGTH_LONG,
+                                            ).show()
+                                            return@launch
+                                        }
+                                        val googleIdOption = GetGoogleIdOption.Builder()
+                                            .setFilterByAuthorizedAccounts(false)
+                                            .setServerClientId(webClientId)
+                                            .setAutoSelectEnabled(false)
+                                            .build()
+                                        val request = GetCredentialRequest.Builder()
+                                            .addCredentialOption(googleIdOption)
+                                            .build()
+                                        val cm = CredentialManager.create(this@MainActivity)
+                                        val result = cm.getCredential(this@MainActivity, request)
+                                        val cred = result.credential
+                                        if (cred is CustomCredential &&
+                                            cred.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+                                        ) {
+                                            val googleId = GoogleIdTokenCredential.createFrom(cred.data)
+                                            vm.signInWithGoogle(googleId.idToken)
+                                        }
+                                    } catch (e: GetCredentialException) {
+                                        android.widget.Toast.makeText(
+                                            this@MainActivity,
+                                            e.message ?: "Ακύρωση Google Sign-In",
+                                            android.widget.Toast.LENGTH_SHORT,
+                                        ).show()
+                                    } catch (e: Exception) {
+                                        android.widget.Toast.makeText(
+                                            this@MainActivity,
+                                            e.message ?: "Σφάλμα Google",
+                                            android.widget.Toast.LENGTH_SHORT,
+                                        ).show()
+                                    }
+                                }
+                            },
                         )
                     }
                     else -> {

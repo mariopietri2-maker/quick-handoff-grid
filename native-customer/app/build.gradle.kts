@@ -20,6 +20,10 @@ android {
         versionCode = 7233211
         versionName = "1.0.9"
 
+        // Web client ID for Google Sign-In (Supabase Google provider). Set in CI or local.properties.
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", """ + (project.findProperty("GOOGLE_WEB_CLIENT_ID") ?: System.getenv("GOOGLE_WEB_CLIENT_ID") ?: "") + """) ?: System.getenv("GOOGLE_WEB_CLIENT_ID") ?: "\"\"\"}\"",
+        )
+
         buildConfigField(
             "String",
             "SUPABASE_URL",
@@ -138,6 +142,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.9.0")
 
     implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
     implementation("com.stripe:stripe-android:21.6.0")
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-messaging")

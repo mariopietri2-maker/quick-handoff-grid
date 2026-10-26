@@ -400,6 +400,23 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun signInWithGoogle(idToken: String) {
+        if (idToken.isBlank()) {
+            _state.value = _state.value.copy(error = "Δεν ελήφθη token Google")
+            return
+        }
+        viewModelScope.launch {
+            _state.value = _state.value.copy(busy = true, error = null)
+            runCatching { repo.signInWithGoogle(idToken) }
+                .onFailure { e ->
+                    _state.value = _state.value.copy(
+                        busy = false,
+                        error = e.message ?: "Αποτυχία σύνδεσης με Google",
+                    )
+                }
+        }
+    }
+
     fun toggleSignupMode(on: Boolean) {
         _state.value = _state.value.copy(signupMode = on, error = null, info = null)
     }

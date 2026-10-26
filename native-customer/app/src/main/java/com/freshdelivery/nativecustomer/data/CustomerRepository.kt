@@ -3,6 +3,8 @@ package com.freshdelivery.nativecustomer.data
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.auth.providers.builtin.IDToken
+import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.functions.functions
 import io.ktor.client.statement.bodyAsText
 import io.github.jan.supabase.postgrest.from
@@ -42,6 +44,13 @@ class CustomerRepository(
         client.auth.signInWith(Email) {
             this.email = email
             this.password = password
+        }
+    }
+
+    suspend fun signInWithGoogle(idToken: String) {
+        client.auth.signInWith(IDToken) {
+            this.idToken = idToken
+            provider = Google
         }
     }
 

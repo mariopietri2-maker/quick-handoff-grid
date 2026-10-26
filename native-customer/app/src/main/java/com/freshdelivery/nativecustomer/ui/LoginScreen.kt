@@ -26,6 +26,7 @@ import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
@@ -78,6 +79,7 @@ fun LoginScreen(
     onToggleSignup: (Boolean) -> Unit = {},
     onLogin: (String, String) -> Unit,
     onSignUp: (String, String, String, String) -> Unit = { _, _, _, _ -> },
+    onGoogleSignIn: () -> Unit = {},
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -249,7 +251,21 @@ fun LoginScreen(
             Spacer(Modifier.height(12.dp))
             Text(info, color = FreshGreenDark, style = MaterialTheme.typography.bodySmall)
         }
-        Spacer(Modifier.height(24.dp))
+        // Google Sign-In (testers feedback)
+        OutlinedButton(
+            onClick = onGoogleSignIn,
+            enabled = !busy,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = RoundedCornerShape(26.dp),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1C1917)),
+        ) {
+            Text("Συνέχεια με Google", fontWeight = FontWeight.SemiBold)
+        }
+        Spacer(Modifier.height(12.dp))
+        Text("ή με email", color = FreshMuted, style = MaterialTheme.typography.labelMedium)
+        Spacer(Modifier.height(12.dp))
         Button(
             onClick = {
                 prefs.rememberMe = rememberMe
