@@ -64,5 +64,14 @@ export default defineConfig({
         comments: false,
       },
     },
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          supabase: ['@supabase/supabase-js'],
+          mapbox: ['mapbox-gl'],
+        },
+      },
+    },
   },
 });
