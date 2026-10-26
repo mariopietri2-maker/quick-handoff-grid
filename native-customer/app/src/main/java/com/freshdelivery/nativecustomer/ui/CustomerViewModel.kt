@@ -1380,6 +1380,31 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         launchNativePaymentSheet(orderId)
     }
 
+
+    /** User-facing edge-function errors — never dump headers/JWT. */
+    private fun friendlyEdgeError(raw: String?): String {
+        val s = raw?.trim().orEmpty()
+        if (s.isEmpty()) return "Αποτυχία σύνδεσης με πληρωμές"
+        if (s.contains("NOT_FOUND") || s.contains("was not found")) {
+            return "Η υπηρεσία αποθήκευσης κάρτας δεν είναι ενεργή ακόμα (create-setup-intent)."
+        }
+        if (s.contains("Unauthorized") || s.contains("401")) {
+            return "Συνδέσου ξανά για να αποθηκεύσεις κάρτα."
+        }
+        // Prefer JSON message field
+        Regex(""message"\s*:\s*"([^"]+)"").find(s)?.groupValues?.getOrNull(1)?.let {
+            return it
+        }
+        Regex(""error"\s*:\s*"([^"]+)"").find(s)?.groupValues?.getOrNull(1)?.let {
+            return it
+        }
+        // Strip huge dumps
+        if (s.length > 180 || s.contains("Authorization") || s.contains("Bearer")) {
+            return "Αποτυχία αποθήκευσης κάρτας. Έλεγξε Stripe / edge functions."
+        }
+        return s
+    }
+
     fun startAddCard() {
         viewModelScope.launch {
             _state.value = _state.value.copy(busy = true, error = null)
@@ -1402,7 +1427,10 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     )
                 }
                 .onFailure { e ->
-                    _state.value = _state.value.copy(busy = false, error = e.message ?: "Αποτυχία αποθήκευσης κάρτας")
+                    _state.value = _state.value.copy(
+                        busy = false,
+                        error = friendlyEdgeError(e.message),
+                    )
                 }
         }
     }
