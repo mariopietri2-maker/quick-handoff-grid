@@ -24,8 +24,8 @@ android {
             ?: System.getenv("GOOGLE_WEB_CLIENT_ID")
             ?: ""
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
-
-
+        buildConfigField(
+            "String",
             "SUPABASE_URL",
             "\"https://ojkesspghyqmjmupybva.supabase.co\"",
         )
