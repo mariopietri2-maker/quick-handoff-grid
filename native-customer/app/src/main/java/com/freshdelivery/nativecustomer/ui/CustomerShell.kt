@@ -521,7 +521,7 @@ fun CustomerShell(
                     onPayOrder = onPayOrder,
                 )
                 CustomerTab.Track -> TrackTab(state, onRefresh = onRefresh, onPay = onPayOrder)
-                CustomerTab.Profile -> ProfileTab(state, onSaveProfile, onSignOut, onOpenSupport, onBackToHome = { onTab(CustomerTab.Home) })
+                CustomerTab.Profile -> ProfileTab(state, onSaveProfile, onSignOut, onOpenSupport, onOpenPayments = onOpenPayments, onBackToHome = { onTab(CustomerTab.Home) })
             }
         }
     }
@@ -2122,8 +2122,6 @@ private fun MenuScreen(
 // FreshMenuRow extracted
 
 @Composable
-
-@Composable
 private fun PaymentMethodsScreen(
     state: CustomerUiState,
     onBack: () -> Unit,
@@ -2194,6 +2192,7 @@ private fun PaymentMethodsScreen(
     }
 }
 
+@Composable
 private fun CartCheckoutScreen(
     state: CustomerUiState,
     snackbar: SnackbarHostState,
@@ -4030,6 +4029,7 @@ private fun ProfileTab(
     onSaveProfile: (String, String) -> Unit,
     onSignOut: () -> Unit,
     onOpenSupport: () -> Unit = {},
+    onOpenPayments: () -> Unit = {},
     onBackToHome: () -> Unit = {},
 ) {
     var fullName by remember(state.profile?.full_name) {
