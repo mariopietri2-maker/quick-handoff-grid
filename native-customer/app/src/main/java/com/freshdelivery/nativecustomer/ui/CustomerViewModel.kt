@@ -1686,7 +1686,8 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 ensureDeliveryCoordsOnTrack(tracked)
                 refreshLoyalty()
             }.onFailure { e ->
-                _state.value = _state.value.copy(error = userFacingError(e, "Δεν ήταν δυνατή η ανανέωση παραγγελιών"))
+                // Background refresh — keep existing orders, don't banner the home screen.
+                android.util.Log.w("CustomerVM", "refreshOrders failed", e)
             }
         }
     }

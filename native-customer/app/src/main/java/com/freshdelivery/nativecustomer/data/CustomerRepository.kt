@@ -725,7 +725,7 @@ class CustomerRepository(
                 filter { eq("customer_id", userId) }
                 order("created_at", Order.DESCENDING)
             }.decodeList<OrderRow>()
-        val storeById = storesByIds(orders.map { it.store_id })
+        val storeById = runCatching { storesByIds(orders.map { it.store_id }) }.getOrDefault(emptyMap())
         val orderIds = orders.map { it.id }
         val counts = runCatching {
             if (orderIds.isEmpty()) emptyMap()
