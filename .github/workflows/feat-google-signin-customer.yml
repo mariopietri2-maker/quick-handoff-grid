@@ -1,0 +1,26 @@
+name: Google Sign-In + Play listing docs
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/feat-google-signin-customer.py"
+      - "docs/play-store-listing-el.md"
+      - ".github/workflows/feat-google-signin-customer.yml"
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply Google Sign-In patch
+        run: python3 scripts/feat-google-signin-customer.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer docs/play-store-listing-el.md scripts
+          if git diff --staged --quiet; then echo no change; else
+            git commit -m "feat(customer-native): Google Sign-In button + Play listing EL docs"
+            git push
+          fi
