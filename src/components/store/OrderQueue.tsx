@@ -725,6 +725,7 @@ export function OrderQueue({
               const next = !soundMuted;
               setSoundMuted(next);
               localStorage.setItem('store_sound_muted', next ? '1' : '0');
+              if (next) { try { stopOrderAlertLoop(); } catch {} }
               toast.message(next ? 'Ήχος off' : 'Ήχος on');
             }}
           >

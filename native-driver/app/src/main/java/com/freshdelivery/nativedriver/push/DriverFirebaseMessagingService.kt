@@ -132,9 +132,11 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
                     vibratePattern()
                 }
             } else {
-                // One sound only: MediaPlayer. Notification is silent (channel has no sound).
+                // Offers must survive process throttle: FGS ring (same as store call).
                 showNotification(title, body, isStoreCall = false, silent = true)
                 if (isOffer || type.isBlank()) {
+                    StoreCallRingService.ensureChannel(this)
+                    runCatching { StoreCallRingService.start(this, title, body) }
                     if (claimMediaSoundSlot()) {
                         playOfferSound(loop = false)
                     }

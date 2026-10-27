@@ -207,7 +207,7 @@ export function useStoreOrders(
     const hasNew = orders.some((o) => o.status === 'placed');
     if (!hasNew) { stopOrderAlertLoop(); return; }
     if (autoAcceptEnabled) {
-      startOrderAlertLoop({ maxRepeats: 10 });
+      startOrderAlertLoop({ maxRepeats: 5 });
       const timer = window.setTimeout(async () => {
         if (autoAcceptingRef.current) return;
         const placed = orders.filter((o) => o.status === 'placed');
