@@ -1,0 +1,21 @@
+name: Fix store accept order
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/fix-store-accept-order.py"
+      - ".github/workflows/fix-store-accept.yml"
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/fix-store-accept-order.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/hooks/useOrders.ts src/components/store/OrderQueue.tsx supabase/migrations/
+          git commit -m "fix(store): accept path + pending card clarity" || true
+          git push || true
