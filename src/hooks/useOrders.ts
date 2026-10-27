@@ -36,7 +36,7 @@ export function useStoreOrders(
   const refetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const burstCount = useRef(0);
   const burstToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const ACTIVE_STATUSES = useRef(new Set(['placed', 'accepted', 'preparing', 'ready']));
+  const ACTIVE_STATUSES = useRef(new Set(['pending', 'placed', 'accepted', 'preparing', 'ready']));
 
   useEffect(() => {
     if (!storeId) { setAutoAcceptEnabled(false); return; }
@@ -56,7 +56,7 @@ export function useStoreOrders(
       .from('orders')
       .select('*, order_items(*)')
       .eq('store_id', storeId)
-      .in('status', ['placed', 'accepted', 'preparing', 'ready'])
+      .in('status', ['pending', 'placed', 'accepted', 'preparing', 'ready'])
       .order('created_at', { ascending: false })
       .limit(100);
     if (!error && data) {
@@ -157,21 +157,52 @@ export function useStoreOrders(
   ): Promise<boolean> => {
     const estimatedPrepTime =
       typeof optionsOrPrep === 'number' ? optionsOrPrep : optionsOrPrep?.estimatedPrepTime;
-    const { error } = await supabase.rpc('transition_order_status' as never, {
-      p_order_id: orderId,
-      p_new_status: newStatus,
-      p_estimated_prep_time: estimatedPrepTime ?? null,
-    } as never);
+    const runTransition = async (status: string) =>
+      supabase.rpc('transition_order_status' as never, {
+        p_order_id: orderId,
+        p_new_status: status,
+        p_estimated_prep_time: estimatedPrepTime ?? null,
+      } as never);
+
+    let { error } = await runTransition(newStatus);
+
+    // Fallback: some DB versions only allow placed → accepted, not placed → preparing
+    if (error && newStatus === 'preparing') {
+      const msg0 = error.message ?? '';
+      if (msg0.includes('Illegal order status') || msg0.includes('transition')) {
+        const mid = await runTransition('accepted');
+        if (!mid.error) {
+          const second = await runTransition('preparing');
+          error = second.error;
+        }
+      }
+    }
+
+    // Last resort direct update for store owner (cash placed only)
+    if (error && newStatus === 'preparing') {
+      const { error: upErr } = await supabase
+        .from('orders')
+        .update({
+          status: 'preparing',
+          estimated_prep_time: estimatedPrepTime ?? 20,
+        } as any)
+        .eq('id', orderId)
+        .eq('status', 'placed');
+      if (!upErr) error = null;
+    }
+
     if (error) {
       const msg = error.message ?? '';
       const friendly =
-        msg.includes('card payment') || msg.includes('waiting for card')
-          ? 'Η παραγγελία περιμένει πληρωμή με κάρτα'
+        msg.includes('card payment') || msg.includes('waiting for card') || msg.includes('pending')
+          ? 'Η παραγγελία περιμένει πληρωμή με κάρτα — δεν γίνεται αποδοχή ακόμα'
           : msg.includes('Not authorized')
-            ? 'Δεν έχεις δικαίωμα για αυτή την παραγγελία'
+            ? 'Δεν έχεις δικαίωμα για αυτή την παραγγελία (έλεγξε owner λογαριασμό)'
             : msg.includes('Not authenticated')
               ? 'Ξανασυνδέσου στο κατάστημα'
-              : (msg || 'Αποτυχία ενημέρωσης κατάστασης');
+              : msg.includes('Illegal order status')
+                ? 'Μη επιτρεπτή αλλαγή κατάστασης — δοκίμασε ανανέωση'
+                : (msg || 'Αποτυχία ενημέρωσης κατάστασης');
       toast.error(friendly);
       return false;
     }

@@ -36,6 +36,7 @@ interface OrderQueueProps {
 }
 
 const statusConfig: Record<string, { label: string; short: string; bg: string; chip: string; accent: string }> = {
+  pending: { label: 'Πληρωμή κάρτας', short: 'Κάρτα', bg: 'bg-amber-500/10', chip: 'text-amber-700', accent: 'border-amber-500' },
   placed: {
     label: 'Νέα',
     short: 'Νέα',
@@ -126,6 +127,9 @@ function getNextAction(status: string) {
   switch (status) {
     case 'placed':
       return { label: 'Αποδοχή', short: 'OK', next: 'preparing' };
+    case 'pending':
+      // Card not paid yet — store must not accept
+      return null;
     case 'accepted':
       return { label: 'Έτοιμο', short: 'Έτοιμο', next: 'ready' };
     case 'preparing':
@@ -286,11 +290,16 @@ export function OrderQueue({
 
   const handleAdvance = async (order: OrderWithItems, nextStatus: string) => {
     if (isBusy(order.id)) return;
+    if (order.status === 'pending') {
+      toast.error('Η παραγγελία περιμένει πληρωμή με κάρτα');
+      return;
+    }
     const from = order.status;
     setBusyLocal((p) => ({ ...p, [order.id]: true }));
     try {
       const opts = order.status === 'placed' ? { estimatedPrepTime: getPrep(order) } : undefined;
-      await onStatusUpdate(order.id, nextStatus, opts);
+      const ok = await onStatusUpdate(order.id, nextStatus, opts);
+      if (ok === false) return;
       setLastAction({ orderId: order.id, from, to: nextStatus });
       setExpanded((p) => {
         const next = { ...p };
