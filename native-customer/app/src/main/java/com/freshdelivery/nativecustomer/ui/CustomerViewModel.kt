@@ -1427,19 +1427,6 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         if (s.contains("Unauthorized") || s.contains("401")) {
             return "Συνδέσου ξανά για να αποθηκεύσεις κάρτα."
         }
-        // Prefer short JSON message= without fragile Regex string escaping
-        val msgKey = s.indexOf(""message"")
-        if (msgKey >= 0) {
-            val after = s.substring(msgKey + 9)
-            val q1 = after.indexOf('"')
-            if (q1 >= 0) {
-                val q2 = after.indexOf('"', q1 + 1)
-                if (q2 > q1) {
-                    val extracted = after.substring(q1 + 1, q2)
-                    if (extracted.isNotBlank() && extracted.length < 160) return extracted
-                }
-            }
-        }
         if (s.length > 180 || s.contains("Authorization") || s.contains("Bearer")) {
             return "Αποτυχία αποθήκευσης κάρτας. Έλεγξε Stripe / edge functions."
         }
