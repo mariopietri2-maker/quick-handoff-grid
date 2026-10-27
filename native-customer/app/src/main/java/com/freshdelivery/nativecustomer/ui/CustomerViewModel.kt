@@ -778,6 +778,24 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun addToCart(item: MenuItemRow) {
+        // week1 closed guard
+        run {
+            val st = _state.value
+            val store = st.selectedStore
+                ?: st.stores.firstOrNull { it.id == (st.cartStoreId ?: item.store_id) }
+            if (store != null) {
+                if (store.is_active == false) {
+                    _state.value = st.copy(error = "Το κατάστημα δεν δέχεται παραγγελίες")
+                    scheduleBannerClear()
+                    return
+                }
+                if (store.status_override == "closed" || !isStoreOpenNow(store)) {
+                    _state.value = st.copy(error = "Το κατάστημα είναι κλειστό — δεν μπορείς να προσθέσεις στο καλάθι")
+                    scheduleBannerClear()
+                    return
+                }
+            }
+        }
         val mods = _state.value.menuModifiers[item.id].orEmpty()
         if (mods.isNotEmpty()) {
             _state.value = _state.value.copy(modifierPickerItem = item)
@@ -1309,6 +1327,23 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 val placed = placedId.trim().trim('"').takeIf { it.isNotBlank() }
                 val storeName = s.cartStoreName ?: store?.name
                 val wasCard = s.paymentMethod == "card"
+                val optimisticTrack = placed?.let { oid ->
+                    OrderUi(
+                        order = OrderRow(
+                            id = oid,
+                            store_id = storeId,
+                            status = if (wasCard) "pending" else "placed",
+                            delivery_address = s.deliveryAddress,
+                            delivery_latitude = s.deliveryLat,
+                            delivery_longitude = s.deliveryLng,
+                            total_amount = s.cart.sumOf { line -> line.price * line.quantity },
+                            payment_method = if (wasCard) "card" else "cash",
+                        ),
+                        storeName = storeName,
+                        storeLat = store?.latitude,
+                        storeLng = store?.longitude,
+                    )
+                }
                 _state.value = _state.value.copy(
                     busy = false,
                     cart = emptyList(),
@@ -1333,6 +1368,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     promoPercentOff = 0.0,
                     promoFreeDelivery = false,
                     tab = CustomerTab.Track,
+                    trackingOrder = optimisticTrack,
                 )
                 scheduleBannerClear()
                 if (placed != null) {
