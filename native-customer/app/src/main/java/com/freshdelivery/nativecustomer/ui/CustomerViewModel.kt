@@ -630,7 +630,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 else store.delivery_fee.coerceAtLeast(0.0)
             }
             store.latitude != null && store.longitude != null && dLat != null && dLng != null -> {
-                val km = haversineKm(store.latitude!!, store.longitude!!, dLat, dLng)
+                val km = haversineKm(store.latitude ?: 0.0, store.longitude ?: 0.0, dLat, dLng)
                 (s.feeBase + s.feePerKm * km).coerceAtLeast(s.feeBase)
             }
             else -> s.feeBase

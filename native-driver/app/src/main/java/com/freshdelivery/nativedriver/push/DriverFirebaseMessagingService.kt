@@ -136,8 +136,9 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
                 showNotification(title, body, isStoreCall = false, silent = true)
                 if (isOffer || type.isBlank()) {
                     StoreCallRingService.ensureChannel(this)
-                    runCatching { StoreCallRingService.start(this, title, body) }
-                    if (claimMediaSoundSlot()) {
+                    val fgsOk = runCatching { StoreCallRingService.start(this, title, body) }.isSuccess
+                    // Only one-shot MediaPlayer if FGS failed to start
+                    if (!fgsOk && claimMediaSoundSlot()) {
                         playOfferSound(loop = false)
                     }
                     vibratePattern()
