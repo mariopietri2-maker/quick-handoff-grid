@@ -115,7 +115,7 @@ export function useStoreOrders(
             if (newId) setPendingIds((prev) => (prev.includes(newId) ? prev : [...prev, newId]));
             try {
               if (!suppressSoundRef.current) {
-                startOrderAlertLoop({ maxRepeats: autoAcceptRef.current ? 10 : null });
+                startOrderAlertLoop({ maxRepeats: autoAcceptRef.current ? 5 : null });
               }
               if (newId) showOrderNotification(newId, 0);
             } catch {}
@@ -203,7 +203,8 @@ export function useStoreOrders(
   }, [storeId]);
 
   useEffect(() => {
-    if (suppressSound) { stopOrderAlertLoop(); return; }
+    const mutedLs = typeof localStorage !== 'undefined' && localStorage.getItem('store_sound_muted') === '1';
+    if (suppressSound || mutedLs) { stopOrderAlertLoop(); return; }
     const hasNew = orders.some((o) => o.status === 'placed');
     if (!hasNew) { stopOrderAlertLoop(); return; }
     if (autoAcceptEnabled) {
