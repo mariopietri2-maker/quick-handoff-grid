@@ -1,0 +1,89 @@
+name: Rebuild all native APKs now
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/bump-and-flag-rebuild.sh"
+      - ".github/workflows/rebuild-all-native-apks-now.yml"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bump versions
+        run: bash scripts/bump-and-flag-rebuild.sh
+      - name: Commit version bump
+        continue-on-error: true
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/app/build.gradle.kts native-driver/app/build.gradle.kts
+          git commit -m "chore: native versionCode customer 7233213 / driver 1004" || true
+          git push || true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Android SDK
+        run: |
+          set -euo pipefail
+          SDK_ROOT="$HOME/android-sdk"
+          mkdir -p "$SDK_ROOT/cmdline-tools"
+          curl -fsSL -o /tmp/cmdtools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q /tmp/cmdtools.zip -d "$SDK_ROOT/cmdline-tools"
+          rm -rf "$SDK_ROOT/cmdline-tools/latest"
+          mv "$SDK_ROOT/cmdline-tools/cmdline-tools" "$SDK_ROOT/cmdline-tools/latest"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "$SDK_ROOT/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          yes | "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --licenses >/dev/null || true
+          "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --install \
+            "platforms;android-36" "platforms;android-35" "build-tools;36.0.0" "build-tools;35.0.0" "platform-tools"
+      - name: Mapbox
+        env:
+          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
+        run: |
+          mkdir -p ~/.gradle
+          echo "MAPBOX_DOWNLOADS_TOKEN=${MAPBOX_DOWNLOADS_TOKEN:-}" >> ~/.gradle/gradle.properties
+          echo "systemProp.mapboxDownloadsToken=${MAPBOX_DOWNLOADS_TOKEN:-}" >> ~/.gradle/gradle.properties
+      - name: Wrappers
+        run: |
+          for app in native-customer native-driver native-admin; do
+            [ -d "$app" ] || continue
+            cp -R native-driver/gradle "$app/" 2>/dev/null || true
+            cp native-driver/gradlew "$app/" 2>/dev/null || true
+            chmod +x "$app/gradlew" 2>/dev/null || true
+            echo "sdk.dir=$ANDROID_HOME" > "$app/local.properties"
+          done
+      - name: Build customer
+        working-directory: native-customer
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Build driver
+        working-directory: native-driver
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Build admin
+        working-directory: native-admin
+        continue-on-error: true
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace || true
+      - name: Upload APKs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp native-customer/app/build/outputs/apk/debug/*.apk dist/fresh2go-customer-native-debug.apk
+          cp native-driver/app/build/outputs/apk/debug/*.apk dist/fresh2go-driver-native-debug.apk
+          if ls native-admin/app/build/outputs/apk/debug/*.apk 1>/dev/null 2>&1; then
+            cp native-admin/app/build/outputs/apk/debug/*.apk dist/fresh2go-admin-native-debug.apk
+          fi
+          TAG=mobile-apks-v1
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "Fresh2GO native APKs" --notes "debug"
+          for name in fresh2go-customer-native-debug.apk fresh2go-driver-native-debug.apk fresh2go-admin-native-debug.apk; do
+            id=$(gh api "repos/${{ github.repository }}/releases/tags/$TAG" --jq ".assets[] | select(.name==\"$name\") | .id" 2>/dev/null || true)
+            [ -n "${id:-}" ] && gh api -X DELETE "repos/${{ github.repository }}/releases/assets/$id" || true
+          done
+          gh release upload "$TAG" dist/*.apk --clobber
+          ls -lah dist/
+          echo ALL_APKS_UPLOADED
