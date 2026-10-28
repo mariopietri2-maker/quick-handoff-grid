@@ -1034,13 +1034,20 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
             while (true) {
                 val role = _state.value.driverProfile?.call_role
                 val isKPoll = role == "K" || role == "both"
-                // Faster poll when online — backup if FCM delayed on OEM
-                delay(if (isKPoll) 2_000 else 3_000)
+                val online = _state.value.online
+                // P0 perf: FCM/realtime primary; poll is backup. Back off when offline.
+                delay(
+                    when {
+                        !online -> 15_000L
+                        isKPoll -> 5_000L
+                        else -> 8_000L
+                    },
+                )
                 tick++
                 if (_state.value.signedIn) {
                     refreshWork()
                     if (_state.value.tab == DriverTab.Inbox) refreshInbox()
-                    if (tick % 2 == 0) refreshStoreMap()
+                    if (online && tick % 2 == 0) refreshStoreMap()
                 }
             }
         }

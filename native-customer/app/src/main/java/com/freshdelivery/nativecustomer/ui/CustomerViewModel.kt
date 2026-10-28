@@ -1814,7 +1814,8 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         pollJob?.cancel()
         pollJob = viewModelScope.launch {
             while (true) {
-                delay(30_000)
+                // P0 perf: less frequent than efood-scale clients; only when active orders
+                delay(45_000)
                 if (_state.value.signedIn && _state.value.activeOrders.isNotEmpty()) {
                     refreshOrders()
                 }
