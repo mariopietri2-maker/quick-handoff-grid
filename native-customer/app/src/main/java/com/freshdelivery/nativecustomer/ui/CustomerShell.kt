@@ -39,6 +39,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.stickyHeader
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
@@ -660,7 +661,9 @@ private fun HomeTab(
                 }
             }
         }
-        item {
+        // WOLT_STICKY_HOME — stays while list scrolls (Wolt-style)
+        stickyHeader {
+
             Column(
                 Modifier
                     .fillMaxWidth()
@@ -807,7 +810,8 @@ private fun HomeTab(
                 }
             }
         }
-        item {
+        stickyHeader {
+
             Row(
                 Modifier
                     .horizontalScroll(rememberScrollState())
