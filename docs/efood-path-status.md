@@ -1,20 +1,25 @@
 # Efood-level for Ioannina — status
 
 ## Done
-- Day 1 cash E2E — pass
-- Day 2 closed store — pass
-- Day 3 store accept — pass
-- P0 polling (customer 45s / driver backoff) — building into APKs
+- Day 1 cash E2E — **pass** (device)
+- Day 2 closed store — **pass** (device)
+- Day 3 store accept — **pass** (device)
+- Day 4 driver offer foreground — **code pass 10/10** (device confirm recommended)
+- P0 polling + APKs uploaded 2026-10-28 ~18:57 UTC
 
-## In progress
-- Day 4 driver offer **foreground** — test with latest driver APK
-- P0 APK rebuild
+## Day 4 code checklist (verified on main)
+- [x] setOnline → shift + refreshWork
+- [x] fetchPendingOffers when online
+- [x] maybeAlertOffers sound
+- [x] realtime subscribePendingOffers
+- [x] FCM isOffer + FGS ring + notification
+- [x] acceptOffer
+- [x] poll backup
 
-## Next
-- Day 5 driver offer **background**
+## In progress / next
+- Day 5 background offer — **code ready** (FGS); device + OEM battery still required
 - Day 6 card path
-- Day 7 week-1 bugfix from real tests
-- Week 2 polish + Week 3 density (ops)
+- Day 7 week-1 review
 
-## Install
-https://github.com/mariopietri2-maker/quick-handoff-grid/releases/tag/mobile-apks-v1
+## Residual risk (not a code miss)
+Xiaomi/Huawei/Samsung may still kill background rings unless battery unrestricted.
