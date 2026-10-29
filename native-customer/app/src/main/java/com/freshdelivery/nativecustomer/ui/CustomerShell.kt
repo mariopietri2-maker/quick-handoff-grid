@@ -39,7 +39,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.stickyHeader
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
@@ -635,36 +634,13 @@ private fun HomeTab(
             .fillMaxSize()
             .background(if (nightMode) Color(0xFFF3F0EB) else FreshBg),
     ) {
-    LazyColumn(
-        state = listState,
-        userScrollEnabled = true,
-        modifier = Modifier
+    Column(
+        Modifier
             .fillMaxSize()
             .background(if (nightMode) Color(0xFFF3F0EB) else FreshBg),
-        contentPadding = PaddingValues(bottom = 96.dp),
     ) {
-        if (state.isOffline) {
-            item {
-                Surface(
-                    color = Color(0xFFFFF3E0),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .statusBarsPadding(),
-                ) {
-                    Text(
-                        "Χωρίς σύνδεση — τα δεδομένα μπορεί να μην είναι ενημερωμένα.",
-                        color = Color(0xFFE65100),
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                    )
-                }
-            }
-        }
-        // WOLT_STICKY_HOME — stays while list scrolls (Wolt-style)
-        stickyHeader {
-
-            Column(
+        // FIXED top (Wolt-style)
+Column(
                 Modifier
                     .fillMaxWidth()
                     .then(if (!state.isOffline) Modifier.statusBarsPadding() else Modifier)
@@ -809,10 +785,7 @@ private fun HomeTab(
                     )
                 }
             }
-        }
-        stickyHeader {
-
-            Row(
+Row(
                 Modifier
                     .horizontalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp)
@@ -833,7 +806,34 @@ private fun HomeTab(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 )
             }
+    LazyColumn(
+        state = listState,
+        userScrollEnabled = true,
+        modifier = Modifier
+            .weight(1f)
+            .fillMaxWidth()
+            .background(if (nightMode) Color(0xFFF3F0EB) else FreshBg),
+        contentPadding = PaddingValues(bottom = 96.dp),
+    ) {
+        if (state.isOffline) {
+            item {
+                Surface(
+                    color = Color(0xFFFFF3E0),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding(),
+                ) {
+                    Text(
+                        "Χωρίς σύνδεση — τα δεδομένα μπορεί να μην είναι ενημερωμένα.",
+                        color = Color(0xFFE65100),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    )
+                }
+            }
         }
+
 
 
         // Admin-managed promo carousel (customer_app_config.promos) — auto-rotate
