@@ -1,25 +1,23 @@
 # Efood-level for Ioannina — status
 
-## Done
-- Day 1 cash E2E — **pass** (device)
-- Day 2 closed store — **pass** (device)
-- Day 3 store accept — **pass** (device)
-- Day 4 driver offer foreground — **code pass 10/10** (device confirm recommended)
-- P0 polling + APKs uploaded 2026-10-28 ~18:57 UTC
+## Week 1 scoreboard
+| Day | Topic | Status |
+|-----|--------|--------|
+| 1 | Cash E2E | **device pass** |
+| 2 | Closed store | **device pass** |
+| 3 | Store accept | **device pass** |
+| 4 | Driver offer foreground | **code pass 10/10** |
+| 5 | Driver offer background | **code pass 13/13** |
+| 6 | Card payment path | **code pass 7/7** (needs Stripe secrets for live pay) |
+| 7 | Week 1 review | next |
 
-## Day 4 code checklist (verified on main)
-- [x] setOnline → shift + refreshWork
-- [x] fetchPendingOffers when online
-- [x] maybeAlertOffers sound
-- [x] realtime subscribePendingOffers
-- [x] FCM isOffer + FGS ring + notification
-- [x] acceptOffer
-- [x] poll backup
+## Day 5 verified
+FCM, isOffer, notification, FGS ring, MediaPlayer alarm attrs, manifest permissions.
 
-## In progress / next
-- Day 5 background offer — **code ready** (FGS); device + OEM battery still required
-- Day 6 card path
-- Day 7 week-1 review
+## Day 6 verified
+Card/cash placeOrder, PaymentSheet, setup-intent, friendly errors, pending optimistic, pay retry. Edge functions deployed (401 without JWT).
 
-## Residual risk (not a code miss)
-Xiaomi/Huawei/Samsung may still kill background rings unless battery unrestricted.
+## Residual (device/ops, not missing code)
+- OEM battery kill on background rings
+- Stripe keys must be set for real card charges
+- Density of stores/drivers = Week 3
