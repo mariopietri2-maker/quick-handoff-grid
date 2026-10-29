@@ -1,23 +1,31 @@
 # Efood-level for Ioannina — status
 
-## Week 1 scoreboard
+## Week 1 — COMPLETE (code)
 | Day | Topic | Status |
 |-----|--------|--------|
-| 1 | Cash E2E | **device pass** |
-| 2 | Closed store | **device pass** |
-| 3 | Store accept | **device pass** |
-| 4 | Driver offer foreground | **code pass 10/10** |
-| 5 | Driver offer background | **code pass 13/13** |
-| 6 | Card payment path | **code pass 7/7** (needs Stripe secrets for live pay) |
-| 7 | Week 1 review | next |
+| 1 | Cash E2E | device pass |
+| 2 | Closed store | device pass |
+| 3 | Store accept | device pass |
+| 4 | Driver offer foreground | code pass |
+| 5 | Driver offer background | code pass |
+| 6 | Card path | code pass (Stripe secrets for live) |
+| 7 | Review aggregate | **code pass 10/10** |
 
-## Day 5 verified
-FCM, isOffer, notification, FGS ring, MediaPlayer alarm attrs, manifest permissions.
+### Day 7 aggregate checks
+All core paths present: place+track, closed guards, store accept+sound stop, FCM/FGS offers, payment sheet + friendly errors.
 
-## Day 6 verified
-Card/cash placeOrder, PaymentSheet, setup-intent, friendly errors, pending optimistic, pay retry. Edge functions deployed (401 without JWT).
+### Known residual (ops/device)
+- OEM battery may still block background rings
+- Stripe keys for real card charges
+- Store/driver density not Week 1
 
-## Residual (device/ops, not missing code)
-- OEM battery kill on background rings
-- Stripe keys must be set for real card charges
-- Density of stores/drivers = Week 3
+## Week 2 — Trust & polish (next)
+| Day | Focus |
+|-----|--------|
+| 8 | Customer UX — no blocking spam, stable cart |
+| 9 | Tracking always filled after order |
+| 10 | Store PWA queue clarity |
+| 11 | Driver UX simpler |
+| 12 | Status labels Greek clarity |
+| 13 | Support reachable |
+| 14 | Week 2 review + APKs |
