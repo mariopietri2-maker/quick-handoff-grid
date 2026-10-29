@@ -1,51 +1,40 @@
-# Efood-level for Ioannina — status
+# Efood-level for Ioannina — FINAL 30-day status
 
-## Weeks 1–3 code: READY
-## Week 4 — Soft launch
+## Day 30 scorecard (local efood)
 
-| Day | Focus | Status |
-|-----|--------|--------|
-| 22 | Soft launch rules | **code ready 8/8** — go/no-go checklist below |
-| 23 | Live lunch | ops |
-| 24 | Fix top 3 from log | ops + targeted fixes |
-| 25 | Live dinner | ops |
-| 26 | Payments + support under load | ops |
-| 27 | Driver background on 2–3 OEMs | device |
-| 28 | Store rush sound/accept | device |
-| 29 | Feature freeze | rule |
-| 30 | Scorecard vs local efood | review |
+| Criterion | Status |
+|-----------|--------|
+| 9/10 test orders finish clean | **Partial** — Days 1–3 device pass; 4–6 code pass, full live volume not proven |
+| Closed store cannot order | **Pass** (device Day 2) |
+| Store accept + sound stop | **Pass** (device Day 3 + code) |
+| Driver hears offer (foreground) | **Code pass** |
+| Driver hears offer (background + OEM) | **Code pass** — OEM battery residual |
+| Cash always works | **Pass** (device Day 1) |
+| Card when Stripe configured | **Code pass** — needs secrets for live |
+| Track not empty after place | **Pass** (device + code) |
+| Peak coverage in zones | **Ops gap** — store/driver density |
+| Clear local advantage vs efood | **Product ready**; market proof pending |
 
-### Day 22 soft-launch rules (use these)
-1. **Zone-limited** — only 2–3 Ioannina areas
-2. **Invite / friends first** — not full city ads yet
-3. **Cash primary** until Stripe verified live
-4. **Log every failure** (screenshot + order id + time)
-5. **No new features** during Days 23–29 — only fixes from the log
+## 30-day plan result
+| Block | Result |
+|-------|--------|
+| Week 1 reliability | **Done** (device 1–3, code 4–7) |
+| Week 2 polish | **Done** (code) |
+| Week 3 density tools | **Done** (code); **ops incomplete** |
+| Week 4 soft launch | **Rules ready**; **live days are ops** |
 
-### Day 22 go/no-go (code)
-- [x] Cash order → track
-- [x] Closed store blocked
-- [x] Store accept
-- [x] Driver offer FCM/FGS
-- [x] Card path present
-- [x] Support surfaces
-- [x] Geo/zones tools
+## What is NOT left in code for soft launch
+Core loop, guards, accept, offers, payments UI, support, zones, promos — verified.
 
-### Day 22 go/no-go (ops — you)
-- [ ] ≥5 open stores in launch zones
-- [ ] ≥5 drivers willing at peak
-- [ ] Latest customer 1.0.11 + driver 1.0.3 installed
-- [ ] Battery unrestricted on driver phones
-- [ ] Stripe keys if card offered to public
+## What IS left (only you / ops)
+1. Sign stores in 2–3 Ioannina zones
+2. Sign drivers + battery unrestricted
+3. Live lunch/dinner with failure log
+4. Stripe keys if public card
+5. Feature freeze while fixing only real failures
 
-### Day 30 local efood scorecard
-- 9/10 test orders finish clean
-- Closed store cannot order
-- Store accept + sound stop
-- Driver hears offer (bg with OEM settings)
-- Cash always; card if configured
-- Track not empty
-- Peak coverage in chosen zones
+## Honest conclusion
+**Platform is soft-launch capable for Ioannina.**  
+**efood-level density and brand trust are not automatic** — they come from operating Days 23–30 for real.
 
-## Honest limit
-National efood parity is out of scope. **Ioannina soft-launch parity** is the target and the platform side is in place.
+Stop mass feature work. Run orders. Fix from the log.
