@@ -1,27 +1,27 @@
 # Efood-level for Ioannina — status
 
-## Week 1 COMPLETE
-## Week 2 COMPLETE (code)
+## Week 1–2 COMPLETE (code)
+## Week 3 — density + tools
 
 | Day | Topic | Status |
 |-----|--------|--------|
-| 8 | Customer UX | pass |
-| 9 | Tracking | pass |
-| 10 | Store queue | **pass** — StoreDashboard → OrderQueue (earlier 9/10 was false fail) |
-| 11 | Driver UX | pass |
-| 12 | Greek status labels | **pass 7/7** TRACK_STEPS + trackHeadline |
-| 13 | Support reachable | **pass** — SupportScreen, Support*Buttons, SupportApp, tickets |
-| 14 | Week 2 review | **pass** aggregate |
+| 15 | Ioannina zones / geo | **code pass 5/5** — lat/lng, geocode, distance, ServiceZones, AdminIoanninaMap, lock_ioannina migrations |
+| 16–17 | Sign stores | **ops only** — you recruit; platform ready |
+| 18 | Drivers | **ops only** — you recruit |
+| 19 | Admin zone tools | **code pass** — ServiceZonesEditor + AdminIoanninaMap |
+| 20 | Promos | **code pass** — wheel + promo on placeOrder |
+| 21 | Peak dry run | **ops** — real lunch/dinner test |
 
-### Fix note (Day 10)
-StoreApp does not import OrderQueue directly; it renders StoreDashboard which **does** import and render OrderQueue with onStatusUpdate. Wiring is correct.
+### Day 15 recommended zones (ops)
+Pick 2–3 areas only, e.g.:
+1. Center / clock tower
+2. University / campus side
+3. One residential neighborhood
 
-## Week 3 next (ops-heavy)
-| Day | Focus |
-|-----|--------|
-| 15 | Pick Ioannina zones |
-| 16–17 | Sign stores |
-| 18 | Drivers |
-| 19 | Admin tools |
-| 20 | Promos stable |
-| 21 | Peak dry run |
+Keep delivery radius tight until driver density is real.
+
+### Cannot automate
+Signing Pizza Pan–class stores and 5–15 drivers — only you.
+
+## Week 4 next
+Soft launch rules + live fix loop (Days 22–30).
