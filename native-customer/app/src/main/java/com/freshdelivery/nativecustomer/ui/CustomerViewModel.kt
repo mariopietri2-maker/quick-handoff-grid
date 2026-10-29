@@ -1417,18 +1417,29 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
 
-    /** User-facing edge-function errors — never dump headers/JWT. */
+    /** User-facing edge/Stripe errors — never dump headers/JWT/raw IOException. */
     private fun friendlyEdgeError(raw: String?): String {
         val s = raw?.trim().orEmpty()
         if (s.isEmpty()) return "Αποτυχία σύνδεσης με πληρωμές"
+        val lower = s.lowercase()
+        if (lower.contains("unable to resolve host") ||
+            lower.contains("no address associated") ||
+            lower.contains("unknownhost") ||
+            lower.contains("failed to connect") ||
+            lower.contains("network is unreachable") ||
+            lower.contains("software caused connection abort") ||
+            lower.contains("timeout") && lower.contains("stripe")
+        ) {
+            return "Δεν υπάρχει σύνδεση στο Stripe. Έλεγξε Wi‑Fi/δεδομένα (ή VPN/ad-block) και δοκίμασε ξανά."
+        }
         if (s.contains("NOT_FOUND") || s.contains("was not found")) {
-            return "Η υπηρεσία αποθήκευσης κάρτας δεν είναι ενεργή ακόμα."
+            return "Η υπηρεσία κάρτας δεν είναι ενεργή ακόμα."
         }
         if (s.contains("Unauthorized") || s.contains("401")) {
             return "Συνδέσου ξανά για να αποθηκεύσεις κάρτα."
         }
-        if (s.length > 180 || s.contains("Authorization") || s.contains("Bearer")) {
-            return "Αποτυχία αποθήκευσης κάρτας. Έλεγξε Stripe / edge functions."
+        if (s.length > 180 || s.contains("Authorization") || s.contains("Bearer") || s.contains("IOException")) {
+            return "Αποτυχία πληρωμής/κάρτας. Έλεγξε σύνδεση και Stripe."
         }
         return s.take(160)
     }
@@ -1525,7 +1536,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         if (success) {
             refreshSavedCards()
             _state.value = _state.value.copy(
-                info = "Η πληρωμή ολοκληρώθηκε! Στέλνουμε την παραγγελία στο κατάστημα…",
+                info = "Η πληρωμή ολοκληρώθηκε! Πληρωμή OK — η παραγγελία πάει στο κατάστημα μόνο μετά την επιβεβαίωση Stripe…",
                 busy = true,
             )
             viewModelScope.launch {
@@ -1551,7 +1562,12 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 message.contains("cancel", ignoreCase = true) ||
                     message.contains("ακυρ", ignoreCase = true) ->
                     "Η πληρωμή ακυρώθηκε. Μπορείς να δοκιμάσεις ξανά."
-                else -> message
+                message.contains("Unable to resolve host", ignoreCase = true) ||
+                    message.contains("No address associated", ignoreCase = true) ||
+                    message.contains("UnknownHost", ignoreCase = true) ||
+                    message.contains("IOException", ignoreCase = true) ->
+                    "Δεν υπάρχει σύνδεση στο Stripe. Έλεγξε Wi‑Fi/δεδομένα και δοκίμασε ξανά."
+                else -> friendlyEdgeError(message)
             }
             _state.value = _state.value.copy(error = friendly)
         }
