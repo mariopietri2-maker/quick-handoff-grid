@@ -1,0 +1,190 @@
+name: Rebuild all APKs and AABs
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/rebuild-all-apks-and-aabs.yml"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+    env:
+      MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
+      PLAY_CUSTOMER_KEYSTORE_B64: ${{ secrets.PLAY_CUSTOMER_KEYSTORE_B64 }}
+      PLAY_DRIVER_KEYSTORE_B64: ${{ secrets.PLAY_DRIVER_KEYSTORE_B64 }}
+      PLAY_STORE_PASSWORD: ${{ secrets.PLAY_STORE_PASSWORD }}
+      PLAY_KEY_PASSWORD: ${{ secrets.PLAY_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android SDK
+        run: |
+          set -euo pipefail
+          SDK_ROOT="$HOME/android-sdk"
+          mkdir -p "$SDK_ROOT/cmdline-tools"
+          curl -fsSL -o /tmp/cmdtools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q /tmp/cmdtools.zip -d "$SDK_ROOT/cmdline-tools"
+          rm -rf "$SDK_ROOT/cmdline-tools/latest"
+          mv "$SDK_ROOT/cmdline-tools/cmdline-tools" "$SDK_ROOT/cmdline-tools/latest"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "$SDK_ROOT/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          yes | "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --licenses >/dev/null || true
+          "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --install \
+            "platforms;android-36" "platforms;android-35" "build-tools;36.0.0" "build-tools;35.0.0" "platform-tools"
+
+      - name: Mapbox
+        run: |
+          mkdir -p ~/.gradle
+          echo "MAPBOX_DOWNLOADS_TOKEN=${MAPBOX_DOWNLOADS_TOKEN:-}" >> ~/.gradle/gradle.properties
+          echo "systemProp.mapboxDownloadsToken=${MAPBOX_DOWNLOADS_TOKEN:-}" >> ~/.gradle/gradle.properties
+
+      - name: Bump version codes
+        run: |
+          # Keep monotonic-ish codes for Play
+          sed -i 's/versionCode = 7233213/versionCode = 7233214/' native-customer/app/build.gradle.kts || true
+          sed -i 's/versionName = "1.0.11"/versionName = "1.0.12"/' native-customer/app/build.gradle.kts || true
+          sed -i 's/versionCode = 1004/versionCode = 1005/' native-driver/app/build.gradle.kts || true
+          sed -i 's/versionName = "1.0.3"/versionName = "1.0.4"/' native-driver/app/build.gradle.kts || true
+          grep -n versionCode native-customer/app/build.gradle.kts | head -2
+          grep -n versionCode native-driver/app/build.gradle.kts | head -2
+
+      - name: Commit bumps
+        continue-on-error: true
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/app/build.gradle.kts native-driver/app/build.gradle.kts || true
+          git commit -m "chore: bump customer 1.0.12 / driver 1.0.4 for APK+AAB rebuild" || true
+          git push || true
+
+      - name: Wrappers
+        run: |
+          for app in native-customer native-driver native-admin; do
+            [ -d "$app" ] || continue
+            cp -R native-driver/gradle "$app/" 2>/dev/null || true
+            cp native-driver/gradlew "$app/" 2>/dev/null || true
+            chmod +x "$app/gradlew" 2>/dev/null || true
+            echo "sdk.dir=$ANDROID_HOME" > "$app/local.properties"
+          done
+
+      - name: Play keystores (optional)
+        run: |
+          set -euo pipefail
+          mkdir -p mobile-signing
+          if [ -n "${PLAY_CUSTOMER_KEYSTORE_B64:-}" ]; then
+            echo "$PLAY_CUSTOMER_KEYSTORE_B64" | base64 -d > mobile-signing/fresh2go-customer-upload.jks
+            echo "customer keystore restored"
+          else
+            echo "No PLAY_CUSTOMER_KEYSTORE_B64 — AAB will use debug signing if configured"
+          fi
+          if [ -n "${PLAY_DRIVER_KEYSTORE_B64:-}" ]; then
+            echo "$PLAY_DRIVER_KEYSTORE_B64" | base64 -d > mobile-signing/fresh2go-driver-upload.jks
+            echo "driver keystore restored"
+          fi
+          if [ -n "${PLAY_STORE_PASSWORD:-}" ]; then
+            cat > mobile-signing/key.properties <<EOF
+          storePassword=${PLAY_STORE_PASSWORD}
+          keyPassword=${PLAY_KEY_PASSWORD:-${PLAY_STORE_PASSWORD}}
+          storeFile=fresh2go-customer-upload.jks
+          keyAlias=fresh2go-customer
+          EOF
+          fi
+
+      - name: Build customer APK
+        id: cust_apk
+        working-directory: native-customer
+        continue-on-error: true
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Build driver APK
+        id: drv_apk
+        working-directory: native-driver
+        continue-on-error: true
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Build admin APK
+        id: adm_apk
+        working-directory: native-admin
+        continue-on-error: true
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace || true
+
+      - name: Build customer AAB
+        id: cust_aab
+        working-directory: native-customer
+        continue-on-error: true
+        run: |
+          ./gradlew :app:bundleRelease --no-daemon --stacktrace || ./gradlew :app:bundleDebug --no-daemon --stacktrace
+
+      - name: Build driver AAB
+        id: drv_aab
+        working-directory: native-driver
+        continue-on-error: true
+        run: |
+          ./gradlew :app:bundleRelease --no-daemon --stacktrace || ./gradlew :app:bundleDebug --no-daemon --stacktrace
+
+      - name: Collect and upload
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          # APKs
+          if ls native-customer/app/build/outputs/apk/debug/*.apk 1>/dev/null 2>&1; then
+            cp native-customer/app/build/outputs/apk/debug/*.apk dist/fresh2go-customer-native-debug.apk
+            echo CUSTOMER_APK_OK
+          else
+            echo CUSTOMER_APK_FAIL
+          fi
+          if ls native-driver/app/build/outputs/apk/debug/*.apk 1>/dev/null 2>&1; then
+            cp native-driver/app/build/outputs/apk/debug/*.apk dist/fresh2go-driver-native-debug.apk
+            echo DRIVER_APK_OK
+          else
+            echo DRIVER_APK_FAIL
+          fi
+          if ls native-admin/app/build/outputs/apk/debug/*.apk 1>/dev/null 2>&1; then
+            cp native-admin/app/build/outputs/apk/debug/*.apk dist/fresh2go-admin-native-debug.apk
+            echo ADMIN_APK_OK
+          fi
+          # AABs (release or debug)
+          find native-customer/app/build/outputs -name '*.aab' -print 2>/dev/null | head -5
+          find native-driver/app/build/outputs -name '*.aab' -print 2>/dev/null | head -5
+          CAAB=$(find native-customer/app/build/outputs -name '*.aab' 2>/dev/null | head -1 || true)
+          DAAB=$(find native-driver/app/build/outputs -name '*.aab' 2>/dev/null | head -1 || true)
+          if [ -n "${CAAB:-}" ]; then
+            cp "$CAAB" dist/fresh2go-customer-native.aab
+            echo CUSTOMER_AAB_OK
+          else
+            echo CUSTOMER_AAB_FAIL
+          fi
+          if [ -n "${DAAB:-}" ]; then
+            cp "$DAAB" dist/fresh2go-driver-native.aab
+            echo DRIVER_AAB_OK
+          else
+            echo DRIVER_AAB_FAIL
+          fi
+          ls -lah dist/
+          TAG=mobile-apks-v1
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "Fresh2GO native builds" --notes "APK + AAB"
+          for f in dist/*; do
+            name=$(basename "$f")
+            id=$(gh api "repos/${{ github.repository }}/releases/tags/$TAG" --jq ".assets[] | select(.name==\"$name\") | .id" 2>/dev/null || true)
+            [ -n "${id:-}" ] && gh api -X DELETE "repos/${{ github.repository }}/releases/assets/$id" || true
+          done
+          gh release upload "$TAG" dist/* --clobber
+          echo UPLOAD_DONE
+
+      - name: Summary
+        run: |
+          echo "### Build results" >> "$GITHUB_STEP_SUMMARY"
+          echo "- customer APK: ${{ steps.cust_apk.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- driver APK: ${{ steps.drv_apk.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- admin APK: ${{ steps.adm_apk.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- customer AAB: ${{ steps.cust_aab.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- driver AAB: ${{ steps.drv_aab.outcome }}" >> "$GITHUB_STEP_SUMMARY"
