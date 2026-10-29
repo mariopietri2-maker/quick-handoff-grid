@@ -1,31 +1,18 @@
 # Efood-level for Ioannina — status
 
-## Week 1 — COMPLETE (code)
+## Week 1 — COMPLETE (code + partial device)
+Days 1–3 device pass · 4–7 code pass
+
+## Week 2 — Trust & polish
 | Day | Topic | Status |
 |-----|--------|--------|
-| 1 | Cash E2E | device pass |
-| 2 | Closed store | device pass |
-| 3 | Store accept | device pass |
-| 4 | Driver offer foreground | code pass |
-| 5 | Driver offer background | code pass |
-| 6 | Card path | code pass (Stripe secrets for live) |
-| 7 | Review aggregate | **code pass 10/10** |
+| 8 | Customer UX cart/banners | **code pass 10/10** |
+| 9 | Tracking after order | **code pass 5/5** |
+| 10 | Store PWA queue | next |
+| 11 | Driver UX simpler | next |
+| 12 | Status labels Greek | next |
+| 13 | Support reachable | next |
+| 14 | Week 2 review | next |
 
-### Day 7 aggregate checks
-All core paths present: place+track, closed guards, store accept+sound stop, FCM/FGS offers, payment sheet + friendly errors.
-
-### Known residual (ops/device)
-- OEM battery may still block background rings
-- Stripe keys for real card charges
-- Store/driver density not Week 1
-
-## Week 2 — Trust & polish (next)
-| Day | Focus |
-|-----|--------|
-| 8 | Customer UX — no blocking spam, stable cart |
-| 9 | Tracking always filled after order |
-| 10 | Store PWA queue clarity |
-| 11 | Driver UX simpler |
-| 12 | Status labels Greek clarity |
-| 13 | Support reachable |
-| 14 | Week 2 review + APKs |
+Day 8: addToCart, cart clear, scheduleBannerClear, cartStoreId, offline guard.
+Day 9: trackingOrder, autoOpenTrack, optimistic OrderUi, refreshOrders.
