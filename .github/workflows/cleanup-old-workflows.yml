@@ -1,0 +1,55 @@
+name: Cleanup old workflows
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/cleanup-old-workflows.yml"
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove obsolete workflow files
+        run: |
+          set -euo pipefail
+          KEEP=(
+            ci.yml
+            signed-customer-aab.yml
+            build-native-play-aabs.yml
+            build-native-apks.yml
+            rebuild-all-apks-aabs-full.yml
+            deploy-create-setup-intent.yml
+            cleanup-old-workflows.yml
+          )
+          cd .github/workflows
+          for f in *.yml *.yaml; do
+            [ -f "$f" ] || continue
+            keep=0
+            for k in "${KEEP[@]}"; do
+              if [ "$f" = "$k" ]; then keep=1; break; fi
+            done
+            if [ "$keep" -eq 0 ]; then
+              echo "DELETE $f"
+              git rm -f "$f" || rm -f "$f"
+            else
+              echo "KEEP $f"
+            fi
+          done
+          # also remove disabled leftovers
+          for f in *.disabled; do
+            [ -f "$f" ] || continue
+            echo "DELETE $f"
+            git rm -f "$f" || rm -f "$f"
+          done
+          cd ../..
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A .github/workflows || true
+          git status
+          git commit -m "chore: remove obsolete one-off workflows, keep current pipelines" || echo "nothing to commit"
+          git push || true
+          echo "Remaining:"
+          ls -1 .github/workflows/
