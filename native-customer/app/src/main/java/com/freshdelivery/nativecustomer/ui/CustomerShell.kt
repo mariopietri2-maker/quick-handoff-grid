@@ -52,6 +52,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.RateReview
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Close
@@ -4263,6 +4264,32 @@ private fun ProfileTab(
             ) {
                 if (state.savingProfile) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp))
                 else Text("Αποθήκευση", fontWeight = FontWeight.Bold)
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+        // Tester feedback CTA — opens support (Play / soft-launch insights)
+        Surface(
+            onClick = onOpenSupport,
+            shape = RoundedCornerShape(18.dp),
+            color = Color.White,
+            shadowElevation = 3.dp,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Row(
+                Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(Icons.Outlined.RateReview, contentDescription = null, tint = FreshGreen)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Στείλε feedback", fontWeight = FontWeight.Bold)
+                    Text(
+                        "Πες μας τι δουλεύει και τι όχι — βοηθάει το soft launch.",
+                        color = FreshMuted,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = FreshMuted)
             }
         }
         Spacer(Modifier.height(24.dp))
