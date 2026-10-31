@@ -4289,7 +4289,7 @@ private fun ProfileTab(
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
-                Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = FreshMuted)
+                Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = FreshMuted)
             }
         }
         Spacer(Modifier.height(24.dp))
