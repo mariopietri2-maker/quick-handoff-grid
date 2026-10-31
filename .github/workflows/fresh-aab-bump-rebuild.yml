@@ -1,0 +1,106 @@
+name: Fresh AAB bump + rebuild
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/fresh-aab-bump-rebuild.yml"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    env:
+      MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bump versions (must be higher than Play)
+        run: |
+          set -euo pipefail
+          # Customer: 7233214 -> 7233300
+          sed -i 's/versionCode = 7233214/versionCode = 7233300/' native-customer/app/build.gradle.kts || true
+          sed -i 's/versionName = "1.0.12"/versionName = "1.0.13"/' native-customer/app/build.gradle.kts || true
+          # Driver: 1005 -> 1006 if present
+          sed -i 's/versionCode = 1005/versionCode = 1006/' native-driver/app/build.gradle.kts || true
+          sed -i 's/versionName = "1.0.4"/versionName = "1.0.5"/' native-driver/app/build.gradle.kts || true
+          grep -n versionCode native-customer/app/build.gradle.kts | head -2
+          grep -n versionCode native-driver/app/build.gradle.kts | head -2
+
+      - name: Commit bump
+        continue-on-error: true
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/app/build.gradle.kts native-driver/app/build.gradle.kts
+          git commit -m "chore: versionCode 7233300 / driver 1006 for Play AAB" || true
+          git push || true
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: SDK
+        run: |
+          set -euo pipefail
+          SDK_ROOT="$HOME/android-sdk"
+          mkdir -p "$SDK_ROOT/cmdline-tools"
+          curl -fsSL -o /tmp/cmdtools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q /tmp/cmdtools.zip -d "$SDK_ROOT/cmdline-tools"
+          rm -rf "$SDK_ROOT/cmdline-tools/latest"
+          mv "$SDK_ROOT/cmdline-tools/cmdline-tools" "$SDK_ROOT/cmdline-tools/latest"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "$SDK_ROOT/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          yes | "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --licenses >/dev/null || true
+          "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --install \
+            "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+
+      - name: Mapbox + wrappers
+        run: |
+          mkdir -p ~/.gradle
+          echo "MAPBOX_DOWNLOADS_TOKEN=${MAPBOX_DOWNLOADS_TOKEN:-}" >> ~/.gradle/gradle.properties
+          echo "systemProp.mapboxDownloadsToken=${MAPBOX_DOWNLOADS_TOKEN:-}" >> ~/.gradle/gradle.properties
+          for app in native-customer native-driver; do
+            cp -R native-driver/gradle "$app/" 2>/dev/null || true
+            cp native-driver/gradlew "$app/" 2>/dev/null || true
+            chmod +x "$app/gradlew"
+            echo "sdk.dir=$ANDROID_HOME" > "$app/local.properties"
+          done
+
+      - name: Build customer AAB + APK
+        working-directory: native-customer
+        run: |
+          ./gradlew :app:assembleDebug :app:bundleRelease --no-daemon --stacktrace \
+            || ./gradlew :app:assembleDebug :app:bundleDebug --no-daemon --stacktrace
+
+      - name: Build driver AAB + APK
+        working-directory: native-driver
+        continue-on-error: true
+        run: |
+          ./gradlew :app:assembleDebug :app:bundleRelease --no-daemon --stacktrace \
+            || ./gradlew :app:assembleDebug :app:bundleDebug --no-daemon --stacktrace
+
+      - name: Upload
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          ls native-customer/app/build/outputs/apk/debug/*.apk | head -1 | xargs -I{} cp {} dist/fresh2go-customer-native-debug.apk
+          CAAB=$(find native-customer/app/build/outputs -name '*.aab' | head -1)
+          cp "$CAAB" dist/fresh2go-customer-native.aab
+          # stamp version into filename too so it's obvious
+          cp "$CAAB" dist/fresh2go-customer-native-v1.0.13-vc7233300.aab
+          ls native-driver/app/build/outputs/apk/debug/*.apk 2>/dev/null | head -1 | xargs -I{} cp {} dist/fresh2go-driver-native-debug.apk || true
+          DAAB=$(find native-driver/app/build/outputs -name '*.aab' 2>/dev/null | head -1 || true)
+          [ -n "${DAAB:-}" ] && cp "$DAAB" dist/fresh2go-driver-native.aab
+          ls -lah dist/
+          TAG=mobile-apks-v1
+          for f in dist/*; do
+            name=$(basename "$f")
+            id=$(gh api "repos/${{ github.repository }}/releases/tags/$TAG" --jq ".assets[] | select(.name==\"$name\") | .id" 2>/dev/null || true)
+            [ -n "${id:-}" ] && gh api -X DELETE "repos/${{ github.repository }}/releases/assets/$id" || true
+          done
+          gh release upload "$TAG" dist/* --clobber
+          echo FRESH_AAB_OK version 1.0.13 code 7233300
