@@ -1341,7 +1341,8 @@ Row(
                 )
             }
         }
-    }
+    } // LazyColumn
+    } // Column fixed Wolt top
     } // PullToRefreshBox
 }
 
