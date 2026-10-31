@@ -1,3 +1,4 @@
+# Trigger rebuild 2026-10-31T12:28Z
 name: Rebuild ALL APKs + AABs
 on:
   workflow_dispatch:
