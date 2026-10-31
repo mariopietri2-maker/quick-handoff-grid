@@ -1,0 +1,127 @@
+name: Build AABs now
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/build-aabs-now.yml"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    env:
+      MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
+      PLAY_CUSTOMER_KEYSTORE_B64: ${{ secrets.PLAY_CUSTOMER_KEYSTORE_B64 }}
+      PLAY_DRIVER_KEYSTORE_B64: ${{ secrets.PLAY_DRIVER_KEYSTORE_B64 }}
+      PLAY_STORE_PASSWORD: ${{ secrets.PLAY_STORE_PASSWORD }}
+      PLAY_KEY_PASSWORD: ${{ secrets.PLAY_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android SDK
+        run: |
+          set -euo pipefail
+          SDK_ROOT="$HOME/android-sdk"
+          mkdir -p "$SDK_ROOT/cmdline-tools"
+          curl -fsSL -o /tmp/cmdtools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q /tmp/cmdtools.zip -d "$SDK_ROOT/cmdline-tools"
+          rm -rf "$SDK_ROOT/cmdline-tools/latest"
+          mv "$SDK_ROOT/cmdline-tools/cmdline-tools" "$SDK_ROOT/cmdline-tools/latest"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "$SDK_ROOT/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          yes | "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --licenses >/dev/null || true
+          "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --install \
+            "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+
+      - name: Mapbox
+        run: |
+          mkdir -p ~/.gradle
+          echo "MAPBOX_DOWNLOADS_TOKEN=${MAPBOX_DOWNLOADS_TOKEN:-}" >> ~/.gradle/gradle.properties
+          echo "systemProp.mapboxDownloadsToken=${MAPBOX_DOWNLOADS_TOKEN:-}" >> ~/.gradle/gradle.properties
+
+      - name: Wrappers + local.properties
+        run: |
+          for app in native-customer native-driver; do
+            cp -R native-driver/gradle "$app/" 2>/dev/null || true
+            cp native-driver/gradlew "$app/" 2>/dev/null || true
+            chmod +x "$app/gradlew"
+            echo "sdk.dir=$ANDROID_HOME" > "$app/local.properties"
+          done
+
+      - name: Optional Play signing
+        run: |
+          set -euo pipefail
+          mkdir -p mobile-signing
+          if [ -n "${PLAY_CUSTOMER_KEYSTORE_B64:-}" ]; then
+            echo "$PLAY_CUSTOMER_KEYSTORE_B64" | base64 -d > mobile-signing/fresh2go-customer-upload.jks
+            echo "customer keystore ok"
+          fi
+          if [ -n "${PLAY_DRIVER_KEYSTORE_B64:-}" ]; then
+            echo "$PLAY_DRIVER_KEYSTORE_B64" | base64 -d > mobile-signing/fresh2go-driver-upload.jks
+            echo "driver keystore ok"
+          fi
+          # If project expects key.properties, write minimal for release when secrets exist
+          if [ -n "${PLAY_STORE_PASSWORD:-}" ] && [ -f mobile-signing/fresh2go-customer-upload.jks ]; then
+            cat > native-customer/keystore.properties <<EOF || true
+          storePassword=${PLAY_STORE_PASSWORD}
+          keyPassword=${PLAY_KEY_PASSWORD:-${PLAY_STORE_PASSWORD}}
+          keyAlias=fresh2go-customer
+          storeFile=${{ github.workspace }}/mobile-signing/fresh2go-customer-upload.jks
+          EOF
+          fi
+
+      - name: Customer AAB
+        id: cust
+        continue-on-error: true
+        working-directory: native-customer
+        run: |
+          set -euo pipefail
+          ./gradlew :app:bundleRelease --no-daemon --stacktrace \
+            || ./gradlew :app:bundleDebug --no-daemon --stacktrace
+
+      - name: Driver AAB
+        id: drv
+        continue-on-error: true
+        working-directory: native-driver
+        run: |
+          set -euo pipefail
+          ./gradlew :app:bundleRelease --no-daemon --stacktrace \
+            || ./gradlew :app:bundleDebug --no-daemon --stacktrace
+
+      - name: Collect + upload
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          CAAB=$(find native-customer/app/build/outputs -name '*.aab' 2>/dev/null | head -1 || true)
+          DAAB=$(find native-driver/app/build/outputs -name '*.aab' 2>/dev/null | head -1 || true)
+          echo "customer aab: ${CAAB:-NONE}"
+          echo "driver aab: ${DAAB:-NONE}"
+          [ -n "${CAAB:-}" ] && cp "$CAAB" dist/fresh2go-customer-native.aab
+          [ -n "${DAAB:-}" ] && cp "$DAAB" dist/fresh2go-driver-native.aab
+          ls -lah dist/ || true
+          if [ ! -f dist/fresh2go-customer-native.aab ] && [ ! -f dist/fresh2go-driver-native.aab ]; then
+            echo "No AABs produced"
+            exit 1
+          fi
+          TAG=mobile-apks-v1
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "Fresh2GO native builds" --notes "APK + AAB"
+          for f in dist/*; do
+            name=$(basename "$f")
+            id=$(gh api "repos/${{ github.repository }}/releases/tags/$TAG" --jq ".assets[] | select(.name==\"$name\") | .id" 2>/dev/null || true)
+            [ -n "${id:-}" ] && gh api -X DELETE "repos/${{ github.repository }}/releases/assets/$id" || true
+          done
+          gh release upload "$TAG" dist/* --clobber
+          echo UPLOAD_OK
+
+      - name: Summary
+        run: |
+          echo "customer step: ${{ steps.cust.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "driver step: ${{ steps.drv.outcome }}" >> "$GITHUB_STEP_SUMMARY"
