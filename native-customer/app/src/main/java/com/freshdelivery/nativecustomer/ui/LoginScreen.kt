@@ -228,7 +228,13 @@ fun LoginScreen(
             }
             TextButton(
                 onClick = {
-                    val uri = Uri.parse("https://freshdelivery.app/auth?reset=1")
+                    val q = email.trim()
+                    val uri = Uri.parse(
+                        if (q.contains("@"))
+                            "https://freshdelivery.app/auth?reset=1&email=" + Uri.encode(q)
+                        else
+                            "https://freshdelivery.app/auth?reset=1"
+                    )
                     context.startActivity(Intent(Intent.ACTION_VIEW, uri))
                 },
             ) {

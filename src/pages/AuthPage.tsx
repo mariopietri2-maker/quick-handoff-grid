@@ -99,10 +99,16 @@ export default function AuthPage() {
       const params = new URLSearchParams(window.location.search);
       const wantsReset = params.get('reset') === '1' || params.get('type') === 'recovery';
       const hashRecovery = window.location.hash.includes('type=recovery');
+      const emailParam = params.get('email');
+      if (emailParam && emailParam.includes('@')) {
+        setEmail(emailParam.trim().toLowerCase());
+      }
+      // recovery link from email → set new password
       if (hashRecovery || params.get('type') === 'recovery') {
         setMode('reset');
       } else if (wantsReset) {
-        setMode('otp');
+        // App "forgot password" → request 6-digit code first (not empty OTP form)
+        setMode('forgot');
       }
     } catch { /* noop */ }
 
@@ -327,7 +333,7 @@ export default function AuthPage() {
 
   const subtitle =
     mode === 'forgot'
-      ? 'Θα λάβετε κωδικό στην εφαρμογή (και email αν είναι διαθέσιμο)'
+      ? 'Θα λάβετε 6ψήφιο κωδικό στο email σας (Fresh2GO)'
       : mode === 'otp'
         ? 'Βάλτε τον 6ψήφιο κωδικό και ορίστε νέο password'
         : mode === 'reset'
@@ -419,6 +425,15 @@ export default function AuthPage() {
                   <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="bg-[hsl(220,20%,14%)] border-[hsl(220,20%,20%)] text-[hsl(220,14%,96%)]" required />
                 </div>
                 <Button type="submit" className="w-full" disabled={submitting}>{submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Αλλαγή κωδικού'}</Button>
+                <button
+                  type="button"
+                  className="w-full text-sm text-primary font-semibold"
+                  disabled={submitting || !email.trim()}
+                  onClick={(ev) => { void handleForgot(ev as unknown as React.FormEvent); }}
+                >
+                  Ξαναποστολή κωδικού
+                </button>
+                <button type="button" className="w-full text-sm text-[hsl(220,10%,55%)]" onClick={() => setMode('forgot')}>Αλλαγή email</button>
                 <button type="button" className="w-full text-sm text-[hsl(220,10%,55%)]" onClick={() => setMode('login')}>Πίσω στη σύνδεση</button>
               </form>
             ) : mode === 'reset' ? (
