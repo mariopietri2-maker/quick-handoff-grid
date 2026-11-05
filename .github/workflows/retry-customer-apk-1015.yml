@@ -1,0 +1,64 @@
+name: Retry customer APK 1.0.15
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/retry-customer-apk-1015.yml"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    permissions:
+      contents: write
+    env:
+      MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: SDK
+        run: |
+          set -euo pipefail
+          SDK_ROOT="$HOME/android-sdk"
+          mkdir -p "$SDK_ROOT/cmdline-tools"
+          curl -fsSL --retry 5 --retry-delay 3 -o /tmp/cmdtools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q /tmp/cmdtools.zip -d "$SDK_ROOT/cmdline-tools"
+          rm -rf "$SDK_ROOT/cmdline-tools/latest"
+          mv "$SDK_ROOT/cmdline-tools/cmdline-tools" "$SDK_ROOT/cmdline-tools/latest"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "$SDK_ROOT/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          yes | "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --licenses >/dev/null || true
+          "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --install \
+            "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+      - name: Build APK with retries
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.gradle
+          echo "MAPBOX_DOWNLOADS_TOKEN=${MAPBOX_DOWNLOADS_TOKEN:-}" >> ~/.gradle/gradle.properties
+          echo "systemProp.org.gradle.internal.http.connectionTimeout=180000" >> ~/.gradle/gradle.properties
+          echo "systemProp.org.gradle.internal.http.socketTimeout=180000" >> ~/.gradle/gradle.properties
+          echo "org.gradle.daemon=false" >> ~/.gradle/gradle.properties
+          cp -R native-driver/gradle native-customer/
+          cp native-driver/gradlew native-customer/
+          chmod +x native-customer/gradlew
+          echo "sdk.dir=$ANDROID_HOME" > native-customer/local.properties
+          cd native-customer
+          for i in 1 2 3; do
+            echo "=== assembleDebug attempt $i ==="
+            if ./gradlew :app:assembleDebug --no-daemon --stacktrace --refresh-dependencies; then
+              break
+            fi
+            if [ "$i" = 3 ]; then exit 1; fi
+            sleep 20
+          done
+          cp app/build/outputs/apk/debug/*.apk /tmp/fresh2go-customer-native-debug.apk
+          ls -lh /tmp/fresh2go-customer-native-debug.apk
+          TAG=mobile-apks-v1
+          id=$(gh api "repos/${{ github.repository }}/releases/tags/$TAG" --jq '.assets[] | select(.name=="fresh2go-customer-native-debug.apk") | .id' || true)
+          [ -n "${id:-}" ] && gh api -X DELETE "repos/${{ github.repository }}/releases/assets/$id" || true
+          gh release upload "$TAG" /tmp/fresh2go-customer-native-debug.apk --clobber
+          echo APK_RETRY_OK
