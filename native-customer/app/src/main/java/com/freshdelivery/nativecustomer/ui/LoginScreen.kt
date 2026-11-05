@@ -146,7 +146,7 @@ fun LoginScreen(
             fontWeight = FontWeight.Bold,
         )
         Text(
-            if (signupMode) "Δημιούργησε λογαριασμό" else "Fresh Meals. Fast Delivery.",
+            if (signupMode) "Δημιούργησε λογαριασμό Fresh2GO" else "Fresh2GO — Γρήγορη παράδοση",
             color = FreshMuted,
             style = MaterialTheme.typography.bodyMedium,
         )
@@ -299,7 +299,7 @@ fun LoginScreen(
         ) {
             if (busy) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp))
             else Text(
-                if (signupMode) "Συνέχεια" else "Σύνδεση",
+                if (signupMode) "Δημιουργία λογαριασμού" else "Σύνδεση",
                 fontWeight = FontWeight.Bold,
             )
         }

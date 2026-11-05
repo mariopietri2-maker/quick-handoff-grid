@@ -423,16 +423,39 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun signUp(email: String, password: String, fullName: String, phone: String) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(busy = true, error = null)
-            runCatching { repo.signUp(email, password, fullName, phone) }
+            _state.value = _state.value.copy(busy = true, error = null, info = null)
+            val emailNorm = email.trim()
+            val pass = password
+            runCatching {
+                repo.signUp(emailNorm, pass, fullName.trim(), phone.trim())
+                // Complete in-app: sign in right after register so user does not leave the app.
+                runCatching { repo.signIn(emailNorm, pass) }
+                    .onFailure {
+                        // If email confirmation is required, sign-in fails — surface clear Greek message.
+                        error("CONFIRM_REQUIRED")
+                    }
+            }
                 .onFailure { e ->
-                    _state.value = _state.value.copy(busy = false, error = e.message ?: "Signup failed")
+                    val raw = (e.message ?: "").lowercase()
+                    val msg = when {
+                        "confirm_required" in raw ->
+                            "Ο λογαριασμός δημιουργήθηκε. Αν ζητηθεί, επιβεβαίωσε το email και μετά πάτα Σύνδεση."
+                        "already" in raw || "registered" in raw || "exists" in raw ->
+                            "Υπάρχει ήδη λογαριασμός με αυτό το email. Κάνε σύνδεση."
+                        "password" in raw && ("weak" in raw || "least" in raw) ->
+                            "Ο κωδικός είναι πολύ απλός (τουλάχιστον 6 χαρακτήρες)."
+                        "invalid" in raw && "email" in raw ->
+                            "Μη έγκυρο email."
+                        else -> e.message ?: "Αποτυχία δημιουργίας λογαριασμού"
+                    }
+                    _state.value = _state.value.copy(busy = false, error = msg)
                 }
                 .onSuccess {
                     _state.value = _state.value.copy(
                         busy = false,
                         signupMode = false,
-                        info = "Έλεγξε το email σου για επιβεβαίωση και μετά συνδέσου.",
+                        error = null,
+                        info = "Ο λογαριασμός δημιουργήθηκε. Καλώς ήρθες στο Fresh2GO!",
                     )
                 }
         }
