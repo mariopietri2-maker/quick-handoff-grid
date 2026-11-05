@@ -1,0 +1,21 @@
+name: Fix forgot password v2
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/fix-forgot-v2.py"
+      - ".github/workflows/fix-forgot-v2.yml"
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/fix-forgot-v2.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/AuthPage.tsx native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/LoginScreen.kt
+          git commit -m "fix(auth): reset=1 opens request-code (forgot) step" || exit 0
+          git push
