@@ -103,7 +103,18 @@ class CustomerRepository(
         }
     }
 
-    suspend fun platformFees(): PlatformFees = PlatformFees()
+    suspend fun platformFees(): PlatformFees {
+        return runCatching {
+            val raw = client.postgrest.rpc("get_platform_settings_public")
+            val row = raw.decodeList<JsonObject>().firstOrNull() ?: return@runCatching PlatformFees()
+            fun num(key: String): Double? = row[key]?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()
+            PlatformFees(
+                platform_service_fee = num("platform_service_fee") ?: 0.0,
+                customer_base_fee = num("customer_base_fee"),
+                customer_per_km_fee = num("customer_per_km_fee"),
+            )
+        }.getOrDefault(PlatformFees(platform_service_fee = 0.0))
+    }
 
     /**
      * Reads the PUBLISHED customer app config (mirrors web `useCustomerAppConfig.loadShared`).

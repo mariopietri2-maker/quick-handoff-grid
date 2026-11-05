@@ -146,7 +146,7 @@ data class PushTokenUpsert(
 
 @Serializable
 data class PlatformFees(
-    val platform_service_fee: Double? = 0.99,
+    val platform_service_fee: Double? = 0.0,
     val customer_base_fee: Double? = null,
     val customer_per_km_fee: Double? = null,
 )

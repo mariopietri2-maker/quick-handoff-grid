@@ -122,7 +122,7 @@ data class CustomerUiState(
     val deliveryLng: Double? = null,
     val notes: String = "",
     val tipAmount: Double = 0.0,
-    val deliveryFee: Double = 0.99,
+    val deliveryFee: Double = 0.0,
     val paymentMethod: String = "cash",
     /** Modifiers for current store menu (keyed by menu_item_id). */
     val menuModifiers: Map<String, List<com.freshdelivery.nativecustomer.data.MenuModifierRow>> = emptyMap(),
@@ -149,7 +149,7 @@ data class CustomerUiState(
     val cachedSuggestions: List<CachedSuggestionRow> = emptyList(),
     val saveLabel: String = "Σπίτι",
     val savedAddresses: List<SavedAddressRow> = emptyList(),
-    val feeBase: Double = 0.99,
+    val feeBase: Double = 0.0,
     val feePerKm: Double = 0.0,
     val error: String? = null,
     /** True when device has no validated network (soft banner). */
@@ -304,7 +304,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         runCatching {
             val profile = repo.loadProfile(userId)
             val fees = repo.platformFees()
-            val base = fees.customer_base_fee ?: fees.platform_service_fee ?: 0.99
+            val base = fees.customer_base_fee ?: fees.platform_service_fee ?: 0.0
             val perKm = fees.customer_per_km_fee ?: 0.0
             val prefs = getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
             val savedAddr = prefs.getString("last_delivery_address", "") ?: ""
