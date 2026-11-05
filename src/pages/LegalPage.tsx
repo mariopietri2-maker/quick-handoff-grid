@@ -63,6 +63,7 @@ const CONTENT: Record<LegalKey, { icon: any; el: { title: string; updated: strin
         { h: "4. Διάρκεια Διατήρησης", p: "Παραγγελίες: 5 έτη (φορολογικός νόμος). Λογαριασμός: όσο είναι ενεργός. Δεδομένα τοποθεσίας οδηγών: 90 ημέρες. Αναλυτικά δεδομένα: ανώνυμα μετά τους 24 μήνες." },
         { h: "5. Διαμοιρασμός Δεδομένων", p: "Με καταστήματα (στοιχεία παραγγελίας), οδηγούς (όνομα, διεύθυνση παράδοσης, τηλέφωνο), Stripe (πληρωμές), Mapbox (χάρτες). Δεν πωλούμε δεδομένα τρίτους." },
         { h: "6. Δικαιώματά σας (GDPR)", p: `Πρόσβαση, διόρθωση, διαγραφή, φορητότητα, εναντίωση, περιορισμός. Στείλτε αίτημα στο ${COMPANY.email}. Έχετε δικαίωμα καταγγελίας στην Αρχή Προστασίας Δεδομένων Προσωπικού Χαρακτήρα (www.dpa.gr).` },
+        { h: "6α. Διαγραφή λογαριασμού και δεδομένων", p: "Μπορείτε να ζητήσετε τη διαγραφή του λογαριασμού σας και των συσχετισμένων δεδομένων (προφίλ, διευθύνσεις, ιστορικό παραγγελιών, αποθηκευμένες κάρτες) ανά πάσα στιγμή. Το αίτημα υποβάλλεται από τον σύνδεσμο στην ενότητα «Διαγραφή λογαριασμού» παρακάτω ή με email στο support@fresh2go.gr με θέμα «Διαγραφή λογαριασμού». Θα διαγράψουμε ή θα ανωνυμοποιήσουμε τα δεδομένα εντός 30 ημερών, εκτός από όσα πρέπει να κρατήσουμε για φορολογικές/νομικές υποχρεώσεις." },
         { h: "7. Cookies", p: "Χρησιμοποιούμε απαραίτητα cookies (συνεδρία) και προαιρετικά analytics. Μπορείτε να τα απορρίψετε από τις ρυθμίσεις του browser." },
         { h: "8. Ασφάλεια", p: "Κρυπτογράφηση TLS, Row-Level Security στη βάση δεδομένων, ρόλοι πρόσβασης, τακτικά security audits." },
         { h: "9. Παιδιά", p: "Η υπηρεσία δεν απευθύνεται σε άτομα κάτω των 18 ετών." },
@@ -78,6 +79,7 @@ const CONTENT: Record<LegalKey, { icon: any; el: { title: string; updated: strin
         { h: "4. Retention", p: "Orders: 5 years (tax law). Account: while active. Driver location data: 90 days. Analytics: anonymized after 24 months." },
         { h: "5. Sharing", p: "With stores (order details), drivers (name, address, phone), Stripe (payments), Mapbox (maps). We never sell data to third parties." },
         { h: "6. Your Rights (GDPR)", p: `Access, rectification, erasure, portability, objection, restriction. Send a request to ${COMPANY.email}. You may file complaints with the Hellenic Data Protection Authority (www.dpa.gr).` },
+        { h: "6a. Account and data deletion", p: "You can request deletion of your account and associated data (profile, addresses, order history, saved cards) at any time. Use the Delete account link in the section below, or email support@fresh2go.gr with the subject “Account deletion”. We will delete or anonymize the data within 30 days, except records we must keep for tax or legal obligations." },
         { h: "7. Cookies", p: "We use essential session cookies and optional analytics. You can refuse via browser settings." },
         { h: "8. Security", p: "TLS encryption, Row-Level Security on the database, role-based access, regular audits." },
         { h: "9. Children", p: "The service is not directed at persons under 18." },
@@ -164,6 +166,27 @@ export default function LegalPage() {
                 <p className="text-sm text-foreground/80 leading-relaxed">{s.p}</p>
               </section>
             ))}
+            {key === "privacy" && (
+              <section id="delete-account" className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+                <h2 className="font-heading font-semibold text-base mb-2">
+                  {lang === "el" ? "Διαγραφή λογαριασμού" : "Delete your account"}
+                </h2>
+                <p className="text-sm text-foreground/80 leading-relaxed mb-3">
+                  {lang === "el"
+                    ? "Χρησιμοποιήστε τον παρακάτω σύνδεσμο για να ζητήσετε τη διαγραφή του λογαριασμού σας και όλων των συσχετισμένων δεδομένων (προφίλ, διευθύνσεις, παραγγελίες, κάρτες)."
+                    : "Use the link below to request deletion of your account and all associated data (profile, addresses, orders, cards)."}
+                </p>
+                <a
+                  href="mailto:support@fresh2go.gr?subject=Account%20deletion%20request&body=Please%20delete%20my%20Fresh2GO%20account%20and%20associated%20data.%0A%0AEmail%20of%20the%20account%3A%20"
+                  className="inline-flex items-center text-sm font-semibold text-primary underline underline-offset-4"
+                >
+                  {lang === "el" ? "Αίτημα διαγραφής λογαριασμού" : "Request account deletion"}
+                </a>
+                <p className="text-xs text-muted-foreground mt-3">
+                  support@fresh2go.gr · https://fresh2go.gr/legal/privacy#delete-account
+                </p>
+              </section>
+            )}
           </CardContent>
         </Card>
 
