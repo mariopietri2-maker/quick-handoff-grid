@@ -257,21 +257,8 @@ fun LoginScreen(
             Spacer(Modifier.height(12.dp))
             Text(info, color = FreshGreenDark, style = MaterialTheme.typography.bodySmall)
         }
-        // Google Sign-In (testers feedback)
-        OutlinedButton(
-            onClick = onGoogleSignIn,
-            enabled = !busy,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-            shape = RoundedCornerShape(26.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1C1917)),
-        ) {
-            Text("Συνέχεια με Google", fontWeight = FontWeight.SemiBold)
-        }
-        Spacer(Modifier.height(12.dp))
-        Text("ή με email", color = FreshMuted, style = MaterialTheme.typography.labelMedium)
-        Spacer(Modifier.height(12.dp))
+        // Google Sign-In disabled for soft launch (email/password only)
+        // Re-enable when GOOGLE_WEB_CLIENT_ID is configured in the release build.
         Button(
             onClick = {
                 prefs.rememberMe = rememberMe
