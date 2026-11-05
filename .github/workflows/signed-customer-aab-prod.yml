@@ -1,0 +1,119 @@
+name: Production signed customer AAB
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/signed-customer-aab-prod.yml"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    permissions:
+      contents: write
+    env:
+      MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
+      PLAY_CUSTOMER_KEYSTORE_B64: ${{ secrets.PLAY_CUSTOMER_KEYSTORE_B64 }}
+      PLAY_STORE_PASSWORD: ${{ secrets.PLAY_STORE_PASSWORD }}
+      PLAY_KEY_PASSWORD: ${{ secrets.PLAY_KEY_PASSWORD }}
+      PLAY_KEY_ALIAS: ${{ secrets.PLAY_KEY_ALIAS }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bump to 1.0.14 / 7233400
+        run: |
+          set -euo pipefail
+          sed -i 's/versionCode = 7233300/versionCode = 7233400/' native-customer/app/build.gradle.kts
+          sed -i 's/versionName = "1.0.13"/versionName = "1.0.14"/' native-customer/app/build.gradle.kts
+          grep -E 'versionCode|versionName' native-customer/app/build.gradle.kts | head -4
+
+      - name: Commit bump
+        continue-on-error: true
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/app/build.gradle.kts
+          git commit -m "chore(customer): 1.0.14 (7233400) production" || true
+          git push || true
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android SDK
+        run: |
+          set -euo pipefail
+          SDK_ROOT="$HOME/android-sdk"
+          mkdir -p "$SDK_ROOT/cmdline-tools"
+          curl -fsSL -o /tmp/cmdtools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q /tmp/cmdtools.zip -d "$SDK_ROOT/cmdline-tools"
+          rm -rf "$SDK_ROOT/cmdline-tools/latest"
+          mv "$SDK_ROOT/cmdline-tools/cmdline-tools" "$SDK_ROOT/cmdline-tools/latest"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "$SDK_ROOT/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          yes | "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --licenses >/dev/null || true
+          "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --install \
+            "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+
+      - name: Restore Play upload keystore
+        run: |
+          set -euo pipefail
+          mkdir -p mobile-signing
+          test -n "${PLAY_CUSTOMER_KEYSTORE_B64:-}" || { echo "Missing PLAY_CUSTOMER_KEYSTORE_B64"; exit 1; }
+          test -n "${PLAY_STORE_PASSWORD:-}" || { echo "Missing PLAY_STORE_PASSWORD"; exit 1; }
+          echo "$PLAY_CUSTOMER_KEYSTORE_B64" | base64 -d > mobile-signing/fresh2go-customer-upload.jks
+          ALIAS="${PLAY_KEY_ALIAS:-fresh2go-customer}"
+          KEYPASS="${PLAY_KEY_PASSWORD:-$PLAY_STORE_PASSWORD}"
+          cat > mobile-signing/key.properties <<EOF
+          storePassword=${PLAY_STORE_PASSWORD}
+          keyPassword=${KEYPASS}
+          keyAlias=${ALIAS}
+          storeFile=fresh2go-customer-upload.jks
+          customerStoreFile=fresh2go-customer-upload.jks
+          EOF
+          echo "PLAY_KEYSTORE_FILE=${{ github.workspace }}/mobile-signing/fresh2go-customer-upload.jks" >> "$GITHUB_ENV"
+          echo "PLAY_KEY_ALIAS=${ALIAS}" >> "$GITHUB_ENV"
+
+      - name: Mapbox + wrapper
+        run: |
+          mkdir -p ~/.gradle
+          echo "MAPBOX_DOWNLOADS_TOKEN=${MAPBOX_DOWNLOADS_TOKEN:-}" >> ~/.gradle/gradle.properties
+          echo "systemProp.mapboxDownloadsToken=${MAPBOX_DOWNLOADS_TOKEN:-}" >> ~/.gradle/gradle.properties
+          cp -R native-driver/gradle native-customer/
+          cp native-driver/gradlew native-customer/
+          chmod +x native-customer/gradlew
+          echo "sdk.dir=$ANDROID_HOME" > native-customer/local.properties
+
+      - name: Bundle release signed
+        working-directory: native-customer
+        env:
+          PLAY_KEYSTORE_FILE: ${{ github.workspace }}/mobile-signing/fresh2go-customer-upload.jks
+          PLAY_STORE_PASSWORD: ${{ secrets.PLAY_STORE_PASSWORD }}
+          PLAY_KEY_PASSWORD: ${{ secrets.PLAY_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          export PLAY_KEY_ALIAS="${PLAY_KEY_ALIAS:-fresh2go-customer}"
+          export PLAY_KEY_PASSWORD="${PLAY_KEY_PASSWORD:-$PLAY_STORE_PASSWORD}"
+          ./gradlew :app:bundleRelease --no-daemon --stacktrace
+
+      - name: Upload production AAB
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          AAB=$(find native-customer/app/build/outputs/bundle -name '*.aab' | head -1)
+          ls -lh "$AAB"
+          cp "$AAB" /tmp/fresh2go-customer-native-signed.aab
+          cp "$AAB" /tmp/fresh2go-customer-native-v1.0.14-vc7233400-signed.aab
+          cp "$AAB" /tmp/fresh2go-customer-native.aab
+          TAG=mobile-apks-v1
+          for name in fresh2go-customer-native-signed.aab fresh2go-customer-native-v1.0.14-vc7233400-signed.aab fresh2go-customer-native.aab; do
+            id=$(gh api "repos/${{ github.repository }}/releases/tags/$TAG" --jq ".assets[] | select(.name==\"$name\") | .id" 2>/dev/null || true)
+            [ -n "${id:-}" ] && gh api -X DELETE "repos/${{ github.repository }}/releases/assets/$id" || true
+          done
+          gh release upload "$TAG" \
+            /tmp/fresh2go-customer-native-signed.aab \
+            /tmp/fresh2go-customer-native-v1.0.14-vc7233400-signed.aab \
+            /tmp/fresh2go-customer-native.aab \
+            --clobber
+          echo PROD_SIGNED_AAB_OK 1.0.14 7233400
