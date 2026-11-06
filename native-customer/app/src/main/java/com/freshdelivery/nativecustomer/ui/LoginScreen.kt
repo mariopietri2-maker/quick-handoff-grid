@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ButtonDefaults
@@ -80,6 +81,8 @@ fun LoginScreen(
     onLogin: (String, String) -> Unit,
     onSignUp: (String, String, String, String) -> Unit = { _, _, _, _ -> },
     onGoogleSignIn: () -> Unit = {},
+    onRequestReset: (String, (String?, String?) -> Unit) -> Unit = { _, cb -> cb(null, "Μη διαθέσιμο") },
+    onConfirmReset: (String, String, String, (String?) -> Unit) -> Unit = { _, _, _, cb -> cb("Μη διαθέσιμο") },
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -87,7 +90,89 @@ fun LoginScreen(
     var phone by remember { mutableStateOf("") }
     var rememberMe by remember { mutableStateOf(false) }
     var showPassword by remember { mutableStateOf(false) }
+    var showForgot by remember { mutableStateOf(false) }
+    var forgotStep by remember { mutableStateOf(0) }
+    var resetEmail by remember { mutableStateOf("") }
+    var resetOtp by remember { mutableStateOf("") }
+    var resetPass by remember { mutableStateOf("") }
+    var resetBusy by remember { mutableStateOf(false) }
+    var resetMsg by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
+
+    if (showForgot) {
+        AlertDialog(
+            onDismissRequest = { if (!resetBusy) showForgot = false },
+            title = { Text(if (forgotStep == 0) "Επαναφορά κωδικού" else "Νέος κωδικός") },
+            text = {
+                Column {
+                    if (forgotStep == 0) {
+                        OutlinedTextField(
+                            value = resetEmail,
+                            onValueChange = { resetEmail = it },
+                            label = { Text("Email") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    } else {
+                        Text("Στείλαμε 6ψήφιο κωδικό στο $resetEmail", style = MaterialTheme.typography.bodySmall)
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = resetOtp,
+                            onValueChange = { resetOtp = it.filter { ch -> ch.isDigit() }.take(6) },
+                            label = { Text("Κωδικός") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = resetPass,
+                            onValueChange = { resetPass = it },
+                            label = { Text("Νέος κωδικός") },
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    resetMsg?.let {
+                        Spacer(Modifier.height(8.dp))
+                        Text(it, color = FreshRose, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !resetBusy,
+                    onClick = {
+                        resetMsg = null
+                        if (forgotStep == 0) {
+                            val em = resetEmail.trim().lowercase()
+                            if (!em.contains("@")) { resetMsg = "Συμπλήρωσε email"; return@TextButton }
+                            resetBusy = true
+                            onRequestReset(em) { msg, err ->
+                                resetBusy = false
+                                if (err != null) resetMsg = err
+                                else { forgotStep = 1; resetMsg = msg }
+                            }
+                        } else {
+                            if (resetOtp.length != 6) { resetMsg = "Βάλε τον 6ψήφιο κωδικό"; return@TextButton }
+                            if (resetPass.length < 6) { resetMsg = "Ο κωδικός χρειάζεται 6+ χαρακτήρες"; return@TextButton }
+                            resetBusy = true
+                            onConfirmReset(resetEmail.trim().lowercase(), resetOtp, resetPass) { err ->
+                                resetBusy = false
+                                if (err != null) resetMsg = err
+                                else showForgot = false
+                            }
+                        }
+                    },
+                ) { Text(if (resetBusy) "..." else if (forgotStep == 0) "Αποστολή" else "Αλλαγή") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showForgot = false; forgotStep = 0; resetMsg = null }) { Text("Άκυρο") }
+            },
+        )
+    }
     val prefs = remember { CustomerPreferences(context) }
     LaunchedEffect(Unit) {
         rememberMe = prefs.rememberMe
@@ -226,18 +311,7 @@ fun LoginScreen(
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
-            TextButton(
-                onClick = {
-                    val q = email.trim()
-                    val uri = Uri.parse(
-                        if (q.contains("@"))
-                            "https://freshdelivery.app/auth?reset=1&email=" + Uri.encode(q)
-                        else
-                            "https://freshdelivery.app/auth?reset=1"
-                    )
-                    context.startActivity(Intent(Intent.ACTION_VIEW, uri))
-                },
-            ) {
+            TextButton(onClick = { showForgot = true }) {
                 Text("Ξέχασες τον κωδικό;", color = FreshGreenDark, style = MaterialTheme.typography.labelLarge)
             }
         }

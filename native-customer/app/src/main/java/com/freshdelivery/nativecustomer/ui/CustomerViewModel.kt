@@ -389,6 +389,26 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+
+    fun requestPasswordReset(email: String, onDone: (String?, String?) -> Unit) {
+        viewModelScope.launch {
+            runCatching { repo.requestPasswordReset(email) }
+                .onSuccess { msg -> onDone(msg, null) }
+                .onFailure { e -> onDone(null, e.message ?: "Αποτυχία αποστολής") }
+        }
+    }
+
+    fun confirmPasswordReset(email: String, otp: String, password: String, onDone: (String?) -> Unit) {
+        viewModelScope.launch {
+            runCatching { repo.confirmPasswordReset(email, otp, password) }
+                .onSuccess {
+                    runCatching { repo.signIn(email, password) }
+                    onDone(null)
+                }
+                .onFailure { e -> onDone(e.message ?: "Αποτυχία επαναφοράς") }
+        }
+    }
+
     fun signIn(email: String, password: String) {
         viewModelScope.launch {
             _state.value = _state.value.copy(busy = true, error = null)

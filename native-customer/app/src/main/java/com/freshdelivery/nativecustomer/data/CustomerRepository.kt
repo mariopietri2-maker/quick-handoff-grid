@@ -372,6 +372,37 @@ class CustomerRepository(
         return if (key.startsWith("pk_test_")) "sandbox" else "live"
     }
 
+
+    suspend fun requestPasswordReset(email: String): String {
+        val raw = client.functions.invoke(
+            function = "request-password-reset",
+            body = buildJsonObject { put("email", email.trim().lowercase()) },
+        )
+        val el = Json.parseToJsonElement(raw.bodyAsText()).jsonObject
+        if (el["throttled"]?.jsonPrimitive?.booleanOrNull == true) {
+            return el["message"]?.jsonPrimitive?.contentOrNull ?: "Πολλά αιτήματα. Δοκίμασε ξανά σε λίγα λεπτά."
+        }
+        return el["message"]?.jsonPrimitive?.contentOrNull
+            ?: "Αν υπάρχει λογαριασμός, στάλθηκε κωδικός στο email σου."
+    }
+
+    suspend fun confirmPasswordReset(email: String, otp: String, password: String) {
+        val raw = client.functions.invoke(
+            function = "confirm-password-reset",
+            body = buildJsonObject {
+                put("email", email.trim().lowercase())
+                put("otp", otp.trim())
+                put("password", password)
+            },
+        )
+        val el = Json.parseToJsonElement(raw.bodyAsText()).jsonObject
+        val err = el["error"]?.jsonPrimitive?.contentOrNull
+        val ok = el["ok"]?.jsonPrimitive?.booleanOrNull == true
+        if (!ok || !err.isNullOrBlank()) {
+            error(el["message"]?.jsonPrimitive?.contentOrNull ?: err ?: "Λάθος ή ληγμένος κωδικός.")
+        }
+    }
+
     suspend fun createPaymentSheet(orderId: String): PaymentSheetPayload {
         val env = getStripeEnvironment()
         val raw = client.functions.invoke(

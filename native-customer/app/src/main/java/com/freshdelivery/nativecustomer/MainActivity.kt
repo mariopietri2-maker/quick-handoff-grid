@@ -139,6 +139,8 @@ class MainActivity : ComponentActivity() {
                             onToggleSignup = vm::toggleSignupMode,
                             onLogin = vm::signIn,
                             onSignUp = vm::signUp,
+                            onRequestReset = vm::requestPasswordReset,
+                            onConfirmReset = vm::confirmPasswordReset,
                             onGoogleSignIn = {
                                 lifecycleScope.launch {
                                     try {
