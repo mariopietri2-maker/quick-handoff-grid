@@ -64,20 +64,16 @@ const Index = () => {
 
   useEffect(() => {
     (async () => {
-      const [s, d, o, r, names] = await Promise.all([
-        (supabase as any).from('stores_public').select('id', { count: 'exact', head: true }).eq('is_active', true),
-        supabase.from('driver_profiles').select('id', { count: 'exact', head: true }),
-        supabase.from('orders').select('id', { count: 'exact', head: true }),
-        supabase.from('reviews').select('rating'),
+      const [statsRes, names] = await Promise.all([
+        (supabase as any).rpc('get_homepage_stats'),
         (supabase as any).from('stores_public').select('name').eq('is_active', true).order('name').limit(12),
       ]);
-      const ratings = (r.data ?? []) as { rating: number }[];
-      const avg = ratings.length ? ratings.reduce((a, b) => a + (b.rating ?? 0), 0) / ratings.length : 0;
+      const row = Array.isArray(statsRes.data) ? statsRes.data[0] : statsRes.data;
       setCounts({
-        stores: s.count ?? 0,
-        drivers: d.count ?? 0,
-        orders: o.count ?? 0,
-        rating: Math.round(avg * 10),
+        stores: Number(row?.stores ?? 0),
+        drivers: Number(row?.drivers ?? 0),
+        orders: Number(row?.orders ?? 0),
+        rating: Math.round(Number(row?.rating ?? 0) * 10),
       });
       setPartners(((names.data ?? []) as { name: string }[]).map((n) => n.name));
     })();
