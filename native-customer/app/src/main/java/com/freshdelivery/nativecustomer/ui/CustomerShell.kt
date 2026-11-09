@@ -1541,7 +1541,7 @@ private fun FreshStoreCard(
             .shadow(3.dp, RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp))
             .background(Color.White)
-            .then(if (!active || !openNow) Modifier.graphicsLayer { alpha = 0.72f } else Modifier)
+            .then(if (!active || !openNow) Modifier.graphicsLayer { alpha = 0.88f } else Modifier)
             .clickable(onClick = onClick),
     ) {
         Box(Modifier.fillMaxWidth().height(148.dp)) {
@@ -1659,12 +1659,19 @@ private fun FreshStoreCard(
             }
             val minOrd = store.min_order_amount ?: 0.0
             if (minOrd > 0) {
-                Text(
-                    "Ελάχ. παραγγελία €" + "%.0f".format(minOrd),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = FreshMuted,
-                    modifier = Modifier.padding(top = 2.dp),
-                )
+                Surface(
+                    color = FreshChip,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.padding(top = 6.dp),
+                ) {
+                    Text(
+                        "Ελάχ. παραγγελία €" + "%.0f".format(minOrd),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = FreshInk,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                }
             }
             Spacer(Modifier.height(9.dp))
             Row(

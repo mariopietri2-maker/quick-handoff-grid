@@ -120,7 +120,7 @@ internal fun PromoCarousel(
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
                     )
-                    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
+                    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.58f)))
                 }
                 Box(
                     Modifier
@@ -144,7 +144,7 @@ internal fun PromoCarousel(
                             Modifier
                                 .padding(end = 12.dp)
                                 .clip(RoundedCornerShape(16.dp))
-                                .background(Color.White.copy(alpha = 0.15f))
+                                .background(Color.Black.copy(alpha = 0.35f))
                                 .padding(12.dp),
                         ) {
                             Text("🎁", style = MaterialTheme.typography.headlineMedium)
@@ -177,7 +177,7 @@ internal fun PromoCarousel(
                             Box(
                                 Modifier
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(Color.White.copy(alpha = 0.2f))
+                                    .background(Color.Black.copy(alpha = 0.45f))
                                     .padding(horizontal = 10.dp, vertical = 4.dp),
                             ) {
                                 Text(

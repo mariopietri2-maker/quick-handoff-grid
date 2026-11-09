@@ -62,7 +62,7 @@ internal fun FreshMenuRow(item: MenuItemRow, highlightOffer: Boolean = false, hi
         Column(Modifier.weight(1f)) {
             if (highlightOffer) {
                 Surface(
-                    color = FreshGreen.copy(alpha = 0.12f),
+                    color = FreshGreenSoft,
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.padding(bottom = 6.dp),
                 ) {
@@ -117,7 +117,7 @@ internal fun FreshMenuRow(item: MenuItemRow, highlightOffer: Boolean = false, hi
                 Modifier
                     .size(96.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(FreshChip),
+                    .background(Color(0xFFEEEEEC)),
                 contentAlignment = Alignment.Center,
             ) {
                 if (!item.image_url.isNullOrBlank()) {
