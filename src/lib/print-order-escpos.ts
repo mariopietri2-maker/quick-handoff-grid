@@ -255,7 +255,9 @@ export function buildOrderEscPos(
     enc.line();
     if (recipientName) {
       enc.bold(true);
+      enc.tall(true);
       enc.text(escpad(cutText(recipientName, cols), cols, 'center'));
+      enc.tall(false);
       enc.bold(false);
       enc.line();
     }

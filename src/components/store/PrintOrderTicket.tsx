@@ -325,8 +325,8 @@ export function printOrderTicket(
           width: 100%;
           text-align: center !important;
           font-weight: 900;
-          font-size: 16px;
-          line-height: 1.35;
+          font-size: 18px;
+          line-height: 1.3;
           margin: 0 auto 4px;
         }
         .block .sub {
@@ -354,8 +354,8 @@ export function printOrderTicket(
           width: 100%;
           text-align: center !important;
           font-weight: 900;
-          font-size: 20px;
-          line-height: 1.25;
+          font-size: 18px;
+          line-height: 1.3;
           margin: 2px auto;
           padding: 0 2px;
           letter-spacing: 0.01em;
@@ -366,7 +366,8 @@ export function printOrderTicket(
           text-align: center !important;
           font-size: 18px;
           font-weight: 900;
-          margin: 6px auto 0;
+          line-height: 1.3;
+          margin: 4px auto 0;
           letter-spacing: 0.04em;
         }
         .notes {
