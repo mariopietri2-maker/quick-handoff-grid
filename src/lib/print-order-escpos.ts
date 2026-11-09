@@ -260,27 +260,47 @@ export function buildOrderEscPos(
       enc.line();
     }
     if (recipientPhone) {
-      enc.text(escpad(cutText(`Tel ${recipientPhone}`, cols), cols, 'center'));
+      enc.bold(true);
+      enc.tall(true);
+      enc.text(escpad(cutText(recipientPhone, cols), cols, 'center'));
+      enc.tall(false);
+      enc.bold(false);
       enc.line();
     }
+    enc.feed(1);
+    enc.bold(true);
+    enc.text(escpad('ΔΙΕΥΘΥΝΣΗ', cols, 'center'));
+    enc.bold(false);
+    enc.line();
     if (recipientAddr) {
-      // Wrap address across lines, still centered
-      const words = recipientAddr.split(/\s+/).filter(Boolean);
-      let line = '';
-      for (const w of words) {
-        const next = line ? `${line} ${w}` : w;
-        if ([...next].length > cols && line) {
+      const parts = recipientAddr.split(/[,\n]+/).map((s) => s.trim()).filter(Boolean);
+      enc.bold(true);
+      enc.tall(true);
+      for (const part of parts) {
+        const words = part.split(/\s+/).filter(Boolean);
+        let line = '';
+        for (const w of words) {
+          const next = line ? `${line} ${w}` : w;
+          if ([...next].length > cols && line) {
+            enc.text(escpad(cutText(line, cols), cols, 'center'));
+            enc.line();
+            line = w;
+          } else {
+            line = next;
+          }
+        }
+        if (line) {
           enc.text(escpad(cutText(line, cols), cols, 'center'));
           enc.line();
-          line = w;
-        } else {
-          line = next;
         }
       }
-      if (line) {
-        enc.text(escpad(cutText(line, cols), cols, 'center'));
-        enc.line();
-      }
+      enc.tall(false);
+      enc.bold(false);
+    } else {
+      enc.bold(true);
+      enc.text(escpad('ΧΩΡΙΣ ΔΙΕΥΘΥΝΣΗ', cols, 'center'));
+      enc.bold(false);
+      enc.line();
     }
     enc.text('='.repeat(cols));
     enc.line();

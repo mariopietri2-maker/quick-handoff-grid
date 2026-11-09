@@ -96,6 +96,7 @@ export function printOrderTicket(
   const recipientName = extras.customerName ? String(extras.customerName).trim() : '';
   const recipientPhone = extras.customerPhone ? String(extras.customerPhone).trim() : '';
   const recipientAddr = order.delivery_address ? String(order.delivery_address).trim() : '';
+  const addrLines = recipientAddr.split(/[,\n]+/).map((s) => s.trim()).filter(Boolean);
   const hasRecipient = !!(recipientName || recipientPhone || recipientAddr);
   const copies = prefs.printCopies === 2 ? 2 : 1;
   const compact = prefs.compactTotals !== false;
@@ -337,15 +338,36 @@ export function printOrderTicket(
           margin: 4px auto 0;
           letter-spacing: 0.04em;
         }
+        .block .addr-label {
+          display: block;
+          width: 100%;
+          margin: 10px auto 6px;
+          background: #000;
+          color: #fff;
+          font-size: 12px;
+          font-weight: 900;
+          letter-spacing: 0.14em;
+          padding: 4px 0;
+        }
         .block .addr {
           display: block;
           width: 100%;
           text-align: center !important;
-          font-weight: 800;
-          font-size: 13px;
-          line-height: 1.4;
-          margin: 8px auto 0;
-          padding: 0 4px;
+          font-weight: 900;
+          font-size: 20px;
+          line-height: 1.25;
+          margin: 2px auto;
+          padding: 0 2px;
+          letter-spacing: 0.01em;
+        }
+        .block .phone {
+          display: block;
+          width: 100%;
+          text-align: center !important;
+          font-size: 18px;
+          font-weight: 900;
+          margin: 6px auto 0;
+          letter-spacing: 0.04em;
         }
         .notes {
           background: #000;
@@ -467,8 +489,13 @@ export function printOrderTicket(
           ? `<div class="block">
               <strong>ΠΑΡΑΛΗΠΤΗΣ</strong>
               ${recipientName ? `<span class="line">${e(recipientName)}</span>` : ''}
-              ${recipientPhone ? `<span class="sub">☎ ${e(recipientPhone)}</span>` : ''}
-              ${recipientAddr ? `<span class="addr">${e(recipientAddr)}</span>` : ''}
+              ${recipientPhone ? `<span class="phone">☎ ${e(recipientPhone)}</span>` : ''}
+              <span class="addr-label">ΔΙΕΥΘΥΝΣΗ</span>
+              ${
+                addrLines.length
+                  ? addrLines.map((line) => `<span class="addr">${e(line)}</span>`).join('')
+                  : '<span class="addr">ΧΩΡΙΣ ΔΙΕΥΘΥΝΣΗ</span>'
+              }
             </div>`
           : ''
       }
