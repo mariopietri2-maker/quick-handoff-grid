@@ -1441,7 +1441,11 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     refreshOrders()
                 }
             }.onFailure { e ->
-                _state.value = _state.value.copy(busy = false, error = e.message ?: "Αποτυχία παραγγελίας")
+                val raw = e.message.orEmpty()
+                val msg = if (raw.contains("Store is closed", ignoreCase = true)) {
+                    "Το κατάστημα είναι κλειστό — δοκίμασε όταν ανοίξει"
+                } else raw.ifBlank { "Αποτυχία παραγγελίας" }
+                _state.value = _state.value.copy(busy = false, error = msg)
                 scheduleBannerClear()
             }
         }
