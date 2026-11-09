@@ -1,0 +1,21 @@
+name: Fix UI contrast customer + store
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/fix-ui-contrast-all.py"
+      - ".github/workflows/fix-ui-contrast-all.yml"
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/fix-ui-contrast-all.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer src/components/store || true
+          git commit -m "fix(ui): contrast pass — customer store header, home, promo, store queue" || true
+          git push || true
