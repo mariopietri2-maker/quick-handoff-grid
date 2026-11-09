@@ -425,6 +425,10 @@ export default function CheckoutPage() {
       });
 
       if (orderError || !orderId) {
+        const raw = String(orderError?.message ?? '');
+        if (raw.toLowerCase().includes('store is closed')) {
+          throw new Error('Το κατάστημα είναι κλειστό — δοκίμασε όταν ανοίξει');
+        }
         throw orderError || new Error('Αποτυχία δημιουργίας παραγγελίας');
       }
       const order = { id: orderId as string };

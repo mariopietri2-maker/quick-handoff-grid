@@ -93,6 +93,13 @@ export function useStoreOrders(
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
+  // Realtime can miss an insert. Poll so a new order still appears.
+  useEffect(() => {
+    if (!storeId) return;
+    const id = window.setInterval(() => { void fetchOrders(); }, 15000);
+    return () => window.clearInterval(id);
+  }, [storeId, fetchOrders]);
+
   useEffect(() => {
     if (!storeId) return;
     const channel = supabase
