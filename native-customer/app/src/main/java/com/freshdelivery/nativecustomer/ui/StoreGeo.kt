@@ -34,45 +34,8 @@ internal fun storeDistanceKm(lat: Double, lng: Double, store: StoreRow): Double 
 internal fun isStoreOpenNow(store: StoreRow): Boolean {
     if (store.is_active == false) return false
     // Schedule is not enough. Customers only see the store as open after a manual open.
-    if (store.status_override != "open") return false
-    return true
-    when (store.status_override) {
-        "open" -> return true
-        "closed" -> return false
-    }
-    val zone = ZoneId.of("Europe/Athens")
-    val today = LocalDate.now(zone)
-    val holidayDates = store.holiday_dates ?: emptyList()
-    val dateKey = "%04d-%02d-%02d".format(today.year, today.monthValue, today.dayOfMonth)
-    if (holidayDates.any { it.contains(dateKey) }) return false
-    val hours = store.opening_hours ?: return true
-    val now = LocalDateTime.now(ZoneId.of("Europe/Athens"))
-    val dayKey = when (now.dayOfWeek) {
-        DayOfWeek.MONDAY -> "mon"
-        DayOfWeek.TUESDAY -> "tue"
-        DayOfWeek.WEDNESDAY -> "wed"
-        DayOfWeek.THURSDAY -> "thu"
-        DayOfWeek.FRIDAY -> "fri"
-        DayOfWeek.SATURDAY -> "sat"
-        DayOfWeek.SUNDAY -> "sun"
-    }
-    val schedule = hours.jsonObject[dayKey] ?: return true
-    val obj = schedule.jsonObject
-    val enabled = obj["enabled"]?.jsonPrimitive?.booleanOrNull ?: true
-    if (!enabled) return false
-    val open = obj["open"]?.jsonPrimitive?.contentOrNull ?: return true
-    val close = obj["close"]?.jsonPrimitive?.contentOrNull ?: return true
-    fun toMin(v: String): Int? {
-        val hhmm = v.trim().split(":")
-        if (hhmm.size != 2) return null
-        return hhmm[0].toIntOrNull()?.times(60)?.plus(hhmm[1].toIntOrNull() ?: 0)
-    }
-    val openMin = toMin(open) ?: return true
-    val closeMin = toMin(close) ?: return true
-    val minuteOfDay = now.hour * 60 + now.minute
-    return if (closeMin > openMin) minuteOfDay in openMin until closeMin else minuteOfDay >= openMin || minuteOfDay < closeMin
+    return store.status_override == "open"
 }
-
 
 /** Next open window label for closed stores, e.g. "Ανοίγει 12:00" or null. */
 internal fun nextOpenHint(store: StoreRow): String? {
