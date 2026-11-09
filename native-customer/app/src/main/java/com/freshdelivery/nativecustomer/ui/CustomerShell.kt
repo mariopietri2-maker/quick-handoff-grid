@@ -2003,10 +2003,10 @@ private fun MenuScreen(
                             .background(
                                 Brush.verticalGradient(
                                     listOf(
-                                        Color.Transparent,
-                                        Color.Black.copy(alpha = 0.55f),
+                                        Color.Black.copy(alpha = 0.15f),
+                                        Color.Black.copy(alpha = 0.72f),
                                     ),
-                                    startY = 120f,
+                                    startY = 40f,
                                 ),
                             ),
                     )
@@ -2019,24 +2019,34 @@ private fun MenuScreen(
                             store?.name ?: "Μενού",
                             style = MaterialTheme.typography.headlineMedium,
                             color = Color.White,
+                            fontWeight = FontWeight.Bold,
                         )
                         store?.address?.let {
-                            Text(it, color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.bodyMedium)
+                            Text(it, color = Color.White.copy(alpha = 0.95f), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
                         }
-                        val minO = store?.min_order_amount ?: 0.0
-                        if (minO > 0) {
-                            Text(
-                                "Ελάχ. παραγγελία €%.0f".format(minO),
-                                color = Color.White.copy(alpha = 0.9f),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Spacer(Modifier.height(10.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            val minO = store?.min_order_amount ?: 0.0
+                            if (minO > 0) {
+                                Surface(
+                                    color = Color.Black.copy(alpha = 0.72f),
+                                    shape = RoundedCornerShape(10.dp),
+                                ) {
+                                    Text(
+                                        "Ελάχ. παραγγελία €%.0f".format(minO),
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    )
+                                }
+                            }
                             store?.let { s ->
                                 Surface(
-                                    color = if (isPlatformFulfilment(s)) FreshGreenDark else Color.White.copy(alpha = 0.22f),
+                                    color = if (isPlatformFulfilment(s)) FreshGreenDark else Color.Black.copy(alpha = 0.72f),
                                     shape = RoundedCornerShape(10.dp),
                                 ) {
                                     Text(
@@ -2044,20 +2054,20 @@ private fun MenuScreen(
                                         color = Color.White,
                                         fontWeight = FontWeight.Bold,
                                         style = MaterialTheme.typography.labelMedium,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                                     )
                                 }
                             }
                             Surface(
-                                color = Color.White.copy(alpha = 0.22f),
+                                color = Color.Black.copy(alpha = 0.72f),
                                 shape = RoundedCornerShape(10.dp),
                             ) {
                                 Text(
                                     "${state.menu.size} προϊόντα",
                                     color = Color.White,
-                                    fontWeight = FontWeight.SemiBold,
+                                    fontWeight = FontWeight.Bold,
                                     style = MaterialTheme.typography.labelMedium,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                                 )
                             }
                         }
