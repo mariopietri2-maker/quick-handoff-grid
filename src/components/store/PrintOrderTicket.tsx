@@ -103,7 +103,7 @@ export function printOrderTicket(
   const showDelivery = !compact || om.deliveryFee > 0;
   const showTip = !compact || om.tip > 0;
   const largeType = prefs.largeType !== false;
-  const readyMin = Number((order as any).prep_minutes ?? (order as any).estimated_prep_minutes ?? 0) || 0;
+  const readyMin = Number((order as any).estimated_prep_time ?? (order as any).prep_minutes ?? (order as any).estimated_prep_minutes ?? 0) || 0;
   const scheduled = (order as any).scheduled_for
     ? new Date((order as any).scheduled_for).toLocaleString('el-GR', {
         day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',

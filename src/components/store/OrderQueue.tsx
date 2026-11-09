@@ -494,6 +494,20 @@ export function OrderQueue({
               {busy ? '…' : nextAction.label}
             </Button>
           )}
+          {['placed', 'accepted', 'preparing'].includes(order.status) && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              className="shrink-0 h-11 sm:h-9 px-3 font-heading font-bold text-[13px] text-destructive border-destructive/40 hover:bg-destructive/10"
+              onClick={() => {
+                if (!window.confirm('Ακύρωση αυτής της παραγγελίας;')) return;
+                void handleAdvance(order, 'cancelled');
+              }}
+            >
+              Ακύρωση
+            </Button>
+          )}
         </div>
 
         {open && (
