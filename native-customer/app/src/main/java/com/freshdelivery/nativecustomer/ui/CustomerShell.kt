@@ -1004,7 +1004,8 @@ Row(
                 }
             }
         }
-        if (showDiscovery && enabledPromos.isNotEmpty()) {
+        // Promo cards hidden for now.
+        if (false && showDiscovery && enabledPromos.isNotEmpty()) {
             item(key = "promo-carousel") {
                 PromoCarousel(promos = enabledPromos, onPromoClick = { applyFilter(HomeFilter.Deals); onSearch("") })
             }
