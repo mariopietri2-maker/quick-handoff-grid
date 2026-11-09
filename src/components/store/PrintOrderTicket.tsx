@@ -130,6 +130,20 @@ export function printOrderTicket(
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
         }
+        .title {
+          text-align: center;
+          font-size: 16px;
+          font-weight: 900;
+          letter-spacing: 0.04em;
+          margin: 0 0 2px;
+          text-transform: uppercase;
+        }
+        .not-legal {
+          text-align: center;
+          font-size: 9px;
+          font-weight: 700;
+          margin: 0 0 6px;
+        }
         .brand {
           text-align: center;
           letter-spacing: 0.18em;
@@ -435,6 +449,8 @@ export function printOrderTicket(
       ${copies === 2 ? '<div class="copy-banner">— ΑΝΤΙΓΡΑΦΟ ΕΚΤΥΠΩΣΗΣ —</div>' : ''}
       ${isCash ? `<div class="cash-top">⚠ ΜΕΤΡΗΤΑ · ΕΙΣΠΡΑΞΗ ${money(displayTotal)}€</div>` : ''}
       <div class="fulfill">${fulfillment}</div>
+      <div class="title">Δελτίο Παραγγελίας</div>
+      <div class="not-legal">Όχι φορολογικό παραστατικό</div>
       <div class="brand">FRESH2GO.GR</div>
       <div class="store">${e(String(storeName ?? 'Κατάστημα'))}</div>
       <div class="meta">
