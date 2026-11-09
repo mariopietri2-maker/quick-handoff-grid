@@ -1,0 +1,21 @@
+name: Apply receipt font + phone fix
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/fix-receipt-phone-fonts.py"
+      - ".github/workflows/apply-receipt-fix.yml"
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/fix-receipt-phone-fonts.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/store/PrintOrderTicket.tsx src/lib/print-order-escpos.ts || true
+          git commit -m "fix(store): larger receipt fonts + always print customer phone" || true
+          git push || true
