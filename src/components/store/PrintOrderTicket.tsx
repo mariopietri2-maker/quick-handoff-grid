@@ -450,7 +450,6 @@ export function printOrderTicket(
       ${isCash ? `<div class="cash-top">⚠ ΜΕΤΡΗΤΑ · ΕΙΣΠΡΑΞΗ ${money(displayTotal)}€</div>` : ''}
       <div class="fulfill">${fulfillment}</div>
       <div class="title">Δελτίο Παραγγελίας</div>
-      <div class="not-legal">Όχι φορολογικό παραστατικό</div>
       <div class="brand">FRESH2GO.GR</div>
       <div class="store">${e(String(storeName ?? 'Κατάστημα'))}</div>
       <div class="meta">

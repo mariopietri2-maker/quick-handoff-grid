@@ -105,8 +105,6 @@ export function buildOrderEscPos(
   enc.tall(false);
   enc.bold(false);
   enc.line();
-  enc.text(escpad('ΟΧΙ ΦΟΡΟΛΟΓΙΚΟ ΠΑΡΑΣΤΑΤΙΚΟ', cols, 'center'));
-  enc.line();
   enc.feed(1);
   enc.bold(true);
   enc.text(escpad('FRESH2GO.GR', cols, 'center'));
