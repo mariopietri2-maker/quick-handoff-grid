@@ -33,6 +33,9 @@ internal fun storeDistanceKm(lat: Double, lng: Double, store: StoreRow): Double 
  *  today and today's opening_hours window covers the current time. */
 internal fun isStoreOpenNow(store: StoreRow): Boolean {
     if (store.is_active == false) return false
+    // Schedule is not enough. Customers only see the store as open after a manual open.
+    if (store.status_override != "open") return false
+    return true
     when (store.status_override) {
         "open" -> return true
         "closed" -> return false

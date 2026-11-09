@@ -19,18 +19,16 @@ function toMinutes(hhmm: string): number {
   return (isNaN(h) ? 0 : h) * 60 + (isNaN(m) ? 0 : m);
 }
 
-/** Returns true when the store is open right now.
- *  Accepts raw Supabase JSON too — callers read stores.opening_hours typed as `Json`.
- *  statusOverride is the owner-controlled open/closed override from stores.status_override:
- *  'open' forces open, 'closed' forces closed, anything else falls through to the schedule. */
+/** Returns true when the store is open for customers.
+ *  A schedule alone is not enough. The owner must manually set status_override to 'open'.
+ *  'closed' or null (not opened yet) stays closed, even inside scheduled hours. */
 export function isStoreOpenNow(
   openingHours: OpeningHours | unknown,
   holidayDates?: string[] | null,
   statusOverride?: 'open' | 'closed' | string | null,
   now: Date = new Date(),
 ): boolean {
-  if (statusOverride === 'open') return true;
-  if (statusOverride === 'closed') return false;
+  if (statusOverride !== 'open') return false;
 
   const hours = openingHours as OpeningHours;
   if (!hours || typeof hours !== 'object') return true;

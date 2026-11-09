@@ -31,29 +31,17 @@ export function StoreOpennessToggle({
   isActive,
   onChange,
 }: Props) {
-  const effectiveOpen =
-    statusOverride === 'open' ||
-    (statusOverride == null && scheduleOpen && isActive !== false);
+  const effectiveOpen = statusOverride === 'open' && isActive !== false;
 
   const handleToggle = (target: boolean) => {
-    let next: string | null;
-    if (scheduleOpen) {
-      next = target ? null : 'closed';
-    } else {
-      next = target ? 'open' : null;
-    }
-    onChange(next);
+    onChange(target ? 'open' : 'closed');
   };
 
   const sub = (() => {
     if (isActive === false) return 'Απενεργοποιημένο από τη διαχείριση';
-    if (statusOverride === 'open') return 'Χειροκίνητη παράκαμψη — ανοιχτό εκτός ωραρίου';
-    if (statusOverride === 'closed') return 'Χειροκίνητα κλειστό — σβήσε για να ακολουθεί το ωράριο';
-    if (!scheduleOpen) {
-      const next = nextOpeningLabel(openingHours, new Date());
-      return next ? `Κλειστό λόγω ωραρίου · ${next}` : 'Κλειστό λόγω ωραρίου';
-    }
-    return 'Ακολουθεί το εβδομαδιαίο ωράριο';
+    if (statusOverride === 'open') return 'Ανοιχτό χειροκίνητα — οι πελάτες μπορούν να παραγγείλουν';
+    if (statusOverride === 'closed') return 'Κλειστό. Άνοιξέ το για να σε βλέπουν οι πελάτες';
+    return 'Δεν έχει ανοίξει σήμερα. Πάτα τον διακόπτη για να δεχτείς παραγγελίες';
   })();
 
   return (
