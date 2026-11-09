@@ -115,7 +115,7 @@ export function useStoreOrders(
             if (newId) setPendingIds((prev) => (prev.includes(newId) ? prev : [...prev, newId]));
             try {
               if (!suppressSoundRef.current) {
-                startOrderAlertLoop({ maxRepeats: autoAcceptRef.current ? 5 : null });
+                startOrderAlertLoop({ maxRepeats: null });
               }
               if (newId) showOrderNotification(newId, 0);
             } catch {}
@@ -239,7 +239,7 @@ export function useStoreOrders(
     const hasNew = orders.some((o) => o.status === 'placed');
     if (!hasNew) { stopOrderAlertLoop(); return; }
     if (autoAcceptEnabled) {
-      startOrderAlertLoop({ maxRepeats: 5 });
+      startOrderAlertLoop({ maxRepeats: null });
       const timer = window.setTimeout(async () => {
         if (autoAcceptingRef.current) return;
         const placed = orders.filter((o) => o.status === 'placed');

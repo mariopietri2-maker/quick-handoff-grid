@@ -175,6 +175,9 @@ export function OrderQueue({
   const printQueueRef = useRef<OrderWithItems[]>([]);
   const printRunningRef = useRef(false);
   const lastPrintedIdRef = useRef<string | null>(null);
+  if (!lastPrintedIdRef.current) {
+    try { lastPrintedIdRef.current = localStorage.getItem('store_last_printed'); } catch {}
+  }
 
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'placed' | 'accepted' | 'preparing' | 'ready'>('all');
@@ -300,6 +303,15 @@ export function OrderQueue({
       const opts = order.status === 'placed' ? { estimatedPrepTime: getPrep(order) } : undefined;
       const ok = await onStatusUpdate(order.id, nextStatus, opts);
       if (ok === false) return;
+      if (nextStatus === 'preparing' || nextStatus === 'accepted') {
+        lastPrintedIdRef.current = order.id;
+        try { localStorage.setItem('store_last_printed', order.id); } catch {}
+        try { localStorage.setItem('store_last_printed', order.id); } catch {}
+        void printOrderSafe(order, storeName ?? 'Κατάστημα', {
+          customerName: (order as any).customer_name ?? null,
+          customerPhone: (order as any).customer_phone ?? null,
+        }, storeId);
+      }
       setLastAction({ orderId: order.id, from, to: nextStatus });
       setExpanded((p) => {
         const next = { ...p };
@@ -347,6 +359,7 @@ export function OrderQueue({
       ) {
         printedRef.current.add(order.id);
         lastPrintedIdRef.current = order.id;
+        try { localStorage.setItem('store_last_printed', order.id); } catch {}
         printQueueRef.current.push(order);
       }
     }
@@ -422,7 +435,7 @@ export function OrderQueue({
             className="flex-1 min-w-0 text-left space-y-1"
           >
             <div className="flex items-center gap-2 flex-wrap">
-              <button type="button" className="font-heading font-extrabold text-[17px] tabular-nums text-foreground text-left" onClick={copyOrderNo} title="Αντιγραφή αριθμού">
+              <button type="button" className="font-heading font-extrabold text-[22px] tabular-nums text-foreground text-left" onClick={copyOrderNo} title="Αντιγραφή αριθμού">
                   {formatOrderNumber(order)}
                 </button>
               {order.source && (
@@ -467,8 +480,8 @@ export function OrderQueue({
           {countdown !== null && order.status !== 'ready' && (
             <div
               className={cn(
-                'shrink-0 h-11 w-11 rounded-full border-2 flex items-center justify-center',
-                'font-heading font-bold text-[15px] tabular-nums',
+                'shrink-0 h-14 w-14 rounded-full border-2 flex items-center justify-center',
+                'font-heading font-bold text-[18px] tabular-nums',
                 countdown <= 5
                   ? 'border-destructive text-destructive bg-destructive/5'
                   : 'border-muted-foreground/30 text-foreground',
@@ -501,7 +514,14 @@ export function OrderQueue({
               disabled={busy}
               className="shrink-0 h-11 sm:h-9 px-3 font-heading font-bold text-[13px] text-destructive border-destructive/40 hover:bg-destructive/10"
               onClick={() => {
-                if (!window.confirm('Ακύρωση αυτής της παραγγελίας;')) return;
+                const reason = window.prompt('Γιατί ακυρώνεις; (εξαντλήθηκε / λάθος διεύθυνση / άλλο)');
+                if (reason == null) return;
+                const note = reason.trim();
+                if (note) {
+                  const prev = order.notes ? String(order.notes) : '';
+                  const merged = prev ? `${prev}\nΑκύρωση: ${note}` : `Ακύρωση: ${note}`;
+                  void supabase.from('orders').update({ notes: merged } as any).eq('id', order.id);
+                }
                 void handleAdvance(order, 'cancelled');
               }}
             >
@@ -532,7 +552,7 @@ export function OrderQueue({
                       href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-border text-[11px] font-heading font-semibold hover:bg-muted max-w-full"
+                      className="inline-flex items-center gap-1 h-10 px-3 rounded-md border border-border text-[15px] font-heading font-bold hover:bg-muted max-w-full"
                     >
                       <MapPin className="h-3.5 w-3.5 shrink-0" />
                       <span className="truncate">{addr}</span>
@@ -559,7 +579,7 @@ export function OrderQueue({
                         onClick={() => void markItemSoldOut(item.menu_item_id, item.name, order.id, order.notes)}
                       >
                         <Ban className="h-3 w-3" />
-                        86
+                        Εξαντλήθηκε
                       </button>
                     )}
                   </span>

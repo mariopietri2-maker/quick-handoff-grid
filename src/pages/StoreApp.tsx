@@ -22,6 +22,7 @@ import StoreWalletCard from '@/components/store/StoreWalletCard';
 import StoreOrderPnl from '@/components/store/StoreOrderPnl';
 import StoreOrderHistory from '@/components/store/StoreOrderHistory';
 import { StoreOpennessToggle } from '@/components/store/StoreOpennessToggle';
+import { StoreDayClose } from '@/components/store/StoreDayClose';
 import { isStoreOpenNow } from '@/lib/store-hours';
 import { orderMoney, formatEuro } from '@/lib/money';
 import { StoreSupportButton } from '@/components/store/StoreSupportButton';
@@ -595,6 +596,10 @@ export default function StoreApp() {
               holidayDates={store.holiday_dates}
               isActive={store.is_active}
               onChange={(override) => updateStore({ status_override: override }, store.id)}
+            />
+            <StoreDayClose
+              storeId={store.id}
+              onCloseStore={() => updateStore({ status_override: 'closed' }, store.id)}
             />
             <Button
               onClick={() => setActiveTab('external')}
