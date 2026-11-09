@@ -1182,11 +1182,20 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                             promoCodeMessage = "Μη έγκυρος ή ανενεργός κωδικός",
                         )
                     } else {
+                        // One coupon per order: replace any previous code + clear game deal
+                        val prev = _state.value.promoCodeApplied
+                        val replaced = !prev.isNullOrBlank() && !prev.equals(promo.code, ignoreCase = true)
+                        val msg = buildString {
+                            append(promo.label)
+                            append(" · Ένα κουπόνι ανά παραγγελία")
+                            if (replaced) append(" (αντικατέστησε το $prev)")
+                        }
                         _state.value = _state.value.copy(
                             promoCodeApplied = promo.code,
                             promoPercentOff = promo.percentOff,
                             promoFreeDelivery = promo.freeDelivery,
-                            promoCodeMessage = promo.label,
+                            promoCodeMessage = msg,
+                            appliedDeal = null,
                         )
                     }
                 }
