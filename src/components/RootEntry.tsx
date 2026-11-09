@@ -62,11 +62,24 @@ export default function RootEntry() {
       if (profile.role === 'm') return <Navigate to="/driver" replace />;
       if (profile.role === 'driver') return <Navigate to="/driver" replace />;
       if (profile.role === 'store' || isStore) return <Navigate to="/store" replace />;
-      // Customers always land on the ordering app.
-      return <Navigate to="/order" replace />;
+      // Customers: native customer app → /order; browser keeps marketing home.
+      if (native) return <Navigate to="/order" replace />;
+      return (
+        <Suspense fallback={<BootSpinner />}>
+          <Index />
+        </Suspense>
+      );
     }
   }
 
-  // Typing Fresh2GO.gr opens the customer web app.
-  return <Navigate to="/order" replace />;
+  // Anonymous browser → marketing homepage. Native Capacitor only → /order.
+  if (native) {
+    return <Navigate to="/order" replace />;
+  }
+
+  return (
+    <Suspense fallback={<BootSpinner />}>
+      <Index />
+    </Suspense>
+  );
 }
