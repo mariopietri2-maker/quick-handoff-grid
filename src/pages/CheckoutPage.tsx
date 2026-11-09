@@ -328,7 +328,14 @@ export default function CheckoutPage() {
         .select('opening_hours, holiday_dates, is_active, status_override')
         .eq('id', storeId)
         .maybeSingle();
+      const storeMin = Number((storeRow as any)?.min_order_amount ?? 5);
+      if (storeRow && storeMin > 0 && total < storeMin) {
+        toast.error(`Ελάχιστη παραγγελία ${storeMin.toFixed(2)}€`);
+        setSubmitting(false);
+        return;
+      }
       if (storeRow && (storeRow as any).is_active === false) {
+
         toast.error('Το κατάστημα δεν δέχεται παραγγελίες αυτή τη στιγμή');
         return;
       }

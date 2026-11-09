@@ -1073,7 +1073,7 @@ const displayAddress = deliveryAddress
                               <>
                                 {etaLow}–{etaHigh} {t('customer.min')}
                                 {' · '}
-                                {(store as any).covers_delivery_fee ? 'Δωρεάν παρ.' : '0,99€ παρ.'}
+                                {(store as any).covers_delivery_fee ? 'Δωρεάν παρ.' : '0,99€ παρ.'}{(Number((store as any).min_order_amount ?? 5) > 0) ? ` · Ελάχ. ${Number((store as any).min_order_amount ?? 5).toFixed(0)}€` : ''}
                               </>
                             )}
                           </>

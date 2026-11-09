@@ -169,6 +169,24 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Ελάχιστη παραγγελία</p>
+                <p className="text-xs text-muted-foreground">Προεπιλογή πλατφόρμας 5€. Άλλαξέ το για το κατάστημά σου.</p>
+              </div>
+              <Badge variant="outline">{Number(store.min_order_amount ?? 5).toFixed(0)}€</Badge>
+            </div>
+            <input
+              type="number"
+              min={0}
+              step={0.5}
+              value={store.min_order_amount ?? 5}
+              onChange={(e) => updateStore({ min_order_amount: Number(e.target.value) || 0 }, storeId)}
+              className="h-10 w-28 rounded-lg border border-border bg-background px-3 text-sm font-heading"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-muted-foreground" />
                 <p className="text-sm font-medium">Επιπλέον χρόνος προετοιμασίας</p>
