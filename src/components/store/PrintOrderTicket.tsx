@@ -125,7 +125,7 @@ export function printOrderTicket(
           padding: 6px 4px 10px;
           max-width: ${bodyMm}mm; width: ${bodyMm}mm;
           margin: 0 auto;
-          font-size: ${largeType ? (narrow ? 12 : 13) : (narrow ? 11 : 12)}px;
+          font-size: ${largeType ? (narrow ? 15 : 16) : (narrow ? 13 : 14)}px;
           line-height: 1.4;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
@@ -185,7 +185,7 @@ export function printOrderTicket(
           margin-bottom: 2px;
         }
         .ticket-no .num {
-          font-size: ${largeType ? (narrow ? 30 : 38) : (narrow ? 28 : 36)}px;
+          font-size: ${largeType ? (narrow ? 36 : 44) : (narrow ? 32 : 40)}px;
           font-weight: 900;
           letter-spacing: 0.04em;
           line-height: 1;
@@ -304,11 +304,11 @@ export function printOrderTicket(
           margin: 0 0 6px;
         }
 
-        .tot-row { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; font-weight: 700; font-size: 12px; }
+        .tot-row { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; font-weight: 700; font-size: 15px; }
         .tot-row .lab { flex: 1 1 auto; min-width: 0; }
         .tot-row .val { flex: 0 0 auto; font-weight: 900; white-space: nowrap; }
-        .tot-grand { border-top: 2px solid #000; margin-top: 6px; padding-top: 8px; font-size: 15px; font-weight: 900; }
-        .tot-grand .val { font-size: 17px; }
+        .tot-grand { border-top: 2px solid #000; margin-top: 6px; padding-top: 8px; font-size: 18px; font-weight: 900; }
+        .tot-grand .val { font-size: 20px; }
         .block {
           margin: 12px auto 0;
           width: 100%;
@@ -505,7 +505,7 @@ export function printOrderTicket(
           ? `<div class="block">
               <strong>ΠΑΡΑΛΗΠΤΗΣ</strong>
               ${recipientName ? `<span class="line">${e(recipientName)}</span>` : ''}
-              ${recipientPhone ? `<span class="phone">☎ ${e(recipientPhone)}</span>` : ''}
+              `<span class="phone">☎ ${recipientPhone ? e(recipientPhone) : 'ΧΩΡΙΣ ΤΗΛΕΦΩΝΟ'}</span>`
               <span class="addr-label">ΔΙΕΥΘΥΝΣΗ</span>
               ${
                 addrLines.length
@@ -568,6 +568,28 @@ export async function printOrderSafe(
   extras: PrintOrderExtras = {},
   storeId?: string | null,
 ): Promise<{ direct: boolean }> {
+  // Ensure customer phone is present (profiles.phone) for kitchen tickets
+  let resolved: PrintOrderExtras = { ...extras };
+  try {
+    const needPhone = !String(resolved.customerPhone ?? '').trim();
+    const needName = !String(resolved.customerName ?? '').trim();
+    const cid = (order as any).customer_id as string | undefined;
+    if (cid && (needPhone || needName)) {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name, phone')
+        .eq('user_id', cid)
+        .maybeSingle();
+      if (data) {
+        if (needPhone && data.phone) resolved = { ...resolved, customerPhone: String(data.phone) };
+        if (needName && data.full_name) resolved = { ...resolved, customerName: String(data.full_name) };
+      }
+    }
+  } catch {
+    /* non-fatal */
+  }
+  extras = resolved;
   const prefs = getPrinterPrefs(storeId);
   const st = getPrinterState();
   if (prefs.enabled && prefs.mode === 'direct' && st.status === 'connected') {
