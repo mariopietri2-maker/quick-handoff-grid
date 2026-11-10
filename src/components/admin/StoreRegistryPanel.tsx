@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, FileText, Pencil, Search, Store, Trash2} from 'lucide-react';
+import { Building2, FileText, Pencil, Search, Store, Trash2, Lock, Unlock } from 'lucide-react';
 
 type StoreRow = {
   id: string;
@@ -26,6 +26,7 @@ type StoreRow = {
   address: string;
   owner_id: string;
   is_active: boolean | null;
+  status_override: string | null;
   store_role: string;
   commission_pct: number | null;
   created_at?: string;
@@ -166,6 +167,31 @@ export default function StoreRegistryPanel({ stores, profiles }: Props) {
     }
     toast.success('Το μητρώο καταστήματος ενημερώθηκε');
     setEditing(false);
+    queryClient.invalidateQueries({ queryKey: ['admin-stores'] });
+  };
+
+  const [closing, setClosing] = useState(false);
+  const handleCloseStore = async () => {
+    if (!selected) return;
+    const currentlyOpen = selected.store.status_override === 'open';
+    const next = currentlyOpen ? 'closed' : 'open';
+    const ok = window.confirm(
+      currentlyOpen
+        ? `Κλείσιμο «${selected.store.name}» για τους πελάτες;\nΘα φαίνεται κλειστό μέχρι να το ανοίξεις ξανά.`
+        : `Άνοιγμα «${selected.store.name}» για τους πελάτες;`,
+    );
+    if (!ok) return;
+    setClosing(true);
+    const { error } = await supabase
+      .from('stores')
+      .update({ status_override: next })
+      .eq('id', selected.store.id);
+    setClosing(false);
+    if (error) {
+      toast.error(error.message || 'Αποτυχία');
+      return;
+    }
+    toast.success(next === 'closed' ? 'Το κατάστημα έκλεισε' : 'Το κατάστημα άνοιξε');
     queryClient.invalidateQueries({ queryKey: ['admin-stores'] });
   };
 
@@ -339,6 +365,17 @@ export default function StoreRegistryPanel({ stores, profiles }: Props) {
                   </div>
                   {!editing ? (
                     <div className="flex gap-1.5 shrink-0">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className={`h-8 gap-1.5 ${selected.store.status_override === 'open' ? 'text-destructive border-destructive/30 hover:bg-destructive/10' : 'text-emerald-700 border-emerald-500/40'}`}
+                        onClick={handleCloseStore}
+                        disabled={closing}
+                      >
+                        {selected.store.status_override === 'open'
+                          ? <><Lock className="h-3.5 w-3.5" /> Κλείσιμο</>
+                          : <><Unlock className="h-3.5 w-3.5" /> Άνοιγμα</>}
+                      </Button>
                       <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={startEdit}>
                         <Pencil className="h-3.5 w-3.5" />
                         Επεξεργασία
@@ -392,6 +429,7 @@ export default function StoreRegistryPanel({ stores, profiles }: Props) {
                     <Field label="Ρόλος" value={(selected.store.store_role || 'standard').toUpperCase()} />
                     <Field label="Προμήθεια %" value={selected.store.commission_pct != null ? `${selected.store.commission_pct}%` : 'Προεπιλογή πλατφόρμας'} />
                     <Field label="Κατάσταση" value={selected.store.is_active === false ? 'Ανενεργό' : 'Ενεργό'} />
+                    <Field label="Ανοιχτό τώρα" value={selected.store.status_override === 'open' ? 'Ανοιχτό' : 'Κλειστό'} />
                     <Field label="Ιδιοκτήτης" value={selected.owner?.full_name || selected.owner?.phone || selected.store.owner_id.slice(0, 8) + '…'} />
                   </div>
                 ) : (
