@@ -126,7 +126,7 @@ export function printOrderTicket(
         body {
           font-family: "IBM Plex Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
           color: #000;
-          padding: 6px 4px 10px;
+          padding: 6px 6px 12px;
           max-width: ${bodyMm}mm; width: ${bodyMm}mm;
           margin: 0 auto;
           font-size: ${largeType ? (narrow ? 15 : 16) : (narrow ? 13 : 14)}px;
@@ -308,11 +308,11 @@ export function printOrderTicket(
           margin: 0 0 6px;
         }
 
-        .tot-row { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; font-weight: 700; font-size: 15px; }
-        .tot-row .lab { flex: 1 1 auto; min-width: 0; }
-        .tot-row .val { flex: 0 0 auto; font-weight: 900; white-space: nowrap; }
-        .tot-grand { border-top: 2px solid #000; margin-top: 6px; padding-top: 8px; font-size: 18px; font-weight: 900; }
-        .tot-grand .val { font-size: 20px; }
+        .tot-row { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; padding: 5px 2px; font-weight: 700; font-size: 14px; width: 100%; box-sizing: border-box; }
+        .tot-row .lab { flex: 1 1 auto; min-width: 0; text-align: left; }
+        .tot-row .val { flex: 0 0 auto; font-weight: 900; white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums; }
+        .tot-grand { border-top: 2px solid #000; margin-top: 6px; padding-top: 8px; font-size: 16px; font-weight: 900; }
+        .tot-grand .val { font-size: 18px; }
         .block {
           margin: 12px auto 0;
           width: 100%;
@@ -360,23 +360,28 @@ export function printOrderTicket(
           display: block;
           width: 100%;
           margin: 10px auto 6px;
-          background: #000;
-          color: #fff;
-          font-size: 12px;
+          background: #fff;
+          color: #000;
+          border-top: 2px solid #000;
+          border-bottom: 2px solid #000;
+          font-size: 13px;
           font-weight: 900;
-          letter-spacing: 0.14em;
-          padding: 4px 0;
+          letter-spacing: 0.12em;
+          padding: 5px 4px;
+          text-align: center !important;
         }
         .block .addr {
           display: block;
           width: 100%;
           text-align: center !important;
           font-weight: 900;
-          font-size: 20px;
-          line-height: 1.25;
-          margin: 2px auto 6px;
-          padding: 0 2px;
-          letter-spacing: 0.01em;
+          font-size: 16px;
+          line-height: 1.35;
+          margin: 4px auto 8px;
+          padding: 0 4px;
+          letter-spacing: 0;
+          word-break: break-word;
+          overflow-wrap: anywhere;
         }
         .driver { border-width: 2px; margin-top: 10px; }
         .driver strong { font-size: 14px; letter-spacing: 0.08em; }
@@ -507,7 +512,7 @@ export function printOrderTicket(
       }
 
       <div class="block driver">
-        <strong>ΠΑΡΑΔΟΣΗ · ΓΙΑ ΤΟΝ ΟΔΗΓΟ</strong>
+        <strong>ΠΑΡΑΔΟΣΗ</strong>
         <span class="addr-label">ΟΝΟΜΑ</span>
         <span class="addr">${recipientName ? e(recipientName) : '—'}</span>
         <span class="addr-label">ΔΙΕΥΘΥΝΣΗ</span>
