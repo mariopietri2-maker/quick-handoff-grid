@@ -26,6 +26,7 @@ interface AuthContextType {
     password: string,
     fullName: string,
     role: string,
+    phone?: string,
   ) => Promise<{ error: Error | null; session: Session | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -143,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null };
   };
 
-  const signUp = async (email: string, password: string, fullName: string, _role: string) => {
+  const signUp = async (email: string, password: string, fullName: string, _role: string, phone?: string) => {
     const emailNorm = normalizeEmail(email);
     const flavor = await resolveMobileFlavor();
     const redirectPath = mobileHomePath(flavor === 'shared' ? 'customer' : flavor);
@@ -152,7 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: emailNorm,
       password,
       options: {
-        data: { full_name: fullName.trim() },
+        data: { full_name: fullName.trim(), phone: (phone || '').trim() },
         emailRedirectTo: `${window.location.origin}${redirectPath}`,
       },
     });

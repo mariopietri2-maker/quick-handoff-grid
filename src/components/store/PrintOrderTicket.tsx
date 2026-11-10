@@ -583,14 +583,23 @@ export async function printOrderSafe(
     const cid = (order as any).customer_id as string | undefined;
     if (cid && (needPhone || needName)) {
       const { supabase } = await import('@/integrations/supabase/client');
-      const { data } = await supabase
-        .from('profiles')
-        .select('full_name, phone')
-        .eq('user_id', cid)
-        .maybeSingle();
-      if (data) {
-        if (needPhone && data.phone) resolved = { ...resolved, customerPhone: String(data.phone) };
-        if (needName && data.full_name) resolved = { ...resolved, customerName: String(data.full_name) };
+      // Store cannot read profiles directly (RLS). Use the order-scoped contact function.
+      const { data: contact } = await supabase.rpc('store_order_contact' as any, { p_order_id: (order as any).id });
+      const row = Array.isArray(contact) ? contact[0] : contact;
+      if (row) {
+        if (needPhone && row.phone) resolved = { ...resolved, customerPhone: String(row.phone) };
+        if (needName && row.full_name) resolved = { ...resolved, customerName: String(row.full_name) };
+      }
+      if (needPhone && !resolved.customerPhone) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('full_name, phone')
+          .eq('user_id', cid)
+          .maybeSingle();
+        if (data) {
+          if (needPhone && data.phone) resolved = { ...resolved, customerPhone: String(data.phone) };
+          if (needName && data.full_name) resolved = { ...resolved, customerName: String(data.full_name) };
+        }
       }
     }
   } catch {

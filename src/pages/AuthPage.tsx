@@ -50,6 +50,7 @@ function clearResetQuery() {
 export default function AuthPage() {
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -290,6 +291,10 @@ export default function AuthPage() {
           toast.error('Παρακαλώ εισάγετε το όνομά σας');
           return;
         }
+        if (!phone.trim()) {
+          toast.error('Παρακαλώ εισάγετε το τηλέφωνό σας');
+          return;
+        }
         {
       const pwErr = passwordErrorMessage(password);
       if (pwErr) {
@@ -297,7 +302,7 @@ export default function AuthPage() {
         return;
       }
     }
-        const { error, session } = await signUp(emailNorm, password, fullName, driverIntent ? 'driver' : 'customer');
+        const { error, session } = await signUp(emailNorm, password, fullName, driverIntent ? 'driver' : 'customer', phone.trim());
         if (error) {
           toast.error(error.message);
           if ((error.message || '').toLowerCase().includes('υπάρχει ήδη')) {
@@ -457,6 +462,12 @@ export default function AuthPage() {
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(220,10%,55%)]" />
                       <Input value={fullName} onChange={(e) => setFullName(e.target.value)} className="pl-10 bg-[hsl(220,20%,14%)] border-[hsl(220,20%,20%)] text-[hsl(220,14%,96%)]" required />
                     </div>
+                  </div>
+                )}
+                {isSignup && (
+                  <div className="space-y-2">
+                    <Label className="text-[hsl(220,14%,96%)]">Τηλέφωνο</Label>
+                    <Input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="69xxxxxxxx" className="bg-[hsl(220,20%,14%)] border-[hsl(220,20%,20%)] text-[hsl(220,14%,96%)]" required />
                   </div>
                 )}
                 <div className="space-y-2">
