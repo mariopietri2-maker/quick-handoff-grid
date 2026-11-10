@@ -121,6 +121,7 @@ data class CustomerUiState(
     val deliveryLat: Double? = null,
     val deliveryLng: Double? = null,
     val notes: String = "",
+    val doorbell: String = "",
     val tipAmount: Double = 0.0,
     val deliveryFee: Double = 0.0,
     val paymentMethod: String = "cash",
@@ -1143,6 +1144,10 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(notes = notes)
     }
 
+    fun setDoorbell(value: String) {
+        _state.value = _state.value.copy(doorbell = value)
+    }
+
     fun setTip(tip: Double) {
         _state.value = _state.value.copy(tipAmount = tip.coerceIn(0.0, 100.0))
     }
@@ -1369,7 +1374,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     paymentMethod = payMethod,
                     tipAmount = s.tipAmount,
                     deliveryFee = s.effectiveDeliveryFee,
-                    notes = s.notes.ifBlank { null },
+                    notes = listOfNotNull(s.doorbell.trim().takeIf { it.isNotEmpty() }?.let { "ΚΟΥΔΟΥΝΙ: $it" }, s.notes.trim().takeIf { it.isNotEmpty() }).joinToString("\n").ifBlank { null },
                     distanceKm = distanceKm,
                     promoCode = s.promoCodeApplied ?: s.appliedDeal?.code,
                 )
@@ -1406,6 +1411,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     menu = emptyList(),
                     tipAmount = 0.0,
                     notes = "",
+                    doorbell = "",
                     addressSuggestions = emptyList(),
                     paymentMethod = "cash",
                     info = if (wasCard) {

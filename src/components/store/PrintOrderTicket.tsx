@@ -95,6 +95,8 @@ export function printOrderTicket(
 
   const recipientName = extras.customerName ? String(extras.customerName).trim() : '';
   const recipientPhone = extras.customerPhone ? String(extras.customerPhone).trim() : '';
+  const rawNotes = String(order.notes ?? '');
+  const doorbell = (rawNotes.match(/ΚΟΥΔΟΥΝΙ:\s*(.+)/)?.[1] ?? '').split('\n')[0].trim();
   const recipientAddr = order.delivery_address ? String(order.delivery_address).trim() : '';
   const addrLines = recipientAddr.split(/[,\n]+/).map((s) => s.trim()).filter(Boolean);
   const hasRecipient = !!(recipientName || recipientPhone || recipientAddr);
@@ -510,6 +512,8 @@ export function printOrderTicket(
         <span class="phone">${recipientPhone ? e(recipientPhone) : 'ΧΩΡΙΣ ΤΗΛΕΦΩΝΟ'}</span>
         <span class="addr-label">ΔΙΕΥΘΥΝΣΗ</span>
         <span class="addr">${recipientAddr ? e(recipientAddr) : 'ΧΩΡΙΣ ΔΙΕΥΘΥΝΣΗ'}</span>
+        <span class="addr-label">ΚΟΥΔΟΥΝΙ</span>
+        <span class="addr">${doorbell ? e(doorbell) : '—'}</span>
         ${
           order.notes
             ? `<span class="addr-label">ΣΗΜΕΙΩΣΗ</span><span class="addr">${e(String(order.notes))}</span>`

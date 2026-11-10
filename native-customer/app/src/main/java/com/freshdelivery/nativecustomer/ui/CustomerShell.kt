@@ -238,6 +238,7 @@ fun CustomerShell(
     onSetDelivery: (String, Double?, Double?) -> Unit,
     onSaveAddress: () -> Unit = {},
     onSetNotes: (String) -> Unit,
+    onSetDoorbell: (String) -> Unit = {},
     onSetTip: (Double) -> Unit,
     onSetPayment: (String) -> Unit,
     onPromoCodeInput: (String) -> Unit = {},
@@ -368,7 +369,7 @@ fun CustomerShell(
     if (state.showCart) {
         CartCheckoutScreen(
             state, snackbar, { onToggleCart(false) }, onUpdateQty, onSetCartLineNote, onSetDelivery,
-            onSetNotes, onSetTip, onSetPayment, onPlaceOrder, onUseLocation, onGeocode, onPickSuggestion,
+            onSetNotes, onSetDoorbell, onSetTip, onSetPayment, onPlaceOrder, onUseLocation, onGeocode, onPickSuggestion,
             onPromoCodeInput, onApplyPromoCode, onClearPromoCode,
             onClearCart,
             onRefreshSavedCards,
@@ -2302,6 +2303,7 @@ private fun CartCheckoutScreen(
     onSetCartLineNote: (String, String) -> Unit = { _, _ -> },
     onSetDelivery: (String, Double?, Double?) -> Unit,
     onSetNotes: (String) -> Unit,
+    onSetDoorbell: (String) -> Unit = {},
     onSetTip: (Double) -> Unit,
     onSetPayment: (String) -> Unit,
     onPlaceOrder: () -> Unit,
@@ -2640,9 +2642,19 @@ item {
                     }
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
+                        value = state.doorbell,
+                        onValueChange = onSetDoorbell,
+                        label = { Text("Κουδούνι") },
+                        placeholder = { Text("Όνομα στο κουδούνι") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = fieldColors,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
                         value = state.notes,
                         onValueChange = onSetNotes,
-                        placeholder = { Text("π.χ. Χτύπα το κουδούνι") },
+                        placeholder = { Text("π.χ. 2ος όροφος, αριστερά") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
                         colors = fieldColors,

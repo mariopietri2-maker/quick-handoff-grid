@@ -142,6 +142,7 @@ export default function CheckoutPage() {
       });
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
   const [notes, setNotes] = useState('');
+  const [doorbell, setDoorbell] = useState('');
   const [scheduledFor, setScheduledFor] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
@@ -396,7 +397,7 @@ export default function CheckoutPage() {
           return `${i.name}: ${opts}`;
         })
         .join(' · ');
-      const mergedNotes = [notes?.trim(), modNotes ? `Επιλογές: ${modNotes}` : '']
+      const mergedNotes = [doorbell.trim() ? `ΚΟΥΔΟΥΝΙ: ${doorbell.trim()}` : '', notes?.trim(), modNotes ? `Επιλογές: ${modNotes}` : '']
         .filter(Boolean)
         .join('\n') || null;
 
@@ -677,6 +678,19 @@ export default function CheckoutPage() {
 
         <ScheduledDeliveryPicker value={scheduledFor} onChange={setScheduledFor} />
 
+
+        <Card className="rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)]">
+          <CardContent className="p-4 space-y-2">
+            <Label className="font-heading">Κουδούνι</Label>
+            <input
+              value={doorbell}
+              onChange={(e) => setDoorbell(e.target.value)}
+              maxLength={80}
+              placeholder="Όνομα στο κουδούνι"
+              className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm"
+            />
+          </CardContent>
+        </Card>
 
         <Card className="rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)]">
           <CardContent className="p-4 space-y-2">

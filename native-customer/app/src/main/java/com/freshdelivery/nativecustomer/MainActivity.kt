@@ -208,6 +208,7 @@ class MainActivity : ComponentActivity() {
                             onSetDelivery = vm::setDelivery,
                             onSaveAddress = vm::saveAddress,
                             onSetNotes = vm::setNotes,
+                            onSetDoorbell = vm::setDoorbell,
                             onSetTip = vm::setTip,
                             onSetPayment = vm::setPaymentMethod,
                             onPromoCodeInput = vm::setPromoCodeInput,
