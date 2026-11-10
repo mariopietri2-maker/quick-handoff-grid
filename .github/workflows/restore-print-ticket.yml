@@ -1,0 +1,78 @@
+name: Restore PrintOrderTicket full
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/restore-print-ticket.yml"
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore from known good commit and patch
+        run: |
+          set -euo pipefail
+          git show e203990ae22f13ee99b12c83d323db39483a1559:src/components/store/PrintOrderTicket.tsx > src/components/store/PrintOrderTicket.tsx
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+          p = Path("src/components/store/PrintOrderTicket.tsx")
+          t = p.read_text()
+          t = re.sub(
+              r"\$\{\s*isCash\s*\?\s*`<div class=\"notes\">⚠ ΕΙΣΠΡΑΞΗ ΜΕΤΡΗΤΩΝ[^`]*`\s*:\s*''\s*\}",
+              "",
+              t,
+              count=1,
+          )
+          t = t.replace(
+              "${isCash ? `ΜΕΤΡΗΤΑ · ΕΙΣΠΡΑΞΗ ${money(displayTotal)}€` : (payLabel ? e(payLabel) + ' · ΠΛΗΡΩΘΗΚΕ' : '—')}",
+              "${isCash ? `ΜΕΤΡΗΤΑ` : (payLabel ? e(payLabel) + ' · ΠΛΗΡΩΘΗΚΕ' : '—')}",
+          )
+          t = t.replace("ΠΑΡΑΔΟΣΗ · ΓΙΑ ΤΟΝ ΟΔΗΓΟ", "ΠΑΡΑΔΟΣΗ")
+          t = re.sub(r"\s*\$\{\s*extras\.driverCode\s*\?[\s\S]*?:\s*''\s*\}", "", t, count=1)
+          t = t.replace(
+          """        .block .addr-label {
+          display: block;
+          width: 100%;
+          margin: 10px auto 6px;
+          background: #000;
+          color: #fff;
+          font-size: 12px;
+          font-weight: 900;
+          letter-spacing: 0.14em;
+          padding: 4px 0;
+        }""",
+          """        .block .addr-label {
+          display: block;
+          width: 100%;
+          margin: 6px auto 3px;
+          background: #fff;
+          color: #000;
+          border-top: 1.5px solid #000;
+          border-bottom: 1.5px solid #000;
+          font-size: 11px;
+          font-weight: 900;
+          letter-spacing: 0.1em;
+          padding: 3px 2px;
+          text-align: center !important;
+        }""",
+          )
+          old_bell = """        <span class=\"addr-label\">ΚΟΥΔΟΥΝΙ</span>
+        <span class=\"addr\">${doorbell ? e(doorbell) : '—'}</span>"""
+          new_bell = """        ${doorbell ? `<span class=\"addr-label\">ΚΟΥΔΟΥΝΙ</span><span class=\"addr\">${e(doorbell)}</span>` : ''}"""
+          t = t.replace(old_bell, new_bell)
+          p.write_text(t)
+          assert "itemsHtml" in t and "ticket-no" in t and "Δελτίο Παραγγελίας" in t
+          assert "ΟΔΗΓΟΣ" not in t
+          print("OK restored+patched", t.count("\n"))
+          PY
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/store/PrintOrderTicket.tsx
+          git commit -m "fix(print): restore full HTML ticket with items+header" || true
+          git push || true
