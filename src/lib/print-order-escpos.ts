@@ -194,7 +194,7 @@ export function buildOrderEscPos(
       const unit = parseMoney(item?.unit_price ?? item?.price ?? item?.unitPrice);
       const lineAmt = lineTotal(unit, qty);
       const itemName = String(item?.name ?? item?.product_name ?? item?.title ?? 'Προϊόν').trim();
-      enc.text(twoCol(`#${idx + 1} ${qty}x ${itemName}`, `${money(lineAmt)}E`, cols));
+      enc.text(twoCol(`#${idx + 1} ${qty}x ${itemName}`, `${money(lineAmt)}€`, cols));
       enc.line();
       const modsRaw = item?.order_item_modifiers ?? item?.modifiers ?? [];
       const mods = Array.isArray(modsRaw) ? modsRaw : [];
@@ -206,7 +206,7 @@ export function buildOrderEscPos(
           '';
         if (!label) continue;
         const delta = Number(m?.price_delta ?? m?.price ?? 0) || 0;
-        enc.text(cutText(`  + ${label}${delta ? ` (${money(delta)}E)` : ''}`, cols));
+        enc.text(cutText(`  + ${label}${delta ? ` (${money(delta)}€)` : ''}`, cols));
         enc.line();
       }
     });
@@ -214,18 +214,18 @@ export function buildOrderEscPos(
 
   enc.text('-'.repeat(cols));
   enc.line();
-  enc.text(twoCol('Υποσύνολο', `${money(subAmt)}E`, cols));
+  enc.text(twoCol('Υποσύνολο', `${money(subAmt)}€`, cols));
   enc.line();
   if (fee > 0) {
-    enc.text(twoCol('Παράδοση', `${money(fee)}E`, cols));
+    enc.text(twoCol('Παράδοση', `${money(fee)}€`, cols));
     enc.line();
   }
   if (tip > 0) {
-    enc.text(twoCol('Φιλοδώρημα', `${money(tip)}E`, cols));
+    enc.text(twoCol('Φιλοδώρημα', `${money(tip)}€`, cols));
     enc.line();
   }
   enc.bold(true);
-  enc.text(twoCol('ΣΥΝΟΛΟ', `${money(totalAmt)}E`, cols));
+  enc.text(twoCol('ΣΥΝΟΛΟ', `${money(totalAmt)}€`, cols));
   enc.bold(false);
   enc.line();
 
