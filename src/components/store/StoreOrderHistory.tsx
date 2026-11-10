@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { formatOrderNumber } from '@/lib/order-number';
 import { formatEuro, lineTotal, orderMoney } from '@/lib/money';
+import { getStoreOrderPnl } from '@/lib/store-order-economics';
 
 type HistoryOrder = {
   id: string;
@@ -24,6 +25,11 @@ type HistoryOrder = {
   notes: string | null;
   store_order_number?: number | null;
   customer_id?: string | null;
+  source?: string | null;
+  store_charge?: number | null;
+  cash_received?: number | null;
+  estimated_prep_time?: number | null;
+  predicted_prep_minutes?: number | null;
   order_items?: Array<{
     id: string;
     name: string;
@@ -46,10 +52,35 @@ const STATUS_LABEL: Record<string, string> = {
 
 const euro = formatEuro;
 
+const STATUS_BANNER: Record<string, string> = {
+  delivered: 'ΠΑΡΑΔΟΘΗΚΕ',
+  picked_up: 'ΠΑΡΕΛΗΦΘΗ ΑΠΟ ΤΟΝ ΔΙΑΝΟΜΕΑ',
+  ready: 'ΕΤΟΙΜΗ ΓΙΑ ΠΑΡΑΛΑΒΗ',
+  cancelled: 'ΑΚΥΡΩΘΗΚΕ',
+  preparing: 'ΕΤΟΙΜΑΖΕΤΑΙ',
+  accepted: 'ΑΠΟΔΕΚΤΗ',
+  placed: 'ΝΕΑ ΠΑΡΑΓΓΕΛΙΑ',
+};
+
+function signedEuro(n: number) {
+  const v = Math.abs(n);
+  return n < 0 ? `-${euro(v)}` : euro(v);
+}
+
 export default function StoreOrderHistory({ storeId }: { storeId: string }) {
   const [q, setQ] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'delivered' | 'cancelled'>('all');
+
+  const { data: storeMeta } = useQuery({
+    queryKey: ['store-commission', storeId],
+    enabled: !!storeId,
+    queryFn: async () => {
+      const { data } = await (supabase as any).from('stores').select('commission_pct').eq('id', storeId).maybeSingle();
+      return data as { commission_pct: number | null } | null;
+    },
+  });
+  const commissionPct = storeMeta?.commission_pct ?? 15;
 
   const { data: orders = [], isLoading, refetch, isFetching } = useQuery({
     queryKey: ['store-order-history', storeId],
@@ -57,7 +88,7 @@ export default function StoreOrderHistory({ storeId }: { storeId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, created_at, updated_at, status, total_amount, delivery_fee, tip_amount, payment_method, delivery_address, notes, store_order_number, customer_id, order_items(id, name, quantity, unit_price)')
+        .select('id, created_at, updated_at, status, total_amount, delivery_fee, tip_amount, payment_method, delivery_address, notes, store_order_number, customer_id, source, store_charge, cash_received, estimated_prep_time, predicted_prep_minutes, order_items(id, name, quantity, unit_price)')
         .eq('store_id', storeId)
         .in('status', ['delivered', 'cancelled', 'picked_up', 'ready'])
         .order('created_at', { ascending: false })
@@ -137,6 +168,12 @@ export default function StoreOrderHistory({ storeId }: { storeId: string }) {
             const open = openId === o.id;
             const items = o.order_items ?? [];
             const total = orderMoney(o).total;
+            const pnl = getStoreOrderPnl(o, commissionPct);
+            const fee = pnl.isExternal ? (pnl.storeCharge ?? 0) : pnl.platformFee;
+            const prep = Number(o.estimated_prep_time || o.predicted_prep_minutes || 0);
+            const eta = prep > 0
+              ? format(new Date(new Date(o.created_at).getTime() + prep * 60000), 'HH:mm')
+              : '—';
             return (
               <Card key={o.id} className="overflow-hidden border-border/80">
                 <button type="button" className="w-full text-left p-3 sm:p-4 flex items-start gap-3 hover:bg-muted/40 transition-colors" onClick={() => setOpenId(open ? null : o.id)}>
@@ -151,75 +188,57 @@ export default function StoreOrderHistory({ storeId }: { storeId: string }) {
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {format(new Date(o.created_at), 'dd/MM/yyyy HH:mm', { locale: el })}
-                      {o.customer_name ? ` · ${o.customer_name}` : ''}
-                      {items.length ? ` · ${items.length} προϊόντα` : ''}
-                    </p>
-                  </div>
-                  {open ? <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />}
-                </button>
-                {open && (
-                  <CardContent className="border-t border-border bg-muted/20 px-4 py-3 space-y-3">
-                    <div className="grid sm:grid-cols-2 gap-2 text-sm">
+                     {open && (
+                  <div className="border-t border-border bg-white">
+                    <div className="px-4 pt-3 pb-2 flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-bold">Πελάτης</p>
-                        <p className="font-heading font-semibold">{o.customer_name || '—'}</p>
-                        <p className="text-muted-foreground">{o.customer_phone || ''}</p>
+                        <p className="text-[11px] font-bold tracking-wide text-primary uppercase">{STATUS_BANNER[o.status] ?? STATUS_LABEL[o.status] ?? o.status}</p>
+                        <p className="text-3xl font-heading font-bold tracking-tight text-foreground mt-0.5">{formatOrderNumber(o as never)}</p>
                       </div>
-                      <div>
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-bold">Διεύθυνση</p>
-                        <p className="font-heading">{o.delivery_address || '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-bold">Πληρωμή</p>
-                        <p className="font-heading">{o.payment_method || '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-bold">Σύνολο</p>
-                        <p className="font-heading font-bold text-primary tabular-nums">{euro(total)}</p>
-                      </div>
+                      <p className="text-xs text-muted-foreground">{format(new Date(o.created_at), 'dd/MM/yyyy HH:mm', { locale: el })}</p>
                     </div>
+
+                    <div className="px-4 py-2 flex items-center justify-between text-sm border-t border-border/60">
+                      <span className="text-muted-foreground">Εκτιμώμενη ώρα παράδοσης</span>
+                      <span className="font-semibold tabular-nums">{eta}</span>
+                    </div>
+
+                    <div className="px-4 pt-4 pb-2">
+                      <p className="font-heading font-bold text-lg">Λεπτομέρειες παραγγελίας</p>
+                    </div>
+
                     {items.length > 0 && (
-                      <div>
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-bold mb-1.5">Προϊόντα</p>
-                        <ul className="space-y-1">
-                          {items.map((i) => (
-                            <li key={i.id} className="flex justify-between gap-2 text-sm font-heading">
-                              <span><span className="font-bold tabular-nums">{i.quantity}×</span> {i.name}</span>
-                              <span className="tabular-nums font-semibold shrink-0">{euro(lineTotal(i.unit_price, i.quantity))}</span>
-                            </li>
-                          ))}
-                        </ul>
-                        <div className="mt-2 pt-2 border-t border-border/60 space-y-0.5 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Υποσύνολο</span>
-                            <span className="tabular-nums font-semibold">{euro(Math.max(0, total - Number(o.delivery_fee || 0) - Number(o.tip_amount || 0)))}</span>
+                      <div className="px-4 pb-2 space-y-2">
+                        {items.map((i) => (
+                          <div key={i.id} className="flex items-start justify-between gap-3 text-sm">
+                            <span className="font-heading"><span className="font-bold tabular-nums">{i.quantity}×</span> {i.name}</span>
+                            <span className="tabular-nums font-semibold shrink-0">{euro(lineTotal(i.unit_price, i.quantity))}</span>
                           </div>
-                          {Number(o.delivery_fee || 0) > 0 && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Παράδοση</span>
-                              <span className="tabular-nums">{euro(o.delivery_fee)}</span>
-                            </div>
-                          )}
-                          {Number(o.tip_amount || 0) > 0 && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Φιλοδώρημα</span>
-                              <span className="tabular-nums">{euro(o.tip_amount)}</span>
-                            </div>
-                          )}
-                          <div className="flex justify-between font-bold">
-                            <span>Σύνολο</span>
-                            <span className="tabular-nums text-primary">{euro(total)}</span>
-                          </div>
-                        </div>
+                        ))}
                       </div>
                     )}
-                    {o.notes ? (
-                      <div className="text-sm rounded-lg border border-border bg-background px-3 py-2">
-                        <span className="font-bold">Σημείωση: </span>{o.notes}
-                      </div>
-                    ) : null}
-                    <p className="text-[10px] text-muted-foreground font-mono">ID {o.id.slice(0, 8)}…</p>
-                  </CardContent>
+
+                    <div className="px-4 py-2 space-y-1.5 text-sm border-t border-border/60">
+                      <div className="flex justify-between"><span className="text-muted-foreground">Υποσύνολο</span><span className="tabular-nums">{euro(pnl.subtotal)}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Κόστος διανομής</span><span className="tabular-nums">{euro(pnl.deliveryFee)}</span></div>
+                      {pnl.tip > 0 && (
+                        <div className="flex justify-between"><span className="text-muted-foreground">Φιλοδώρημα</span><span className="tabular-nums">{euro(pnl.tip)}</span></div>
+                      )}
+                      <div className="flex justify-between"><span className="text-muted-foreground">Προμήθεια{pnl.commissionPct != null ? ` ${pnl.commissionPct}%` : ''}</span><span className="tabular-nums text-destructive">{signedEuro(-fee)}</span></div>
+                      <div className="flex justify-between font-bold text-base pt-1"><span>Εκτιμώμενα κέρδη</span><span className="tabular-nums">{euro(pnl.net)}</span></div>
+                      {Number(o.cash_received || 0) > 0 && (
+                        <div className="flex justify-between"><span className="text-muted-foreground">Μετρητά που εισπράχθηκαν</span><span className="tabular-nums font-semibold">{euro(o.cash_received)}</span></div>
+                      )}
+                      <div className="flex justify-between text-muted-foreground"><span>Πελάτης πλήρωσε</span><span className="tabular-nums">{euro(pnl.gross)}</span></div>
+                    </div>
+
+                    <div className="px-4 py-3 border-t border-border/60 text-sm space-y-1 text-muted-foreground">
+                      <p><span className="font-semibold text-foreground">Πελάτης:</span> {o.customer_name || '—'}{o.customer_phone ? ` · ${o.customer_phone}` : ''}</p>
+                      <p><span className="font-semibold text-foreground">Διεύθυνση:</span> {o.delivery_address || '—'}</p>
+                      <p><span className="font-semibold text-foreground">Πληρωμή:</span> {o.payment_method || '—'}</p>
+                      {o.notes ? <p><span className="font-semibold text-foreground">Σημείωση:</span> {o.notes}</p> : null}
+                    </div>
+                  </div>
                 )}
               </Card>
             );
