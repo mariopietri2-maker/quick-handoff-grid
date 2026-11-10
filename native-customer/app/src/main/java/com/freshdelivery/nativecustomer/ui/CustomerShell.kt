@@ -64,6 +64,7 @@ import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Headset
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.LocalOffer
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Logout
@@ -1930,7 +1931,13 @@ private fun MenuScreen(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                // Header favorite heart removed — cleaner store top bar
+                var showStoreInfo by remember(store?.id) { mutableStateOf(false) }
+                IconButton(onClick = { showStoreInfo = true }) {
+                    Icon(Icons.Outlined.Info, contentDescription = "Πληροφορίες", tint = FreshOrange)
+                }
+                if (showStoreInfo && store != null) {
+                    StoreInfoSheet(store = store, onClose = { showStoreInfo = false })
+                }
             }
             // Category chips: continuous white with title bar (no shadow / hairline)
             if (menuGroups.size > 1) {
@@ -4625,3 +4632,87 @@ private fun ReviewStarsRow(onSubmit: (Int, String) -> Unit) {
 
 // PromoCarousel extracted to PromoCarousel.kt
 
+
+
+@Composable
+private fun StoreInfoSheet(store: com.freshdelivery.nativecustomer.data.StoreRow, onClose: () -> Unit) {
+    val hours = storeHoursLines(store.opening_hours)
+    val min = store.min_order_amount ?: 5.0
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.45f))
+            .clickable { onClose() },
+    ) {
+        Surface(
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            color = FreshSurface,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .clickable(enabled = false) {},
+        ) {
+            Column(
+                Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp)
+                    .navigationBarsPadding(),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(store.name ?: "Κατάστημα", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                    IconButton(onClick = onClose) { Icon(Icons.Outlined.Close, contentDescription = "Κλείσιμο") }
+                }
+                store.tagline?.takeIf { it.isNotBlank() }?.let {
+                    Text(it, color = FreshMuted, style = MaterialTheme.typography.bodyMedium)
+                    Spacer(Modifier.height(10.dp))
+                }
+                InfoLine("Διεύθυνση", store.address ?: "—")
+                InfoLine("Ελάχιστη παραγγελία", "€%.0f".format(min))
+                InfoLine("Παράδοση", if (store.covers_delivery_fee == true) "Δωρεάν παράδοση" else "Fresh2GO")
+                InfoLine("Κατάσταση", if (isStoreOpenNow(store)) "Ανοιχτό" else (nextOpenHint(store)?.let { "Κλειστό · $it" } ?: "Κλειστό"))
+                Spacer(Modifier.height(12.dp))
+                Text("Ωράριο", fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(6.dp))
+                if (hours.isEmpty()) {
+                    Text("Δεν έχει οριστεί ωράριο", color = FreshMuted)
+                } else {
+                    hours.forEach { (day, value) ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(day)
+                            Text(value, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun InfoLine(label: String, value: String) {
+    Column(Modifier.padding(vertical = 6.dp)) {
+        Text(label, color = FreshMuted, style = MaterialTheme.typography.labelMedium)
+        Text(value, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+private fun storeHoursLines(raw: kotlinx.serialization.json.JsonElement?): List<Pair<String, String>> {
+    val obj = raw?.let { runCatching { it.jsonObject }.getOrNull() } ?: return emptyList()
+    val days = listOf(
+        "mon" to "Δευτέρα",
+        "tue" to "Τρίτη",
+        "wed" to "Τετάρτη",
+        "thu" to "Πέμπτη",
+        "fri" to "Παρασκευή",
+        "sat" to "Σάββατο",
+        "sun" to "Κυριακή",
+    )
+    return days.mapNotNull { (key, label) ->
+        val day = obj[key]?.let { runCatching { it.jsonObject }.getOrNull() } ?: return@mapNotNull null
+        val enabled = day["enabled"]?.let { runCatching { it.jsonPrimitive.content }.getOrNull() } != "false"
+        val open = day["open"]?.let { runCatching { it.jsonPrimitive.content }.getOrNull() }.orEmpty()
+        val close = day["close"]?.let { runCatching { it.jsonPrimitive.content }.getOrNull() }.orEmpty()
+        label to if (!enabled || open.isBlank()) "Κλειστά" else "$open–$close"
+    }
+}
