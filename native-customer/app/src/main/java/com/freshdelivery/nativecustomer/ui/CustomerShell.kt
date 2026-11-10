@@ -1285,7 +1285,7 @@ Row(
                         fontWeight = FontWeight.SemiBold,
                     )
                     if (filter == HomeFilter.Open) {
-                        Spacer(Modifier.height(6.dp))
+                        Spacer(Modifier.height(4.dp))
                         Text(
                             "Δες «Όλα» για κλειστά καταστήματα ή δοκίμασε αργότερα.",
                             color = FreshMuted,
@@ -1545,10 +1545,10 @@ private fun FreshStoreCard(
             .then(if (!active || !openNow) Modifier.graphicsLayer { alpha = 0.88f } else Modifier)
             .clickable(onClick = onClick),
     ) {
-        Box(Modifier.fillMaxWidth().height(150.dp).clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))) {
+        Box(Modifier.fillMaxWidth().height(92.dp).clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))) {
             StoreHeroImage(
                 store.cover_image_url?.takeIf { it.isNotBlank() } ?: store.image_url,
-                height = 150,
+                height = 92,
             )
             Surface(
                 color = if (!active || !openNow) Color.Black.copy(alpha = 0.72f) else FreshGreen,
@@ -1639,12 +1639,12 @@ private fun FreshStoreCard(
                     }
                 }
             }
-            store.image_url?.takeIf { it.isNotBlank() && it != store.cover_image_url }?.let { logo ->
+            store.image_url?.takeIf { it.isNotBlank() }?.let { logo ->
                 Surface(
                     shape = CircleShape,
                     color = Color.White,
                     shadowElevation = 2.dp,
-                    modifier = Modifier.align(Alignment.BottomStart).padding(10.dp).size(42.dp),
+                    modifier = Modifier.align(Alignment.BottomStart).padding(8.dp).size(36.dp),
                 ) {
                     AsyncImage(
                         model = logo,
@@ -1655,7 +1655,7 @@ private fun FreshStoreCard(
                 }
             }
         }
-        Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+        Column(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
             Text(
                 store.name ?: "Κατάστημα",
                 style = MaterialTheme.typography.titleMedium,
@@ -1838,7 +1838,7 @@ private fun StoreMiniCard(
                     Text("Κλειστό", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
             }
-            store.image_url?.takeIf { it.isNotBlank() && it != store.cover_image_url }?.let { logo ->
+            store.image_url?.takeIf { it.isNotBlank() }?.let { logo ->
                 Surface(
                     shape = CircleShape,
                     color = Color.White,
