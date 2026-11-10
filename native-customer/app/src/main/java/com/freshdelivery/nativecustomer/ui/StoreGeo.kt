@@ -122,8 +122,16 @@ internal fun nextOpenHint(store: StoreRow): String? {
     return null
 }
 
+
+/** True when customer pays €0 delivery for this store. */
+internal fun isFreeDeliveryStore(store: StoreRow): Boolean {
+    if (store.covers_delivery_fee == true) return true
+    val fee = store.delivery_fee
+    return fee != null && fee <= 0.0
+}
+
 internal fun storeDeliveryFeeLabel(store: StoreRow): String {
-    if (store.covers_delivery_fee == true) return "Δωρεάν παράδοση"
+    if (isFreeDeliveryStore(store)) return "Δωρεάν"
     val fee = store.delivery_fee
     return if (fee != null && fee > 0.0) {
         val s = if (fee % 1.0 == 0.0) fee.toInt().toString() else "%.1f".format(fee)

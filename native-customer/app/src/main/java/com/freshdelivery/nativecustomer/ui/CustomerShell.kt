@@ -1026,7 +1026,7 @@ Row(
         }
         // Fresh2GO discovery rails (efood density, own style) — only on the default feed
         if (showDiscovery && stores.isNotEmpty()) {
-            val freeDelivery = stores.filter { it.covers_delivery_fee == true }
+            val freeDelivery = stores.filter { isFreeDeliveryStore(it) }
             val withOffers = stores.filter { !it.promo_badge.isNullOrBlank() }
             val nearFirst = if (hasLocation) {
                 stores.sortedBy { storeDistanceKm(state.deliveryLat!!, state.deliveryLng!!, it) }
@@ -1856,23 +1856,38 @@ private fun StoreMiniCard(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            val free = isFreeDeliveryStore(store)
             Text(
-                storeDeliveryEstimate(store, deliveryLat, deliveryLng) + " · " + storeDeliveryFeeLabel(store),
-                color = FreshMuted,
+                storeDeliveryEstimate(store, deliveryLat, deliveryLng) +
+                    " · " +
+                    if (free) "Δωρεάν παράδοση" else storeDeliveryFeeLabel(store),
+                color = if (free) FreshGreenDark else FreshMuted,
                 fontSize = 11.sp,
+                fontWeight = if (free) FontWeight.Bold else FontWeight.Normal,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 2.dp),
             )
-            Text(
-                storeFulfilmentLabelShort(store),
-                color = if (isPlatformFulfilment(store)) FreshGreenDark else FreshMuted,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 2.dp),
-            )
+            if (!free) {
+                Text(
+                    storeFulfilmentLabelShort(store),
+                    color = if (isPlatformFulfilment(store)) FreshGreenDark else FreshMuted,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            } else {
+                Text(
+                    storeFulfilmentLabelShort(store),
+                    color = FreshMuted,
+                    fontSize = 10.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 1.dp),
+                )
+            }
         }
     }
 }
