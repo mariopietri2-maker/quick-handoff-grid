@@ -1545,10 +1545,10 @@ private fun FreshStoreCard(
             .then(if (!active || !openNow) Modifier.graphicsLayer { alpha = 0.88f } else Modifier)
             .clickable(onClick = onClick),
     ) {
-        Box(Modifier.fillMaxWidth().height(148.dp)) {
+        Box(Modifier.fillMaxWidth().height(108.dp).clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))) {
             StoreHeroImage(
                 store.cover_image_url?.takeIf { it.isNotBlank() } ?: store.image_url,
-                height = 148,
+                height = 108,
             )
             Surface(
                 color = if (!active || !openNow) Color.Black.copy(alpha = 0.72f) else FreshGreen,
@@ -1640,7 +1640,7 @@ private fun FreshStoreCard(
                 }
             }
         }
-        Column(Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+        Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
             Text(
                 store.name ?: "Κατάστημα",
                 style = MaterialTheme.typography.titleMedium,
@@ -1910,6 +1910,7 @@ private fun MenuScreen(
         if (selectedCategory == null) menuGroups
         else menuGroups.filter { it.first == selectedCategory }
     }
+    var showStoreInfo by remember(store?.id) { mutableStateOf(false) }
     Box(Modifier.fillMaxSize().background(FreshBg)) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             // Fixed top bar: back + store name (always visible / tappable)
@@ -1931,7 +1932,6 @@ private fun MenuScreen(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                var showStoreInfo by remember(store?.id) { mutableStateOf(false) }
                 Surface(
                     onClick = { showStoreInfo = true },
                     shape = RoundedCornerShape(999.dp),
@@ -1947,13 +1947,14 @@ private fun MenuScreen(
                         Text("Info", color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
                     }
                 }
-                if (showStoreInfo && store != null) {
-                    StoreInfoSheet(
-                        store = store,
-                        rating = state.storeRatings[store.id],
-                        onClose = { showStoreInfo = false },
-                    )
-                }
+            }
+            // Info sheet lives outside the header so it covers the page cleanly
+            if (showStoreInfo && store != null) {
+                StoreInfoSheet(
+                    store = store,
+                    rating = state.storeRatings[store.id],
+                    onClose = { showStoreInfo = false },
+                )
             }
             // Category chips: continuous white with title bar (no shadow / hairline)
             if (menuGroups.size > 1) {
@@ -2025,39 +2026,31 @@ private fun MenuScreen(
                     .clipToBounds(),
             ) {
             item {
-                Box {
-                    StoreHeroImage(store?.image_url, height = 180)
+                Box(Modifier.fillMaxWidth().height(150.dp).clipToBounds()) {
+                    StoreHeroImage(
+                        store?.cover_image_url?.takeIf { it.isNotBlank() } ?: store?.image_url,
+                        height = 150,
+                    )
                     Box(
                         Modifier
                             .fillMaxSize()
                             .background(
                                 Brush.verticalGradient(
                                     listOf(
-                                        Color.Black.copy(alpha = 0.15f),
-                                        Color.Black.copy(alpha = 0.72f),
+                                        Color.Transparent,
+                                        Color.Black.copy(alpha = 0.45f),
                                     ),
-                                    startY = 40f,
                                 ),
                             ),
                     )
                     Column(
                         Modifier
                             .align(Alignment.BottomStart)
-                            .padding(16.dp),
+                            .padding(12.dp),
                     ) {
-                        Text(
-                            store?.name ?: "Μενού",
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        store?.address?.let {
-                            Text(it, color = Color.White.copy(alpha = 0.95f), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-                        }
-                        Spacer(Modifier.height(10.dp))
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                         ) {
                             val minO = store?.min_order_amount ?: 0.0
                             if (minO > 0) {
@@ -2181,6 +2174,13 @@ private fun MenuScreen(
                     onClick = onOpenCart,
                 )
             }
+        }
+        if (showStoreInfo && store != null) {
+            StoreInfoSheet(
+                store = store,
+                rating = state.storeRatings[store.id],
+                onClose = { showStoreInfo = false },
+            )
         }
     }
 }
@@ -4665,7 +4665,8 @@ private fun StoreInfoSheet(
     Box(
         Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.45f))
+            .zIndex(40f)
+            .background(Color.Black.copy(alpha = 0.5f))
             .clickable { onClose() },
     ) {
         Surface(
