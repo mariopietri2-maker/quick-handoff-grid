@@ -1545,10 +1545,10 @@ private fun FreshStoreCard(
             .then(if (!active || !openNow) Modifier.graphicsLayer { alpha = 0.88f } else Modifier)
             .clickable(onClick = onClick),
     ) {
-        Box(Modifier.fillMaxWidth().height(108.dp).clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))) {
+        Box(Modifier.fillMaxWidth().height(84.dp).clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))) {
             StoreHeroImage(
                 store.cover_image_url?.takeIf { it.isNotBlank() } ?: store.image_url,
-                height = 108,
+                height = 84,
             )
             Surface(
                 color = if (!active || !openNow) Color.Black.copy(alpha = 0.72f) else FreshGreen,
@@ -1640,7 +1640,7 @@ private fun FreshStoreCard(
                 }
             }
         }
-        Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+        Column(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
             Text(
                 store.name ?: "Κατάστημα",
                 style = MaterialTheme.typography.titleMedium,
@@ -1658,23 +1658,7 @@ private fun FreshStoreCard(
                     modifier = Modifier.padding(top = 2.dp),
                 )
             }
-            val minOrd = store.min_order_amount ?: 0.0
-            if (minOrd > 0) {
-                Surface(
-                    color = FreshChip,
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.padding(top = 6.dp),
-                ) {
-                    Text(
-                        "Ελάχ. παραγγελία €" + "%.0f".format(minOrd),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = FreshInk,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    )
-                }
-            }
-            Spacer(Modifier.height(9.dp))
+            Spacer(Modifier.height(6.dp))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
