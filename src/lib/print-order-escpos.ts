@@ -325,8 +325,7 @@ export function buildOrderEscPos(
     enc.bold(true);
     enc.text(escpad(pay === 'cash' ? 'ΜΕΤΡΗΤΑ' : 'ΠΛΗΡΩΘΗΚΕ', cols, 'center'));
     enc.bold(false);
-      enc.line();
-    }
+    enc.line();
     enc.text('='.repeat(cols));
     enc.line();
   }

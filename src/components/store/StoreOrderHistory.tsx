@@ -190,7 +190,13 @@ export default function StoreOrderHistory({ storeId }: { storeId: string }) {
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {format(new Date(o.created_at), 'dd/MM/yyyy HH:mm', { locale: el })}
-                     {open && (
+                      {o.customer_name ? ` · ${o.customer_name}` : ''}
+                      {items.length ? ` · ${items.length} προϊόντα` : ''}
+                    </p>
+                  </div>
+                  {open ? <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />}
+                </button>
+                {open && (
                   <div className="border-t border-border bg-white">
                     <div className="px-4 pt-3 pb-2 flex items-start justify-between gap-3">
                       <div>
