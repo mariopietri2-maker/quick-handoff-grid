@@ -1948,7 +1948,11 @@ private fun MenuScreen(
                     }
                 }
                 if (showStoreInfo && store != null) {
-                    StoreInfoSheet(store = store, onClose = { showStoreInfo = false })
+                    StoreInfoSheet(
+                        store = store,
+                        rating = state.storeRatings[store.id],
+                        onClose = { showStoreInfo = false },
+                    )
                 }
             }
             // Category chips: continuous white with title bar (no shadow / hairline)
@@ -4647,9 +4651,17 @@ private fun ReviewStarsRow(onSubmit: (Int, String) -> Unit) {
 
 
 @Composable
-private fun StoreInfoSheet(store: com.freshdelivery.nativecustomer.data.StoreRow, onClose: () -> Unit) {
+private fun StoreInfoSheet(
+    store: com.freshdelivery.nativecustomer.data.StoreRow,
+    rating: StoreRating?,
+    onClose: () -> Unit,
+) {
     val hours = storeHoursLines(store.opening_hours)
     val min = store.min_order_amount ?: 5.0
+    val avg = rating?.avg ?: 0.0
+    val count = rating?.count ?: 0
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var section by remember { mutableStateOf("menu") }
     Box(
         Modifier
             .fillMaxSize()
@@ -4671,24 +4683,41 @@ private fun StoreInfoSheet(store: com.freshdelivery.nativecustomer.data.StoreRow
                     .navigationBarsPadding(),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(store.name ?: "Κατάστημα", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                    if (section != "menu") {
+                        IconButton(onClick = { section = "menu" }) {
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Πίσω")
+                        }
+                    }
+                    Text(
+                        if (section == "info") "Πληροφορίες καταστήματος" else if (section == "reviews") "Αξιολογήσεις" else "Περισσότερα",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.weight(1f),
+                    )
                     IconButton(onClick = onClose) { Icon(Icons.Outlined.Close, contentDescription = "Κλείσιμο") }
                 }
-                store.tagline?.takeIf { it.isNotBlank() }?.let {
-                    Text(it, color = FreshMuted, style = MaterialTheme.typography.bodyMedium)
-                    Spacer(Modifier.height(10.dp))
-                }
-                InfoLine("Διεύθυνση", store.address ?: "—")
-                InfoLine("Ελάχιστη παραγγελία", "€%.0f".format(min))
-                InfoLine("Παράδοση", if (store.covers_delivery_fee == true) "Δωρεάν παράδοση" else "Fresh2GO")
-                InfoLine("Κατάσταση", if (isStoreOpenNow(store)) "Ανοιχτό" else (nextOpenHint(store)?.let { "Κλειστό · $it" } ?: "Κλειστό"))
-                Spacer(Modifier.height(12.dp))
-                Text("Ωράριο", fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(6.dp))
-                if (hours.isEmpty()) {
-                    Text("Δεν έχει οριστεί ωράριο", color = FreshMuted)
+                if (section == "menu") {
+                    StoreMoreRow(Icons.Outlined.Star, "Αξιολογήσεις", if (count > 0) "%.1f · %d".format(avg, count) else "Δεν υπάρχουν ακόμα") { section = "reviews" }
+                    StoreMoreRow(Icons.Outlined.Storefront, "Πληροφορίες καταστήματος", store.address ?: "Διεύθυνση, ωράριο, ελάχιστη") { section = "info" }
+                    StoreMoreRow(Icons.Outlined.LocationOn, "Κοινοποίηση καταστήματος", "Στείλε το κατάστημα") {
+                        val share = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(android.content.Intent.EXTRA_TEXT, "${store.name ?: "Κατάστημα"} · Fresh2GO\n${store.address ?: ""}")
+                        }
+                        context.startActivity(android.content.Intent.createChooser(share, "Κοινοποίηση"))
+                    }
+                } else if (section == "reviews") {
+                    Text(if (count > 0) "%.1f / 5 από %d αξιολογήσεις".format(avg, count) else "Δεν υπάρχουν αξιολογήσεις ακόμα", fontWeight = FontWeight.SemiBold)
                 } else {
-                    hours.forEach { (day, value) ->
+                    InfoLine("Διεύθυνση", store.address ?: "—")
+                    InfoLine("Ελάχιστη παραγγελία", "€%.0f".format(min))
+                    InfoLine("Παράδοση", if (store.covers_delivery_fee == true) "Δωρεάν παράδοση" else "Fresh2GO")
+                    InfoLine("Κατάσταση", if (isStoreOpenNow(store)) "Ανοιχτό" else (nextOpenHint(store)?.let { "Κλειστό · $it" } ?: "Κλειστό"))
+                    Spacer(Modifier.height(12.dp))
+                    Text("Ωράριο", fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(6.dp))
+                    if (hours.isEmpty()) Text("Δεν έχει οριστεί ωράριο", color = FreshMuted)
+                    else hours.forEach { (day, value) ->
                         Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(day)
                             Text(value, fontWeight = FontWeight.SemiBold)
@@ -4698,6 +4727,22 @@ private fun StoreInfoSheet(store: com.freshdelivery.nativecustomer.data.StoreRow
                 Spacer(Modifier.height(16.dp))
             }
         }
+    }
+}
+
+@Composable
+private fun StoreMoreRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Icon(icon, contentDescription = null, tint = FreshOrange)
+        Column(Modifier.weight(1f)) {
+            Text(title, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, color = FreshMuted, style = MaterialTheme.typography.bodySmall)
+        }
+        Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = FreshMuted)
     }
 }
 
