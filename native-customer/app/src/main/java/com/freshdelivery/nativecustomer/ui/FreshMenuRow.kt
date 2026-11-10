@@ -38,6 +38,7 @@ import com.freshdelivery.nativecustomer.data.MenuItemRow
 import com.freshdelivery.nativecustomer.ui.theme.FreshChip
 import com.freshdelivery.nativecustomer.ui.theme.FreshGreen
 import com.freshdelivery.nativecustomer.ui.theme.FreshGreenDark
+import com.freshdelivery.nativecustomer.ui.theme.FreshGreenSoft
 import com.freshdelivery.nativecustomer.ui.theme.FreshInk
 import com.freshdelivery.nativecustomer.ui.theme.FreshMuted
 import com.freshdelivery.nativecustomer.ui.theme.FreshViolet
