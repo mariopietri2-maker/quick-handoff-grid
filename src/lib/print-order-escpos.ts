@@ -297,5 +297,5 @@ export function buildOrderEscPos(
   enc.feed(3);
   enc.cut();
 
-  return enc.result();
+  return enc.getChunks();
 }
