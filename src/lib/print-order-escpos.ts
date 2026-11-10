@@ -245,7 +245,9 @@ export function buildOrderEscPos(
   }
 
   const recipientName = extras.customerName ? String(extras.customerName).trim() : '';
-  const recipientPhone = extras.customerPhone ? String(extras.customerPhone).trim() : '';
+  const recipientPhone = (extras.customerPhone || (order as any).customer_phone)
+    ? String(extras.customerPhone || (order as any).customer_phone).trim()
+    : '';
   const recipientAddr = order.delivery_address ? String(order.delivery_address).trim() : '';
   if (recipientName || recipientPhone || recipientAddr) {
     enc.align('center');

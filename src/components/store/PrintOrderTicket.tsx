@@ -94,7 +94,9 @@ export function printOrderTicket(
     .join('');
 
   const recipientName = extras.customerName ? String(extras.customerName).trim() : '';
-  const recipientPhone = extras.customerPhone ? String(extras.customerPhone).trim() : '';
+  const recipientPhone = (extras.customerPhone || (order as any).customer_phone)
+    ? String(extras.customerPhone || (order as any).customer_phone).trim()
+    : '';
   const rawNotes = String(order.notes ?? '');
   const doorbell = (rawNotes.match(/ΚΟΥΔΟΥΝΙ:\s*(.+)/)?.[1] ?? '').split('\n')[0].trim();
   const recipientAddr = order.delivery_address ? String(order.delivery_address).trim() : '';
@@ -468,6 +470,12 @@ export function printOrderTicket(
         <div class="num">${e(orderNo)}</div>
       </div>
 
+      <div class="block" style="margin-top:6px;">
+        <span class="addr-label">ΤΗΛΕΦΩΝΟ ΠΕΛΑΤΗ</span>
+        <span class="phone">${recipientPhone ? e(recipientPhone) : 'ΧΩΡΙΣ ΤΗΛΕΦΩΝΟ'}</span>
+        ${recipientName ? `<span class="addr-label">ΟΝΟΜΑ</span><span class="addr">${e(recipientName)}</span>` : ''}
+      </div>
+
       ${
         payLabel
           ? `<div class="badge-row">
@@ -578,6 +586,10 @@ export async function printOrderSafe(
   // Ensure customer phone is present (profiles.phone) for kitchen tickets
   let resolved: PrintOrderExtras = { ...extras };
   try {
+    const orderPhone = String((order as any).customer_phone ?? '').trim();
+    if (orderPhone && !String(resolved.customerPhone ?? '').trim()) {
+      resolved = { ...resolved, customerPhone: orderPhone };
+    }
     const needPhone = !String(resolved.customerPhone ?? '').trim();
     const needName = !String(resolved.customerName ?? '').trim();
     const cid = (order as any).customer_id as string | undefined;
