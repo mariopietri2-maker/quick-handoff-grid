@@ -146,7 +146,8 @@ Deno.serve(async (req) => {
       await admin.from("aade_delivery_reports").update(reportRow).eq("id", reportId);
     }
 
-    // Transmit to myDATA
+    // Transmit to real myDATA SendInvoices (XML). The old SendDeliveryReceipt
+    // endpoint does not exist on AADE.
     let sentOk = false;
     let mydataMark: string | null = null;
     let mydataUid: string | null = null;
@@ -156,22 +157,75 @@ Deno.serve(async (req) => {
       if (!cfg.mydata_base_url || !cfg.mydata_user_id || !cfg.mydata_subscription_key) {
         throw new Error("myDATA credentials missing");
       }
-      const resp = await fetch(`${cfg.mydata_base_url}/SendDeliveryReceipt`, {
+      const issued = new Date(order.updated_at ?? Date.now()).toISOString().slice(0, 10);
+      const afm = String(cfg.afm ?? "").replace(/\D/g, "");
+      const series = "F2G";
+      const aa = String(orderNumber).replace(/\D/g, "").slice(-8) || "1";
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<InvoicesDoc xmlns="http://www.aade.gr/myDATA/invoice/v1.0" xmlns:icls="https://www.aade.gr/myDATA/incomeClassification/v1.0" xmlns:ecls="https://www.aade.gr/myDATA/expensesClassification/v1.0">
+  <invoice>
+    <issuer><vatNumber>${afm}</vatNumber><country>GR</country><branch>0</branch></issuer>
+    <invoiceHeader>
+      <series>${series}</series>
+      <aa>${aa}</aa>
+      <issueDate>${issued}</issueDate>
+      <invoiceType>11.2</invoiceType>
+      <currency>EUR</currency>
+    </invoiceHeader>
+    <paymentMethods>
+      <paymentMethodDetails>
+        <type>${order.payment_method === "card" ? 1 : 3}</type>
+        <amount>${gross.toFixed(2)}</amount>
+      </paymentMethodDetails>
+    </paymentMethods>
+    <invoiceDetails>
+      <lineNumber>1</lineNumber>
+      <netValue>${net.toFixed(2)}</netValue>
+      <vatCategory>2</vatCategory>
+      <vatAmount>${vat.toFixed(2)}</vatAmount>
+      <incomeClassification>
+        <icls:classificationType>E3_561_003</icls:classificationType>
+        <icls:classificationCategory>category1_3</icls:classificationCategory>
+        <icls:amount>${net.toFixed(2)}</icls:amount>
+      </incomeClassification>
+    </invoiceDetails>
+    <invoiceSummary>
+      <totalNetValue>${net.toFixed(2)}</totalNetValue>
+      <totalVatAmount>${vat.toFixed(2)}</totalVatAmount>
+      <totalWithheldAmount>0.00</totalWithheldAmount>
+      <totalFeesAmount>0.00</totalFeesAmount>
+      <totalStampDutyAmount>0.00</totalStampDutyAmount>
+      <totalOtherTaxesAmount>0.00</totalOtherTaxesAmount>
+      <totalDeductionsAmount>0.00</totalDeductionsAmount>
+      <totalGrossValue>${gross.toFixed(2)}</totalGrossValue>
+      <incomeClassification>
+        <icls:classificationType>E3_561_003</icls:classificationType>
+        <icls:classificationCategory>category1_3</icls:classificationCategory>
+        <icls:amount>${net.toFixed(2)}</icls:amount>
+      </incomeClassification>
+    </invoiceSummary>
+  </invoice>
+</InvoicesDoc>`;
+      const base = String(cfg.mydata_base_url).replace(/\/+$/, "");
+      const resp = await fetch(`${base}/SendInvoices`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/xml",
           "aade-user-id": cfg.mydata_user_id,
           "Ocp-Apim-Subscription-Key": cfg.mydata_subscription_key,
         },
-        body: JSON.stringify(payload),
+        body: xml,
       });
       const text = await resp.text();
       if (!resp.ok) throw new Error(`myDATA ${resp.status}: ${text.slice(0, 300)}`);
-      try {
-        const json = JSON.parse(text);
-        mydataMark = json.mark ?? json.invoiceMark ?? null;
-        mydataUid = json.uid ?? json.invoiceUid ?? null;
-      } catch { /* non-JSON ok */ }
+      const mark = text.match(/<invoiceMark>(\d+)<\/invoiceMark>/)?.[1] ?? null;
+      const uid = text.match(/<invoiceUid>([^<]+)<\/invoiceUid>/)?.[1] ?? null;
+      const statusCode = text.match(/<statusCode>([^<]+)<\/statusCode>/)?.[1] ?? "";
+      if (statusCode && statusCode !== "Success") {
+        throw new Error(`myDATA ${statusCode}: ${text.slice(0, 300)}`);
+      }
+      mydataMark = mark;
+      mydataUid = uid;
       sentOk = true;
     } catch (e) {
       errMsg = (e as Error).message;
