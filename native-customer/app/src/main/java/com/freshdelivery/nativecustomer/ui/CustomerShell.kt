@@ -2660,6 +2660,9 @@ item {
                         colors = fieldColors,
                     )
                     Spacer(Modifier.height(10.dp))
+                    if (state.paymentMethod != "card") {
+                        Text("Φιλοδώρημα μόνο με κάρτα.", color = FreshMuted, style = MaterialTheme.typography.bodySmall)
+                    } else {
                     OutlinedTextField(
                         value = tipText,
                         onValueChange = {
@@ -2674,22 +2677,26 @@ item {
                     )
                     Spacer(Modifier.height(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf(0.0, 1.0, 2.0, 5.0).forEach { tip ->
+                        listOf(0.0, 0.5, 1.0, 2.0, 5.0).forEach { tip ->
                             val sel = kotlin.math.abs(state.tipAmount - tip) < 0.01
                             Surface(
-                                onClick = { tipText = if (tip == 0.0) "0" else tip.toInt().toString(); onSetTip(tip) },
+                                onClick = {
+                                    tipText = if (tip == 0.0) "0" else if (tip == 0.5) "0.50" else tip.toInt().toString()
+                                    onSetTip(tip)
+                                },
                                 color = if (sel) FreshGreen else FreshChip,
                                 shape = RoundedCornerShape(12.dp),
                             ) {
                                 Text(
-                                    if (tip == 0.0) "Χωρίς" else "€${tip.toInt()}",
+                                    if (tip == 0.0) "Χωρίς" else if (tip == 0.5) "€0,50" else "€${tip.toInt()}",
                                     color = if (sel) Color.White else FreshInk,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
                                     fontWeight = FontWeight.SemiBold,
                                     style = MaterialTheme.typography.labelMedium,
                                 )
                             }
                         }
+                    }
                     }
                 }
             }
@@ -2699,7 +2706,7 @@ item {
                     Spacer(Modifier.height(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(
-                            onClick = { onSetPayment("cash") },
+                            onClick = { onSetPayment("cash"); onSetTip(0.0); tipText = "0" },
                             enabled = true,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (state.paymentMethod == "cash") FreshGreen else FreshChip,

@@ -184,9 +184,13 @@ export default function CheckoutPage() {
       ? 0
       : deliveryFee;
 
-  const tipAmount = tipOption === 'custom'
-    ? Math.max(0, parseFloat(customTip) || 0)
-    : subtotalAfterDiscount * (tipOption / 100);
+  const tipAmount = paymentMethod !== 'card'
+    ? 0
+    : tipOption === 'custom'
+      ? Math.max(0, parseFloat(customTip) || 0)
+      : tipOption === 0.5
+        ? 0.5
+        : subtotalAfterDiscount * (tipOption / 100);
 
   const grandTotal = subtotalAfterDiscount + effectiveDeliveryFee + tipAmount;
   // Soft upsell only when customer still pays delivery (store does not cover it)
@@ -712,24 +716,29 @@ export default function CheckoutPage() {
               <span className="text-lg">💰</span>
               <h2 className="font-heading font-semibold text-foreground">Φιλοδώρημα οδηγού</h2>
             </div>
-            <div className="grid grid-cols-4 gap-2">
-              {[10, 15, 20, 'custom' as const].map(opt => {
+            {paymentMethod !== 'card' && (
+              <p className="text-xs text-muted-foreground">Φιλοδώρημα μόνο με κάρτα.</p>
+            )}
+            {paymentMethod === 'card' && (
+            <div className="grid grid-cols-5 gap-2">
+              {[0.5, 10, 15, 20, 'custom' as const].map(opt => {
                 const isSelected = tipOption === opt;
                 return (
                   <button
                     key={String(opt)}
-                    onClick={() => setTipOption(opt)}
+                    onClick={() => setTipOption(opt as any)}
                     className={`py-2.5 rounded-xl text-sm font-heading font-semibold transition-all ${
                       isSelected
                         ? 'bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))]'
                         : 'bg-muted text-foreground hover:bg-accent'
                     }`}
                   >
-                    {opt === 'custom' ? 'Άλλο' : `${opt}%`}
+                    {opt === 'custom' ? 'Άλλο' : opt === 0.5 ? '0,50€' : `${opt}%`}
                   </button>
                 );
               })}
             </div>
+            )}
             {tipOption !== 'custom' && tipAmount > 0 && (
               <p className="text-sm text-muted-foreground text-center">
                 {tipAmount.toFixed(2)}€ φιλοδώρημα
