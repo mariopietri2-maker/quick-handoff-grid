@@ -50,11 +50,10 @@ export function isStoreOpenNow(
 
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const openMin = toMinutes(open);
-  let closeMin = toMinutes(close);
+  const closeMin = toMinutes(close);
 
-  // Overnight range (e.g. open 20:00, close 02:00) also covers yesterday's late window
-  if (closeMin <= openMin) closeMin += 24 * 60;
-
+  // Overnight (17:00–04:00): open from open until midnight, and after midnight until close.
+  if (closeMin <= openMin) return nowMin >= openMin || nowMin <= closeMin;
   return nowMin >= openMin && nowMin <= closeMin;
 }
 

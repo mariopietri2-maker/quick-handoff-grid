@@ -33,8 +33,39 @@ internal fun storeDistanceKm(lat: Double, lng: Double, store: StoreRow): Double 
  *  today and today's opening_hours window covers the current time. */
 internal fun isStoreOpenNow(store: StoreRow): Boolean {
     if (store.is_active == false) return false
-    // Schedule is not enough. Customers only see the store as open after a manual open.
-    return store.status_override == "open"
+    // Store must open manually. Schedule still gates the window.
+    if (store.status_override != "open") return false
+    return withinSchedule(store)
+}
+
+private fun withinSchedule(store: StoreRow): Boolean {
+    val hours = store.opening_hours ?: return true
+    val now = LocalDateTime.now(ZoneId.of("Europe/Athens"))
+    val key = when (now.dayOfWeek) {
+        DayOfWeek.MONDAY -> "mon"
+        DayOfWeek.TUESDAY -> "tue"
+        DayOfWeek.WEDNESDAY -> "wed"
+        DayOfWeek.THURSDAY -> "thu"
+        DayOfWeek.FRIDAY -> "fri"
+        DayOfWeek.SATURDAY -> "sat"
+        DayOfWeek.SUNDAY -> "sun"
+    }
+    val obj = hours.jsonObject[key]?.jsonObject ?: return true
+    val enabled = obj["enabled"]?.jsonPrimitive?.booleanOrNull ?: true
+    if (!enabled) return false
+    fun toMin(v: String): Int? {
+        val hhmm = v.trim().split(":")
+        if (hhmm.size != 2) return null
+        return hhmm[0].toIntOrNull()?.times(60)?.plus(hhmm[1].toIntOrNull() ?: 0)
+    }
+    val open = obj["open"]?.jsonPrimitive?.contentOrNull ?: return true
+    val close = obj["close"]?.jsonPrimitive?.contentOrNull ?: return true
+    val openMin = toMin(open) ?: return true
+    val closeMin = toMin(close) ?: return true
+    val nowMin = now.hour * 60 + now.minute
+    // Overnight (17:00–04:00)
+    if (closeMin <= openMin) return nowMin >= openMin || nowMin <= closeMin
+    return nowMin >= openMin && nowMin <= closeMin
 }
 
 /** Next open window label for closed stores, e.g. "Ανοίγει 12:00" or null. */
