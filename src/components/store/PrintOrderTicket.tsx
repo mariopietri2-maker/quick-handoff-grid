@@ -126,17 +126,17 @@ export function printOrderTicket(
         body {
           font-family: "IBM Plex Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
           color: #000;
-          padding: 6px 6px 12px;
+          padding: 4px 5px 8px;
           max-width: ${bodyMm}mm; width: ${bodyMm}mm;
           margin: 0 auto;
           font-size: ${largeType ? (narrow ? 12 : 13) : (narrow ? 11 : 12)}px;
-          line-height: 1.4;
+          line-height: 1.25;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
         }
         .title {
           text-align: center;
-          font-size: 16px;
+          font-size: 13px;
           font-weight: 900;
           letter-spacing: 0.04em;
           margin: 0 0 2px;
@@ -159,7 +159,7 @@ export function printOrderTicket(
         }
         .store {
           text-align: center;
-          font-size: 16px;
+          font-size: 13px;
           font-weight: 800;
           letter-spacing: 0.02em;
           color: #000;
@@ -171,7 +171,7 @@ export function printOrderTicket(
           border-top: 1px solid #222;
           border-bottom: 1px solid #222;
           padding: 4px 0;
-          margin-bottom: 10px;
+          margin-bottom: 4px;
           color: #333;
           font-size: 10px;
         }
@@ -389,11 +389,11 @@ export function printOrderTicket(
           display: block;
           width: 100%;
           text-align: center !important;
-          font-size: 18px;
+          font-size: 13px;
           font-weight: 900;
-          line-height: 1.3;
-          margin: 4px auto 0;
-          letter-spacing: 0.04em;
+          line-height: 1.2;
+          margin: 1px auto 0;
+          letter-spacing: 0.03em;
         }
         .notes {
           background: #000;
@@ -530,7 +530,7 @@ export function printOrderTicket(
       </div>
       
 
-      <div class="barcode">▮▮▮ ▯▯▮ ▮▯▯ ▮▮▯ ▯▮▮ ▮▯▮</div>
+      
 
       <div class="cut-line">· · · · · · · · · · · · · · · ·</div>
       <div class="footer">
