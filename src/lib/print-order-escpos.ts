@@ -312,15 +312,6 @@ export function buildOrderEscPos(
     enc.line();
   }
 
-  if (extras.driverCode) {
-    enc.align('center');
-    enc.bold(true);
-    enc.text(escpad('ΟΔΗΓΟΣ', cols, 'center'));
-    enc.bold(false);
-    enc.line();
-    enc.text(escpad(cutText(String(extras.driverCode), cols), cols, 'center'));
-    enc.line();
-  }
 
   enc.align('center');
   enc.feed(1);

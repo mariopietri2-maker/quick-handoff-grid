@@ -129,7 +129,7 @@ export function printOrderTicket(
           padding: 6px 6px 12px;
           max-width: ${bodyMm}mm; width: ${bodyMm}mm;
           margin: 0 auto;
-          font-size: ${largeType ? (narrow ? 15 : 16) : (narrow ? 13 : 14)}px;
+          font-size: ${largeType ? (narrow ? 12 : 13) : (narrow ? 11 : 12)}px;
           line-height: 1.4;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
@@ -179,7 +179,7 @@ export function printOrderTicket(
           text-align: center;
           border: 2px solid #000;
           border-radius: 8px;
-          padding: 12px 8px 10px;
+          padding: 6px 6px 5px;
           margin: 0 0 10px;
         }
         .ticket-no .label {
@@ -189,7 +189,7 @@ export function printOrderTicket(
           margin-bottom: 2px;
         }
         .ticket-no .num {
-          font-size: ${largeType ? (narrow ? 36 : 44) : (narrow ? 32 : 40)}px;
+          font-size: ${largeType ? (narrow ? 26 : 30) : (narrow ? 24 : 28)}px;
           font-weight: 900;
           letter-spacing: 0.04em;
           line-height: 1;
@@ -308,21 +308,21 @@ export function printOrderTicket(
           margin: 0 0 6px;
         }
 
-        .tot-row { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; padding: 5px 2px; font-weight: 700; font-size: 14px; width: 100%; box-sizing: border-box; }
+        .tot-row { display: flex; justify-content: space-between; align-items: baseline; gap: 4px; padding: 2px 2px; font-weight: 700; font-size: 12px; width: 100%; box-sizing: border-box; }
         .tot-row .lab { flex: 1 1 auto; min-width: 0; text-align: left; }
         .tot-row .val { flex: 0 0 auto; font-weight: 900; white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums; }
-        .tot-grand { border-top: 2px solid #000; margin-top: 6px; padding-top: 8px; font-size: 16px; font-weight: 900; }
-        .tot-grand .val { font-size: 18px; }
+        .tot-grand { border-top: 2px solid #000; margin-top: 4px; padding-top: 4px; font-size: 14px; font-weight: 900; }
+        .tot-grand .val { font-size: 15px; }
         .block {
-          margin: 12px auto 0;
+          margin: 8px auto 0;
           width: 100%;
           max-width: 100%;
           box-sizing: border-box;
-          font-size: 13px;
+          font-size: 12px;
           text-align: center !important;
-          border: 2.5px solid #000;
-          border-radius: 10px;
-          padding: 14px 8px 16px;
+          border: 2px solid #000;
+          border-radius: 6px;
+          padding: 8px 6px 10px;
           background: #fff;
         }
         .block * { text-align: center !important; }
@@ -364,10 +364,10 @@ export function printOrderTicket(
           color: #000;
           border-top: 2px solid #000;
           border-bottom: 2px solid #000;
-          font-size: 13px;
+          font-size: 11px;
           font-weight: 900;
-          letter-spacing: 0.12em;
-          padding: 5px 4px;
+          letter-spacing: 0.1em;
+          padding: 3px 2px;
           text-align: center !important;
         }
         .block .addr {
@@ -375,9 +375,9 @@ export function printOrderTicket(
           width: 100%;
           text-align: center !important;
           font-weight: 900;
-          font-size: 16px;
-          line-height: 1.35;
-          margin: 4px auto 8px;
+          font-size: 13px;
+          line-height: 1.25;
+          margin: 2px auto 4px;
           padding: 0 4px;
           letter-spacing: 0;
           word-break: break-word;
@@ -519,8 +519,7 @@ export function printOrderTicket(
         <span class="addr">${recipientAddr ? e(recipientAddr) : 'ΧΩΡΙΣ ΔΙΕΥΘΥΝΣΗ'}</span>
         <span class="addr-label">ΤΗΛΕΦΩΝΟ</span>
         <span class="phone">${recipientPhone ? e(recipientPhone) : 'ΧΩΡΙΣ ΤΗΛΕΦΩΝΟ'}</span>
-        <span class="addr-label">ΚΟΥΔΟΥΝΙ</span>
-        <span class="addr">${doorbell ? e(doorbell) : '—'}</span>
+        ${doorbell ? `<span class="addr-label">ΚΟΥΔΟΥΝΙ</span><span class="addr">${e(doorbell)}</span>` : ''}
         ${
           order.notes
             ? `<span class="addr-label">ΣΗΜΕΙΩΣΗ</span><span class="addr">${e(String(order.notes))}</span>`
@@ -529,14 +528,7 @@ export function printOrderTicket(
         <span class="addr-label">ΠΛΗΡΩΜΗ</span>
         <span class="addr">${isCash ? `ΜΕΤΡΗΤΑ · ΕΙΣΠΡΑΞΗ ${money(displayTotal)}€` : (payLabel ? e(payLabel) + ' · ΠΛΗΡΩΘΗΚΕ' : '—')}</span>
       </div>
-      ${
-        extras.driverCode
-          ? `<div class="block" style="margin-top:8px;border-style:dashed;">
-              <strong>ΟΔΗΓΟΣ</strong>
-              <span class="line">${e(String(extras.driverCode))}</span>
-            </div>`
-          : ''
-      }
+      
 
       <div class="barcode">▮▮▮ ▯▯▮ ▮▯▯ ▮▮▯ ▯▮▮ ▮▯▮</div>
 
