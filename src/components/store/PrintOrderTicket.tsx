@@ -368,12 +368,14 @@ export function printOrderTicket(
           width: 100%;
           text-align: center !important;
           font-weight: 900;
-          font-size: 18px;
-          line-height: 1.3;
-          margin: 2px auto;
+          font-size: 20px;
+          line-height: 1.25;
+          margin: 2px auto 6px;
           padding: 0 2px;
           letter-spacing: 0.01em;
         }
+        .driver { border-width: 2px; margin-top: 10px; }
+        .driver strong { font-size: 14px; letter-spacing: 0.08em; }
         .block .phone {
           display: block;
           width: 100%;
@@ -500,21 +502,22 @@ export function printOrderTicket(
           : ''
       }
 
-      ${
-        hasRecipient
-          ? `<div class="block">
-              <strong>ΠΑΡΑΛΗΠΤΗΣ</strong>
-              ${recipientName ? `<span class="line">${e(recipientName)}</span>` : ''}
-              `<span class="phone">☎ ${recipientPhone ? e(recipientPhone) : 'ΧΩΡΙΣ ΤΗΛΕΦΩΝΟ'}</span>`
-              <span class="addr-label">ΔΙΕΥΘΥΝΣΗ</span>
-              ${
-                addrLines.length
-                  ? addrLines.map((line) => `<span class="addr">${e(line)}</span>`).join('')
-                  : '<span class="addr">ΧΩΡΙΣ ΔΙΕΥΘΥΝΣΗ</span>'
-              }
-            </div>`
-          : ''
-      }
+      <div class="block driver">
+        <strong>ΠΑΡΑΔΟΣΗ · ΓΙΑ ΤΟΝ ΟΔΗΓΟ</strong>
+        <span class="addr-label">ΟΝΟΜΑ</span>
+        <span class="addr">${recipientName ? e(recipientName) : '—'}</span>
+        <span class="addr-label">ΤΗΛΕΦΩΝΟ</span>
+        <span class="phone">${recipientPhone ? e(recipientPhone) : 'ΧΩΡΙΣ ΤΗΛΕΦΩΝΟ'}</span>
+        <span class="addr-label">ΔΙΕΥΘΥΝΣΗ</span>
+        <span class="addr">${recipientAddr ? e(recipientAddr) : 'ΧΩΡΙΣ ΔΙΕΥΘΥΝΣΗ'}</span>
+        ${
+          order.notes
+            ? `<span class="addr-label">ΣΗΜΕΙΩΣΗ</span><span class="addr">${e(String(order.notes))}</span>`
+            : ''
+        }
+        <span class="addr-label">ΠΛΗΡΩΜΗ</span>
+        <span class="addr">${isCash ? `ΜΕΤΡΗΤΑ · ΕΙΣΠΡΑΞΗ ${money(displayTotal)}€` : (payLabel ? e(payLabel) + ' · ΠΛΗΡΩΘΗΚΕ' : '—')}</span>
+      </div>
       ${
         extras.driverCode
           ? `<div class="block" style="margin-top:8px;border-style:dashed;">

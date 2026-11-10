@@ -254,7 +254,7 @@ export function buildOrderEscPos(
     enc.line();
     enc.bold(true);
     enc.tall(true);
-    enc.text(escpad('ΠΑΡΑΛΗΠΤΗΣ', cols, 'center'));
+    enc.text(escpad('ΠΑΡΑΔΟΣΗ', cols, 'center'));
     enc.tall(false);
     enc.bold(false);
     enc.line();
@@ -308,6 +308,17 @@ export function buildOrderEscPos(
       enc.bold(true);
       enc.text(escpad('ΧΩΡΙΣ ΔΙΕΥΘΥΝΣΗ', cols, 'center'));
       enc.bold(false);
+      enc.line();
+    }
+    enc.feed(1);
+    enc.bold(true);
+    enc.text(escpad('ΠΛΗΡΩΜΗ', cols, 'center'));
+    enc.bold(false);
+    enc.line();
+    const pay = String((order as any).payment_method ?? '').toLowerCase();
+    enc.bold(true);
+    enc.text(escpad(pay === 'cash' ? 'ΜΕΤΡΗΤΑ' : 'ΠΛΗΡΩΘΗΚΕ', cols, 'center'));
+    enc.bold(false);
       enc.line();
     }
     enc.text('='.repeat(cols));
