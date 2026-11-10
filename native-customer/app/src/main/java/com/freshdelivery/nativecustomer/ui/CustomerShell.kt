@@ -1545,10 +1545,10 @@ private fun FreshStoreCard(
             .then(if (!active || !openNow) Modifier.graphicsLayer { alpha = 0.88f } else Modifier)
             .clickable(onClick = onClick),
     ) {
-        Box(Modifier.fillMaxWidth().height(84.dp).clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))) {
+        Box(Modifier.fillMaxWidth().height(150.dp).clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))) {
             StoreHeroImage(
                 store.cover_image_url?.takeIf { it.isNotBlank() } ?: store.image_url,
-                height = 84,
+                height = 150,
             )
             Surface(
                 color = if (!active || !openNow) Color.Black.copy(alpha = 0.72f) else FreshGreen,
@@ -1640,7 +1640,7 @@ private fun FreshStoreCard(
                 }
             }
         }
-        Column(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+        Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
             Text(
                 store.name ?: "Κατάστημα",
                 style = MaterialTheme.typography.titleMedium,
@@ -1663,22 +1663,22 @@ private fun FreshStoreCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Surface(color = FreshGreenSoft, shape = RoundedCornerShape(12.dp)) {
+                Surface(color = FreshGreenSoft, shape = RoundedCornerShape(8.dp)) {
                     Row(
-                        Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Outlined.Timer, contentDescription = null, tint = FreshGreenDark, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Outlined.Timer, contentDescription = null, tint = FreshGreenDark, modifier = Modifier.size(12.dp))
                         Spacer(Modifier.width(4.dp))
                         Text(eta, color = FreshGreenDark, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
                     }
                 }
                 Surface(
                     color = if (freeDelivery) FreshGreenSoft else FreshChip,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(8.dp),
                 ) {
                     Row(
-                        Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         if (freeDelivery) {
@@ -1695,14 +1695,14 @@ private fun FreshStoreCard(
                 }
                 Surface(
                     color = if (isPlatformFulfilment(store)) FreshGreenDark.copy(alpha = 0.12f) else FreshChip,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(8.dp),
                 ) {
                     Text(
                         storeFulfilmentLabel(store),
                         color = if (isPlatformFulfilment(store)) FreshGreenDark else FreshMuted,
                         fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                         maxLines = 1,
                     )
                 }
