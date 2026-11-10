@@ -2140,8 +2140,7 @@ private fun MenuScreen(
                     Icon(Icons.Outlined.RestaurantMenu, contentDescription = null, tint = FreshGreen, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text("Μενού", style = MaterialTheme.typography.titleLarge)
-                    Spacer(Modifier.weight(1f))
-                    TextButton(onClick = onToggleFavorite) {
+                        TextButton(onClick = onToggleFavorite) {
                         Icon(
                             if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                             contentDescription = null,
