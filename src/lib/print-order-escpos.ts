@@ -270,13 +270,6 @@ export function buildOrderEscPos(
       enc.bold(false);
       enc.line();
     }
-    // Always print phone line so store/driver can call customer
-    enc.bold(true);
-    enc.tall(true);
-    enc.text(escpad(cutText(recipientPhone ? `THL ${recipientPhone}` : 'THL: —', cols), cols, 'center'));
-    enc.tall(false);
-    enc.bold(false);
-    enc.line();
     enc.feed(1);
     enc.bold(true);
     enc.text(escpad('ΔΙΕΥΘΥΝΣΗ', cols, 'center'));
@@ -312,6 +305,17 @@ export function buildOrderEscPos(
       enc.bold(false);
       enc.line();
     }
+    enc.feed(1);
+    enc.bold(true);
+    enc.text(escpad('ΤΗΛΕΦΩΝΟ', cols, 'center'));
+    enc.bold(false);
+    enc.line();
+    enc.bold(true);
+    enc.tall(true);
+    enc.text(escpad(cutText(recipientPhone || '—', cols), cols, 'center'));
+    enc.tall(false);
+    enc.bold(false);
+    enc.line();
     enc.feed(1);
     enc.bold(true);
     enc.text(escpad('ΠΛΗΡΩΜΗ', cols, 'center'));

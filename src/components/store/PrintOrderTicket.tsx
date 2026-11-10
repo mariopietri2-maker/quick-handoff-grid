@@ -470,12 +470,6 @@ export function printOrderTicket(
         <div class="num">${e(orderNo)}</div>
       </div>
 
-      <div class="block" style="margin-top:6px;">
-        <span class="addr-label">ΤΗΛΕΦΩΝΟ ΠΕΛΑΤΗ</span>
-        <span class="phone">${recipientPhone ? e(recipientPhone) : 'ΧΩΡΙΣ ΤΗΛΕΦΩΝΟ'}</span>
-        ${recipientName ? `<span class="addr-label">ΟΝΟΜΑ</span><span class="addr">${e(recipientName)}</span>` : ''}
-      </div>
-
       ${
         payLabel
           ? `<div class="badge-row">
@@ -516,10 +510,10 @@ export function printOrderTicket(
         <strong>ΠΑΡΑΔΟΣΗ · ΓΙΑ ΤΟΝ ΟΔΗΓΟ</strong>
         <span class="addr-label">ΟΝΟΜΑ</span>
         <span class="addr">${recipientName ? e(recipientName) : '—'}</span>
-        <span class="addr-label">ΤΗΛΕΦΩΝΟ</span>
-        <span class="phone">${recipientPhone ? e(recipientPhone) : 'ΧΩΡΙΣ ΤΗΛΕΦΩΝΟ'}</span>
         <span class="addr-label">ΔΙΕΥΘΥΝΣΗ</span>
         <span class="addr">${recipientAddr ? e(recipientAddr) : 'ΧΩΡΙΣ ΔΙΕΥΘΥΝΣΗ'}</span>
+        <span class="addr-label">ΤΗΛΕΦΩΝΟ</span>
+        <span class="phone">${recipientPhone ? e(recipientPhone) : 'ΧΩΡΙΣ ΤΗΛΕΦΩΝΟ'}</span>
         <span class="addr-label">ΚΟΥΔΟΥΝΙ</span>
         <span class="addr">${doorbell ? e(doorbell) : '—'}</span>
         ${
