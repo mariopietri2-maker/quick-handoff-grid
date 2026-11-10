@@ -458,52 +458,7 @@ export function printOrderTicket(
     </head>
     <body>
       ${copies === 2 ? '<div class="copy-banner">— ΑΝΤΙΓΡΑΦΟ ΕΚΤΥΠΩΣΗΣ —</div>' : ''}
-      ${isCash ? `<div class="cash-top">⚠ ΜΕΤΡΗΤΑ · ΕΙΣΠΡΑΞΗ ${money(displayTotal)}€</div>` : ''}
-      <div class="fulfill">${fulfillment}</div>
-      <div class="title">Δελτίο Παραγγελίας</div>
-      <div class="brand">FRESH2GO.GR</div>
-      <div class="store">${e(String(storeName ?? 'Κατάστημα'))}</div>
-      <div class="meta">
-        <span>${e(created.split(',')[0] ?? '')}</span>
-        <span>${e(created.split(',')[1] ?? '')}</span>
-      </div>
-      ${scheduled ? `<div class="schedule">📅 ΠΡΟΓΡ. ${e(scheduled)}</div>` : ''}
-      ${readyMin > 0 ? `<div class="prep">⏱ Ετοιμασία ~${readyMin}′</div>` : ''}
-
-      <div class="ticket-no">
-        <div class="label">Αριθμός παραγγελίας</div>
-        <div class="num">${e(orderNo)}</div>
-      </div>
-
-      ${
-        payLabel
-          ? `<div class="badge-row">
-              <span class="badge${isCash ? ' fill' : ''}">${e(payLabel)}</span>
-              ${
-                !isCash && payLabel
-                  ? '<span class="badge fill">ΠΛΗΡΩΘΗΚΕ</span>'
-                  : ''
-              }
-            </div>`
-          : ''
-      }
-
-      <div class="section-label">· Είδη ·</div>
-      <hr/>
-      ${itemsHtml || '<div class="item"><div class="row-main"><span class="name">—</span></div></div>'}
-      <hr/>
-      <div class="section-label">· Σύνολα ·</div>
-      <div class="tot-row"><span class="lab">Υποσύνολο</span><span class="val">${money(subtotal)}€</span></div>
-      ${showDelivery ? `<div class="tot-row"><span class="lab">Παράδοση</span><span class="val">${money(om.deliveryFee)}€</span></div>` : ''}
-      ${showTip ? `<div class="tot-row"><span class="lab">Φιλοδώρημα</span><span class="val">${money(om.tip)}€</span></div>` : ''}
-      <div class="tot-row tot-grand"><span class="lab">ΣΥΝΟΛΟ</span><span class="val">${money(displayTotal)}€</span></div>
-      <div class="tot-row" style="font-size:10px;font-weight:600;"><span class="lab">Είδη</span><span class="val">${itemList.length}</span></div>
-
-      ${
-        isCash
-          ? `<div class="notes">⚠ ΕΙΣΠΡΑΞΗ ΜΕΤΡΗΤΩΝ · ${money(displayTotal)}€</div>`
-          : ''
-      }
+      
 
       ${
         order.notes
@@ -526,7 +481,7 @@ export function printOrderTicket(
             : ''
         }
         <span class="addr-label">ΠΛΗΡΩΜΗ</span>
-        <span class="addr">${isCash ? `ΜΕΤΡΗΤΑ · ΕΙΣΠΡΑΞΗ ${money(displayTotal)}€` : (payLabel ? e(payLabel) + ' · ΠΛΗΡΩΘΗΚΕ' : '—')}</span>
+        <span class="addr">${isCash ? `ΜΕΤΡΗΤΑ` : (payLabel ? e(payLabel) + ' · ΠΛΗΡΩΘΗΚΕ' : '—')}</span>
       </div>
       
 

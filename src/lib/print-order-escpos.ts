@@ -201,15 +201,6 @@ export function buildOrderEscPos(
   enc.bold(false);
   enc.feed(1);
 
-  if (isCash) {
-    enc.align('center');
-    enc.bold(true);
-    enc.text('*** ΕΙΣΠΡΑΞΗ ΜΕΤΡΗΤΩΝ ***');
-    enc.line();
-    enc.text(escpad(money(totalAmt), cols, 'center').trimEnd());
-    enc.bold(false);
-    enc.feed(1);
-  }
 
   if (order.notes) {
     enc.align('left');
@@ -305,7 +296,7 @@ export function buildOrderEscPos(
     enc.bold(false);
     enc.line();
     enc.bold(true);
-    enc.text(escpad(isCash ? `ΜΕΤΡΗΤΑ · ΕΙΣΠΡΑΞΗ ${money(totalAmt)}E` : 'ΠΛΗΡΩΘΗΚΕ', cols, 'center'));
+    enc.text(escpad(isCash ? 'ΜΕΤΡΗΤΑ' : 'ΠΛΗΡΩΘΗΚΕ', cols, 'center'));
     enc.bold(false);
     enc.line();
     enc.text('='.repeat(cols));
