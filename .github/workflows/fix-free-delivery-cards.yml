@@ -1,0 +1,21 @@
+name: Fix free delivery cards
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/fix-free-delivery-cards.py"
+      - ".github/workflows/fix-free-delivery-cards.yml"
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/fix-free-delivery-cards.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/StoreGeo.kt native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt
+          git commit -m "fix(customer): free-delivery section only true free stores + Δωρεάν label" || true
+          git push || true
