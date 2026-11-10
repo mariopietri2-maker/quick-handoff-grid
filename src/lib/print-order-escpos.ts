@@ -140,12 +140,6 @@ export function buildOrderEscPos(
 
   // —— TOP / HEADER (always) ——
   enc.align('center');
-  if (isCash) {
-    enc.bold(true);
-    enc.text(escpad(cutText(`ΜΕΤΡΗΤΑ ${money(totalAmt)}E`, cols), cols, 'center'));
-    enc.bold(false);
-    enc.line();
-  }
   enc.bold(true);
   enc.tall(true);
   enc.text(escpad('ΔΕΛΤΙΟ ΠΑΡΑΓΓΕΛΙΑΣ', cols, 'center'));
