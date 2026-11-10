@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { formatOrderNumber } from '@/lib/order-number';
-import { formatEuro, lineTotal, orderMoney } from '@/lib/money';
+import { formatEuro, lineTotal, orderMoney, roundMoney } from '@/lib/money';
 import { getStoreOrderPnl } from '@/lib/store-order-economics';
 
 type HistoryOrder = {
@@ -170,6 +170,8 @@ export default function StoreOrderHistory({ storeId }: { storeId: string }) {
             const total = orderMoney(o).total;
             const pnl = getStoreOrderPnl(o, commissionPct);
             const fee = pnl.isExternal ? (pnl.storeCharge ?? 0) : pnl.platformFee;
+            const vat = roundMoney(fee * 0.24);
+            const earnings = roundMoney(pnl.gross - fee - vat);
             const prep = Number(o.estimated_prep_time || o.predicted_prep_minutes || 0);
             const eta = prep > 0
               ? format(new Date(new Date(o.created_at).getTime() + prep * 60000), 'HH:mm')
@@ -225,7 +227,8 @@ export default function StoreOrderHistory({ storeId }: { storeId: string }) {
                         <div className="flex justify-between"><span className="text-muted-foreground">Φιλοδώρημα</span><span className="tabular-nums">{euro(pnl.tip)}</span></div>
                       )}
                       <div className="flex justify-between"><span className="text-muted-foreground">Προμήθεια{pnl.commissionPct != null ? ` ${pnl.commissionPct}%` : ''}</span><span className="tabular-nums text-destructive">{signedEuro(-fee)}</span></div>
-                      <div className="flex justify-between font-bold text-base pt-1"><span>Εκτιμώμενα κέρδη</span><span className="tabular-nums">{euro(pnl.net)}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">ΦΠΑ 24%</span><span className="tabular-nums text-destructive">{signedEuro(-vat)}</span></div>
+                      <div className="flex justify-between font-bold text-base pt-1"><span>Εκτιμώμενα κέρδη</span><span className="tabular-nums">{euro(earnings)}</span></div>
                       {Number(o.cash_received || 0) > 0 && (
                         <div className="flex justify-between"><span className="text-muted-foreground">Μετρητά που εισπράχθηκαν</span><span className="tabular-nums font-semibold">{euro(o.cash_received)}</span></div>
                       )}
