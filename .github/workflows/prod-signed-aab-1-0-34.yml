@@ -1,0 +1,118 @@
+name: Production signed AAB 1.0.34
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/prod-signed-aab-1-0-25.yml"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    env:
+      MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
+      PLAY_CUSTOMER_KEYSTORE_B64: ${{ secrets.PLAY_CUSTOMER_KEYSTORE_B64 }}
+      PLAY_STORE_PASSWORD: ${{ secrets.PLAY_STORE_PASSWORD }}
+      PLAY_KEY_PASSWORD: ${{ secrets.PLAY_KEY_PASSWORD }}
+      PLAY_KEY_ALIAS: ${{ secrets.PLAY_KEY_ALIAS }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply UI contrast + coupon + bump 1.0.34
+        run: |
+          set -euo pipefail
+                              python3 scripts/fix-one-coupon.py || true
+          python3 scripts/fix-receipt-phone-fonts.py || true
+          f=native-customer/app/build.gradle.kts
+          sed -i 's/versionCode = [0-9]\+/versionCode = 7235400/' "$f"
+          sed -i 's/versionName = "[^"]*"/versionName = "1.0.34"/' "$f"
+          grep -E 'versionCode|versionName' "$f" | head -4
+
+      - name: Commit sources
+        continue-on-error: true
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(customer): UI contrast + one coupon + 1.0.34 (7235400)" || true
+          git push || true
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: SDK
+        run: |
+          set -euo pipefail
+          SDK_ROOT="$HOME/android-sdk"
+          mkdir -p "$SDK_ROOT/cmdline-tools"
+          curl -fsSL --retry 5 -o /tmp/cmdtools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q /tmp/cmdtools.zip -d "$SDK_ROOT/cmdline-tools"
+          rm -rf "$SDK_ROOT/cmdline-tools/latest"
+          mv "$SDK_ROOT/cmdline-tools/cmdline-tools" "$SDK_ROOT/cmdline-tools/latest"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "$SDK_ROOT/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          yes | "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --licenses >/dev/null || true
+          "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --install \
+            "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+
+      - name: Keystore
+        run: |
+          set -euo pipefail
+          mkdir -p mobile-signing
+          echo "$PLAY_CUSTOMER_KEYSTORE_B64" | base64 -d > mobile-signing/fresh2go-customer-upload.jks
+          ALIAS="${PLAY_KEY_ALIAS:-fresh2go-customer}"
+          KEYPASS="${PLAY_KEY_PASSWORD:-$PLAY_STORE_PASSWORD}"
+          cat > mobile-signing/key.properties <<EOF
+          storePassword=${PLAY_STORE_PASSWORD}
+          keyPassword=${KEYPASS}
+          keyAlias=${ALIAS}
+          storeFile=fresh2go-customer-upload.jks
+          customerStoreFile=fresh2go-customer-upload.jks
+          EOF
+
+      - name: Bundle release
+        working-directory: native-customer
+        env:
+          PLAY_KEYSTORE_FILE: ${{ github.workspace }}/mobile-signing/fresh2go-customer-upload.jks
+          PLAY_STORE_PASSWORD: ${{ secrets.PLAY_STORE_PASSWORD }}
+          PLAY_KEY_PASSWORD: ${{ secrets.PLAY_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.gradle
+          echo "MAPBOX_DOWNLOADS_TOKEN=${MAPBOX_DOWNLOADS_TOKEN:-}" >> ~/.gradle/gradle.properties
+          echo "systemProp.org.gradle.internal.http.connectionTimeout=180000" >> ~/.gradle/gradle.properties
+          echo "systemProp.org.gradle.internal.http.socketTimeout=180000" >> ~/.gradle/gradle.properties
+          cp -R ../native-driver/gradle .
+          cp ../native-driver/gradlew .
+          chmod +x gradlew
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          export PLAY_KEY_ALIAS="${PLAY_KEY_ALIAS:-fresh2go-customer}"
+          export PLAY_KEY_PASSWORD="${PLAY_KEY_PASSWORD:-$PLAY_STORE_PASSWORD}"
+          for i in 1 2 3; do
+            echo "=== bundleRelease attempt $i ==="
+            if ./gradlew :app:bundleRelease --no-daemon --stacktrace; then
+              break
+            fi
+            [ "$i" = 3 ] && exit 1
+            sleep 25
+          done
+
+      - name: Upload signed AAB
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          AAB=$(find native-customer/app/build/outputs/bundle -name '*.aab' | head -1)
+          test -n "$AAB"
+          cp "$AAB" /tmp/fresh2go-customer-native-signed.aab
+          cp "$AAB" /tmp/fresh2go-customer-native-v1.0.34-vc7235400-signed.aab
+          TAG=mobile-apks-v1
+          for name in fresh2go-customer-native-signed.aab fresh2go-customer-native-v1.0.34-vc7235400-signed.aab; do
+            id=$(gh api "repos/${{ github.repository }}/releases/tags/$TAG" --jq ".assets[] | select(.name==\"$name\") | .id" 2>/dev/null || true)
+            [ -n "${id:-}" ] && gh api -X DELETE "repos/${{ github.repository }}/releases/assets/$id" || true
+          done
+          gh release upload "$TAG" /tmp/fresh2go-customer-native-signed.aab /tmp/fresh2go-customer-native-v1.0.34-vc7235400-signed.aab --clobber
+          echo AAB_1_0_25_SIGNED_OK

@@ -12,7 +12,7 @@ export const APK_BUILD_VERSION = '1.0.0';
 export const APK_NATIVE_DRIVER_VERSION = '1.0.5';
 
 /** Native Kotlin/Compose customer. */
-export const APK_NATIVE_CUSTOMER_VERSION = '1.0.33';
+export const APK_NATIVE_CUSTOMER_VERSION = '1.0.34';
 
 /** Native Kotlin/Compose admin ops console. */
 export const APK_NATIVE_ADMIN_VERSION = '1.0.0';
