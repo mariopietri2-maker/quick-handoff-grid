@@ -1,0 +1,21 @@
+name: Show card on receipt
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/fix-receipt-show-card.py"
+      - ".github/workflows/fix-receipt-show-card.yml"
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/fix-receipt-show-card.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib/print-order-escpos.ts
+          git commit -m "fix(print): show ΚΑΡΤΑ when payment is card" || true
+          git push || true
