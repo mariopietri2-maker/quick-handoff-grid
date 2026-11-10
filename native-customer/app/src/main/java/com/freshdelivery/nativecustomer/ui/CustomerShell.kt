@@ -1597,7 +1597,7 @@ private fun FreshStoreCard(
                 Surface(
                     color = Color(0xFFEA580C),
                     shape = RoundedCornerShape(9.dp),
-                    modifier = Modifier.align(Alignment.BottomStart).padding(10.dp),
+                    modifier = Modifier.align(Alignment.BottomStart).padding(start = 60.dp, bottom = 12.dp, end = 10.dp),
                 ) {
                     Text(
                         "🔥 $badge",
@@ -1637,6 +1637,21 @@ private fun FreshStoreCard(
                             )
                         }
                     }
+                }
+            }
+            store.image_url?.takeIf { it.isNotBlank() && it != store.cover_image_url }?.let { logo ->
+                Surface(
+                    shape = CircleShape,
+                    color = Color.White,
+                    shadowElevation = 2.dp,
+                    modifier = Modifier.align(Alignment.BottomStart).padding(10.dp).size(42.dp),
+                ) {
+                    AsyncImage(
+                        model = logo,
+                        contentDescription = store.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().clip(CircleShape),
+                    )
                 }
             }
         }
@@ -1821,6 +1836,21 @@ private fun StoreMiniCard(
                         .padding(horizontal = 8.dp, vertical = 3.dp),
                 ) {
                     Text("Κλειστό", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+            store.image_url?.takeIf { it.isNotBlank() && it != store.cover_image_url }?.let { logo ->
+                Surface(
+                    shape = CircleShape,
+                    color = Color.White,
+                    shadowElevation = 1.dp,
+                    modifier = Modifier.align(Alignment.BottomStart).padding(6.dp).size(30.dp),
+                ) {
+                    AsyncImage(
+                        model = logo,
+                        contentDescription = store.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().clip(CircleShape),
+                    )
                 }
             }
         }
