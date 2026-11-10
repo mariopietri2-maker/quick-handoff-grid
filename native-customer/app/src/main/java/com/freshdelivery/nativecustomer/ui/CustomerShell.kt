@@ -1932,8 +1932,20 @@ private fun MenuScreen(
                     modifier = Modifier.weight(1f),
                 )
                 var showStoreInfo by remember(store?.id) { mutableStateOf(false) }
-                IconButton(onClick = { showStoreInfo = true }) {
-                    Icon(Icons.Outlined.Info, contentDescription = "Πληροφορίες", tint = FreshOrange)
+                Surface(
+                    onClick = { showStoreInfo = true },
+                    shape = RoundedCornerShape(999.dp),
+                    color = FreshOrange,
+                    modifier = Modifier.padding(end = 8.dp),
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Icon(Icons.Outlined.Storefront, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                        Text("Info", color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
+                    }
                 }
                 if (showStoreInfo && store != null) {
                     StoreInfoSheet(store = store, onClose = { showStoreInfo = false })
