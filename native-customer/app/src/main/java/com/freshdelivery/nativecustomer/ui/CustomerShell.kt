@@ -1506,7 +1506,7 @@ private fun StoreCardSkeleton() {
             .clip(RoundedCornerShape(20.dp))
             .background(Color.White),
     ) {
-        Box(Modifier.fillMaxWidth().height(148.dp).background(FreshChip))
+        Box(Modifier.fillMaxWidth().height(110.dp).background(FreshChip))
         Column(Modifier.padding(14.dp)) {
             Box(Modifier.fillMaxWidth(0.55f).height(16.dp).clip(RoundedCornerShape(6.dp)).background(FreshChip))
             Spacer(Modifier.height(8.dp))
@@ -1656,7 +1656,7 @@ private fun FreshStoreCard(
                 }
             }
         }
-        Column(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+        Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
             Text(
                 store.name ?: "Κατάστημα",
                 style = MaterialTheme.typography.titleMedium,
@@ -1689,6 +1689,7 @@ private fun FreshStoreCard(
                         Text(eta, color = FreshGreenDark, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
                     }
                 }
+                // One delivery chip only (fee OR fulfilment — not both)
                 Surface(
                     color = if (freeDelivery) FreshGreenSoft else FreshChip,
                     shape = RoundedCornerShape(8.dp),
@@ -1701,26 +1702,19 @@ private fun FreshStoreCard(
                             Icon(Icons.Outlined.DirectionsBike, contentDescription = null, tint = FreshGreenDark, modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(4.dp))
                         }
+                        val deliveryChip = when {
+                            freeDelivery -> "Δωρεάν παράδοση"
+                            !isPlatformFulfilment(store) -> storeFulfilmentLabelShort(store)
+                            else -> feeLabel
+                        }
                         Text(
-                            feeLabel,
-                            color = if (freeDelivery) FreshGreenDark else FreshMuted,
+                            deliveryChip,
+                            color = if (freeDelivery) FreshGreenDark else FreshInk,
                             fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.labelMedium,
+                            style = MaterialTheme.typography.labelSmall,
+                            maxLines = 1,
                         )
                     }
-                }
-                Surface(
-                    color = if (isPlatformFulfilment(store)) FreshGreenDark.copy(alpha = 0.12f) else FreshChip,
-                    shape = RoundedCornerShape(8.dp),
-                ) {
-                    Text(
-                        storeFulfilmentLabel(store),
-                        color = if (isPlatformFulfilment(store)) FreshGreenDark else FreshMuted,
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                        maxLines = 1,
-                    )
                 }
                 if (dist != null) {
                     Surface(color = FreshChip, shape = RoundedCornerShape(12.dp)) {
@@ -1735,17 +1729,16 @@ private fun FreshStoreCard(
                 }
                 val minOrd = store.min_order_amount ?: 0.0
                 if (minOrd > 0) {
-                    Surface(color = FreshChip, shape = RoundedCornerShape(12.dp)) {
+                    Surface(color = FreshChip, shape = RoundedCornerShape(8.dp)) {
                         Text(
                             "ελάχ. €%.0f".format(minOrd),
-                            color = FreshMuted,
-                            fontWeight = FontWeight.Medium,
-                            style = MaterialTheme.typography.labelMedium,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            color = FreshInk,
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                         )
                     }
                 }
-                Spacer(Modifier.weight(1f))
             }
         }
     }
