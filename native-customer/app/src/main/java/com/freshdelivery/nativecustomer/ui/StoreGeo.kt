@@ -123,13 +123,13 @@ internal fun nextOpenHint(store: StoreRow): String? {
 }
 
 internal fun storeDeliveryFeeLabel(store: StoreRow): String {
-    if (store.covers_delivery_fee == true) return "Δωρεάν delivery"
+    if (store.covers_delivery_fee == true) return "Δωρεάν παράδοση"
     val fee = store.delivery_fee
     return if (fee != null && fee > 0.0) {
         val s = if (fee % 1.0 == 0.0) fee.toInt().toString() else "%.1f".format(fee)
-        "€$s delivery"
+        "€$s παράδοση"
     } else {
-        "Delivery"
+        "Παράδοση"
     }
 }
 

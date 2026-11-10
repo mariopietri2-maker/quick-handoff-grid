@@ -1025,9 +1025,7 @@ Row(
         }
         // Fresh2GO discovery rails (efood density, own style) — only on the default feed
         if (showDiscovery && stores.isNotEmpty()) {
-            val freeDelivery = stores.filter { it.covers_delivery_fee == true }.ifEmpty {
-                stores.filter { (it.delivery_fee ?: 0.0) <= 0.0 }
-            }
+            val freeDelivery = stores.filter { it.covers_delivery_fee == true }
             val withOffers = stores.filter { !it.promo_badge.isNullOrBlank() }
             val nearFirst = if (hasLocation) {
                 stores.sortedBy { storeDistanceKm(state.deliveryLat!!, state.deliveryLng!!, it) }
@@ -1126,7 +1124,7 @@ Row(
 
             if (freeDelivery.isNotEmpty()) {
                 item {
-                    DiscoverSectionHeader(title = "Δωρεάν delivery", action = "Δες τα όλα ›") {
+                    DiscoverSectionHeader(title = "Δωρεάν παράδοση", action = "Δες τα όλα ›") {
                         applyFilter(HomeFilter.Deals); onSearch("")
                     }
                 }
@@ -1150,24 +1148,26 @@ Row(
                 }
             }
 
-            item {
-                DiscoverSectionHeader(title = "Κοντά σου", action = null, onAction = {})
-            }
-            item {
-                Row(
-                    Modifier
-                        .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    nearFirst.take(8).forEach { store ->
-                        StoreMiniCard(
-                            store = store,
-                            rating = state.storeRatings[store.id],
-                            deliveryLat = state.deliveryLat,
-                            deliveryLng = state.deliveryLng,
-                            onClick = { onOpenStore(store) },
-                        )
+            if (nearFirst.size >= 3) {
+                item {
+                    DiscoverSectionHeader(title = "Κοντά σου", action = null, onAction = {})
+                }
+                item {
+                    Row(
+                        Modifier
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        nearFirst.take(8).forEach { store ->
+                            StoreMiniCard(
+                                store = store,
+                                rating = state.storeRatings[store.id],
+                                deliveryLat = state.deliveryLat,
+                                deliveryLng = state.deliveryLng,
+                                onClick = { onOpenStore(store) },
+                            )
+                        }
                     }
                 }
             }
@@ -1811,6 +1811,16 @@ private fun StoreMiniCard(
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                         maxLines = 1,
                     )
+                }
+            }
+            if (!isStoreOpenNow(store)) {
+                Box(
+                    Modifier
+                        .align(Alignment.Center)
+                        .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 8.dp, vertical = 3.dp),
+                ) {
+                    Text("Κλειστό", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
