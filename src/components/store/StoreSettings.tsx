@@ -189,17 +189,29 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-muted-foreground" />
-                <p className="text-sm font-medium">Επιπλέον χρόνος προετοιμασίας</p>
+                <div>
+                  <p className="text-sm font-medium">Χρόνος παράδοσης</p>
+                  <p className="text-xs text-muted-foreground">Αυτό βλέπει ο πελάτης πριν παραγγείλει</p>
+                </div>
               </div>
-              <Badge variant="outline">{store.prep_buffer_minutes ?? 0}΄</Badge>
+              <Badge variant="outline">{(store.prep_buffer_minutes ?? 0) || 15}΄</Badge>
             </div>
-            <Slider
-              value={[store.prep_buffer_minutes ?? 0]}
-              min={0}
-              max={45}
-              step={5}
-              onValueChange={([val]) => updateStore({ prep_buffer_minutes: val }, storeId)}
-            />
+            <div className="flex flex-wrap gap-1.5">
+              {[10, 15, 20, 25, 30, 40, 45].map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => updateStore({ prep_buffer_minutes: m }, storeId)}
+                  className={`h-8 px-3 rounded-full text-xs font-medium border ${
+                    ((store.prep_buffer_minutes ?? 0) || 15) === m
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background border-border text-foreground'
+                  }`}
+                >
+                  {m}΄
+                </button>
+              ))}
+            </div>
           </div>
 
         </CardContent>
