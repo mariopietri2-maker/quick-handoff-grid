@@ -22,9 +22,7 @@ jobs:
       - name: Apply UI contrast + coupon + bump 1.0.26
         run: |
           set -euo pipefail
-          python3 scripts/fix-ui-contrast-all.py || true
-          python3 scripts/fix-store-header-contrast.py || true
-          python3 scripts/fix-one-coupon.py || true
+                              python3 scripts/fix-one-coupon.py || true
           python3 scripts/fix-receipt-phone-fonts.py || true
           f=native-customer/app/build.gradle.kts
           sed -i 's/versionCode = [0-9]\+/versionCode = 7234600/' "$f"

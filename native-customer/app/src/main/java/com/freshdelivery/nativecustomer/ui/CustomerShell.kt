@@ -1935,7 +1935,7 @@ private fun MenuScreen(
                 Surface(
                     onClick = { showStoreInfo = true },
                     shape = RoundedCornerShape(999.dp),
-                    color = FreshOrange,
+                    color = FreshGreen,
                     modifier = Modifier.padding(end = 8.dp),
                 ) {
                     Row(
@@ -4737,7 +4737,7 @@ private fun StoreMoreRow(icon: androidx.compose.ui.graphics.vector.ImageVector, 
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Icon(icon, contentDescription = null, tint = FreshOrange)
+        Icon(icon, contentDescription = null, tint = FreshGreen)
         Column(Modifier.weight(1f)) {
             Text(title, fontWeight = FontWeight.SemiBold)
             Text(subtitle, color = FreshMuted, style = MaterialTheme.typography.bodySmall)
