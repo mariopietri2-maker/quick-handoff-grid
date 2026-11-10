@@ -176,7 +176,7 @@ export function buildOrderEscPos(
   enc.line();
   if (payLabel) {
     enc.bold(true);
-    enc.text(escpad(isCash ? 'ΜΕΤΡΗΤΑ' : `${payLabel} ΠΛΗΡΩΘΗΚΕ`, cols, 'center'));
+    enc.text(escpad(isCash ? 'ΜΕΤΡΗΤΑ' : (payLabel ? `${payLabel} · ΠΛΗΡΩΘΗΚΕ` : 'ΠΛΗΡΩΘΗΚΕ'), cols, 'center'));
     enc.bold(false);
     enc.line();
   }
@@ -279,7 +279,7 @@ export function buildOrderEscPos(
     enc.tall(false);
     enc.bold(false);
     enc.line();
-    enc.text(escpad(isCash ? 'ΜΕΤΡΗΤΑ' : 'ΠΛΗΡΩΘΗΚΕ', cols, 'center'));
+    enc.text(escpad(isCash ? 'ΜΕΤΡΗΤΑ' : (payLabel || 'ΚΑΡΤΑ'), cols, 'center'));
     enc.line();
     enc.text('='.repeat(cols));
     enc.line();
