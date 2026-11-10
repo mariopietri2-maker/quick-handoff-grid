@@ -3,11 +3,11 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - ".github/workflows/prod-signed-aab-1-0-25.yml"
+      - ".github/workflows/prod-signed-aab-1-0-26.yml"
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 95
     permissions:
       contents: write
     env:
@@ -19,11 +19,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Apply UI contrast + coupon + bump 1.0.26
+      - name: Apply UI scripts + bump 1.0.26
         run: |
           set -euo pipefail
-                              python3 scripts/fix-one-coupon.py || true
-          python3 scripts/fix-receipt-phone-fonts.py || true
+          python3 scripts/fix-store-card-dense.py || true
+          python3 scripts/fix-free-delivery-cards.py || true
+          python3 scripts/fix-ui-contrast-all.py || true
           f=native-customer/app/build.gradle.kts
           sed -i 's/versionCode = [0-9]\+/versionCode = 7234600/' "$f"
           sed -i 's/versionName = "[^"]*"/versionName = "1.0.26"/' "$f"
@@ -35,7 +36,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "fix(customer): UI contrast + one coupon + 1.0.26 (7234600)" || true
+          git commit -m "fix(customer): dense cards + free delivery labels + 1.0.26" || true
           git push || true
 
       - uses: actions/setup-java@v4
@@ -62,6 +63,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p mobile-signing
+          test -n "${PLAY_CUSTOMER_KEYSTORE_B64:-}" || { echo 'missing PLAY_CUSTOMER_KEYSTORE_B64'; exit 1; }
           echo "$PLAY_CUSTOMER_KEYSTORE_B64" | base64 -d > mobile-signing/fresh2go-customer-upload.jks
           ALIAS="${PLAY_KEY_ALIAS:-fresh2go-customer}"
           KEYPASS="${PLAY_KEY_PASSWORD:-$PLAY_STORE_PASSWORD}"
@@ -91,14 +93,14 @@ jobs:
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           export PLAY_KEY_ALIAS="${PLAY_KEY_ALIAS:-fresh2go-customer}"
           export PLAY_KEY_PASSWORD="${PLAY_KEY_PASSWORD:-$PLAY_STORE_PASSWORD}"
-          for i in 1 2 3; do
-            echo "=== bundleRelease attempt $i ==="
-            if ./gradlew :app:bundleRelease --no-daemon --stacktrace; then
-              break
-            fi
-            [ "$i" = 3 ] && exit 1
-            sleep 25
-          done
+          set +e
+          ./gradlew :app:bundleRelease --no-daemon --stacktrace 2>&1 | tee /tmp/gradle-bundle.log
+          code=${PIPESTATUS[0]}
+          set -e
+          if [ "$code" != 0 ]; then
+            tail -100 /tmp/gradle-bundle.log
+            exit "$code"
+          fi
 
       - name: Upload signed AAB
         env:
@@ -115,4 +117,4 @@ jobs:
             [ -n "${id:-}" ] && gh api -X DELETE "repos/${{ github.repository }}/releases/assets/$id" || true
           done
           gh release upload "$TAG" /tmp/fresh2go-customer-native-signed.aab /tmp/fresh2go-customer-native-v1.0.26-vc7234600-signed.aab --clobber
-          echo AAB_1_0_25_SIGNED_OK
+          echo AAB_1_0_26_SIGNED_OK
