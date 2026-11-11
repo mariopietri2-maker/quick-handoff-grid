@@ -141,7 +141,7 @@ export function buildOrderEscPos(
   // —— TOP / HEADER (design: pay+total, title, brand, store, date) ——
   enc.align('center');
   enc.bold(true);
-  enc.text(escpad(`${payLabel || 'ΜΕΤΡΗΤΑ'} ${money(totalAmt)}€`, cols, 'center'));
+  enc.text(escpad(payLabel || 'ΜΕΤΡΗΤΑ', cols, 'center'));
   enc.bold(false);
   enc.line();
   enc.bold(true);

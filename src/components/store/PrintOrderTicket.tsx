@@ -455,11 +455,11 @@ export function printOrderTicket(
         }
         .fiscal img { max-width: 120px; margin: 6px auto 0; display: block; }
       
-        .pay-top { text-align:center; font-weight:900; font-size:15px; letter-spacing:0.04em; margin:0 0 4px; }
-        .when, .prep { text-align:center; font-size:11px; font-weight:700; margin:0; }
+        .pay-top { text-align:center; font-weight:900; font-size:15px; letter-spacing:0.08em; margin:0 auto 4px; width:100%; }
+        .when, .prep, .title, .brand, .store, .pay-top, .pay-mid, .ticket-no { text-align:center !important; margin-left:auto; margin-right:auto; } .when, .prep { font-size:11px; font-weight:700; margin:0 auto; }
         .pay-mid { text-align:center; font-weight:900; font-size:12px; margin:4px 0 2px; letter-spacing:0.06em; }
-        .totals .row { display:flex; justify-content:space-between; font-weight:700; padding:1px 0; }
-        .totals .total { font-weight:900; font-size:14px; margin-top:2px; }
+        .totals { width:100%; } .totals .row { display:flex; justify-content:space-between; align-items:baseline; font-weight:700; padding:1px 0; width:100%; }
+        .totals .total { font-weight:900; font-size:16px; margin-top:4px; border-top:1px solid #000; padding-top:3px; }
         .rule { text-align:center; font-weight:900; letter-spacing:0.12em; border-top:2px solid #000; border-bottom:2px solid #000; padding:3px 0; margin:8px 0 6px; }
         .deliver { text-align:center; }
         .deliver .lbl { font-size:10px; font-weight:800; letter-spacing:0.14em; margin-top:6px; border-top:1px solid #000; border-bottom:1px solid #000; padding:2px 0; }
@@ -472,7 +472,7 @@ export function printOrderTicket(
     </head>
     <body>
       ${copies === 2 ? '<div class="copy-banner">— ΑΝΤΙΓΡΑΦΟ ΕΚΤΥΠΩΣΗΣ —</div>' : ''}
-      <div class="pay-top">${e(payLabel || 'ΜΕΤΡΗΤΑ')} ${money(displayTotal)}&#8364;</div>
+      <div class="pay-top">${e(payLabel || 'ΜΕΤΡΗΤΑ')}</div>
       <div class="title">ΔΕΛΤΙΟ ΠΑΡΑΓΓΕΛΙΑΣ</div>
       <div class="brand">FRESH2GO.GR</div>
       <div class="store">${e(storeName || 'Κατάστημα')}</div>
