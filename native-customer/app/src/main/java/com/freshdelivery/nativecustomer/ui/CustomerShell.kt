@@ -1690,7 +1690,7 @@ private fun FreshStoreCard(
                         Text(eta, color = FreshGreenDark, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
                     }
                 }
-                // One delivery chip only (fee OR fulfilment — not both)
+                // One delivery chip only
                 Surface(
                     color = if (freeDelivery) FreshGreenSoft else FreshChip,
                     shape = RoundedCornerShape(8.dp),
@@ -1699,14 +1699,10 @@ private fun FreshStoreCard(
                         Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        if (freeDelivery) {
-                            Icon(Icons.Outlined.DirectionsBike, contentDescription = null, tint = FreshGreenDark, modifier = Modifier.size(14.dp))
-                            Spacer(Modifier.width(4.dp))
-                        }
                         val deliveryChip = when {
-                            freeDelivery -> "Δωρεάν παράδοση"
-                            !isPlatformFulfilment(store) -> storeFulfilmentLabelShort(store)
-                            else -> feeLabel
+                            freeDelivery -> "Δωρεάν"
+                            !isPlatformFulfilment(store) -> "Κατάστημα"
+                            else -> if (feeLabel.startsWith("€")) feeLabel else "Fresh2GO"
                         }
                         Text(
                             deliveryChip,
