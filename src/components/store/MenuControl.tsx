@@ -40,6 +40,7 @@ export function MenuControl({ storeId }: MenuControlProps) {
   const { items, loading, toggleAvailable, toggleSnooze, bulkSetSnooze, bulkSetAvailable, addItem, updateItem, updateItemImage } = useMenuItems(storeId);
   const { isAdmin } = useAuth();
   const [search, setSearch] = useState('');
+  const [activeCategory, setActiveCategory] = useState<string>('Όλα');
   const [addOpen, setAddOpen] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -126,10 +127,21 @@ export function MenuControl({ storeId }: MenuControlProps) {
     );
   });
 
+  const allCategories = [
+    ...(items.some(isOfferItem) ? ['Προσφορές'] : []),
+    ...[...new Set(items.filter(i => !isOfferItem(i)).map(i => i.category ?? 'Χωρίς Κατηγορία'))],
+  ];
   const categories = [
     ...(filtered.some(isOfferItem) ? ['Προσφορές'] : []),
     ...[...new Set(filtered.filter(i => !isOfferItem(i)).map(i => i.category ?? 'Χωρίς Κατηγορία'))],
   ];
+  const visibleCategories = activeCategory === 'Όλα'
+    ? categories
+    : categories.filter((c) => c === activeCategory);
+  const countFor = (cat: string) =>
+    cat === 'Προσφορές'
+      ? items.filter(isOfferItem).length
+      : items.filter((i) => !isOfferItem(i) && (i.category ?? 'Χωρίς Κατηγορία') === cat).length;
 
   if (loading) {
     return (
@@ -195,7 +207,21 @@ export function MenuControl({ storeId }: MenuControlProps) {
               </div>
               <div>
                 <Label className="font-heading">Κατηγορία</Label>
-                <Input value={newItem.category} onChange={e => setNewItem(p => ({ ...p, category: e.target.value }))} placeholder="π.χ. Πίτσα, Ποτά" maxLength={50} />
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {allCategories.filter((c) => c !== 'Προσφορές').map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setNewItem((p) => ({ ...p, category: c }))}
+                      className={`rounded-full px-2.5 py-1 text-[11px] font-heading font-bold border ${
+                        newItem.category === c ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/50 border-border'
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+                <Input value={newItem.category} onChange={e => setNewItem(p => ({ ...p, category: e.target.value }))} placeholder="Διάλεξε ή γράψε νέα, π.χ. Πίτσα" maxLength={50} />
               </div>
               <div>
                 <Label className="font-heading">Περιγραφή (προαιρετικό)</Label>
@@ -212,6 +238,34 @@ export function MenuControl({ storeId }: MenuControlProps) {
           </DialogContent>
         </Dialog>
       </div>
+
+      {allCategories.length > 0 && (
+        <div className="sticky top-0 z-20 -mx-1 px-1 py-2 bg-background/95 backdrop-blur">
+          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+            <button
+              type="button"
+              onClick={() => setActiveCategory('Όλα')}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-heading font-bold border ${
+                activeCategory === 'Όλα' ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/50 border-border'
+              }`}
+            >
+              Όλα · {items.length}
+            </button>
+            {allCategories.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setActiveCategory(cat)}
+                className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-heading font-bold border ${
+                  activeCategory === cat ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/50 border-border'
+                }`}
+              >
+                {cat} · {countFor(cat)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {selectMode && (
         <div className="sticky top-16 z-10 flex flex-wrap items-center gap-2 p-3 rounded-xl bg-primary/5 border border-primary/30">
@@ -246,7 +300,7 @@ export function MenuControl({ storeId }: MenuControlProps) {
           <p className="text-sm text-muted-foreground mt-1">Προσθέστε το πρώτο σας προϊόν για να ξεκινήσετε</p>
         </div>
       ) : (
-        categories.map(category => (
+        visibleCategories.map(category => (
           <div key={category}>
             <h3 className="font-heading font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-2">
               {category}
@@ -389,6 +443,20 @@ export function MenuControl({ storeId }: MenuControlProps) {
                 </div>
                 <div>
                   <Label className="font-heading">Κατηγορία</Label>
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {allCategories.filter((c) => c !== 'Προσφορές').map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setEdit({ ...edit, category: c })}
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-heading font-bold border ${
+                          edit.category === c ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/50 border-border'
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
                   <Input value={edit.category} onChange={(e) => setEdit({ ...edit, category: e.target.value })} />
                 </div>
               </div>
