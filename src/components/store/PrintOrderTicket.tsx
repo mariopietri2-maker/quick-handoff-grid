@@ -537,3 +537,93 @@ export function printOrderTicket(
       </script>
     </body>
     </html>
+  `;
+}
+export async function printOrderSafe(
+  order: OrderWithItems,
+  storeName: string,
+  extras: PrintOrderExtras = {},
+  storeId?: string | null,
+): Promise<{ direct: boolean }> {
+  // Ensure customer phone is present (profiles.phone) for kitchen tickets
+  let resolved: PrintOrderExtras = { ...extras };
+  try {
+    const orderPhone = String((order as any).customer_phone ?? '').trim();
+    if (orderPhone && !String(resolved.customerPhone ?? '').trim()) {
+      resolved = { ...resolved, customerPhone: orderPhone };
+    }
+    const needPhone = !String(resolved.customerPhone ?? '').trim();
+    const needName = !String(resolved.customerName ?? '').trim();
+    const cid = (order as any).customer_id as string | undefined;
+    if (cid && (needPhone || needName)) {
+      const { supabase } = await import('@/integrations/supabase/client');
+      // Store cannot read profiles directly (RLS). Use the order-scoped contact function.
+      const { data: contact } = await supabase.rpc('store_order_contact' as any, { p_order_id: (order as any).id });
+      const row = Array.isArray(contact) ? contact[0] : contact;
+      if (row) {
+        if (needPhone && row.phone) resolved = { ...resolved, customerPhone: String(row.phone) };
+        if (needName && row.full_name) resolved = { ...resolved, customerName: String(row.full_name) };
+      }
+      if (needPhone && !resolved.customerPhone) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('full_name, phone')
+          .eq('user_id', cid)
+          .maybeSingle();
+        if (data) {
+          if (needPhone && data.phone) resolved = { ...resolved, customerPhone: String(data.phone) };
+          if (needName && data.full_name) resolved = { ...resolved, customerName: String(data.full_name) };
+        }
+      }
+    }
+  } catch {
+    /* non-fatal */
+  }
+  extras = resolved;
+  const prefs = getPrinterPrefs(storeId);
+  const st = getPrinterState();
+  if (prefs.enabled && prefs.mode === 'direct' && st.status === 'connected') {
+    const width = prefs.paperWidth === 58 ? 58 : 80;
+    const chunks = buildOrderEscPos(order, storeName, extras, width);
+    const copies = prefs.printCopies === 2 ? 2 : 1;
+    await sendToActivePrinter(chunks);
+    if (copies === 2) {
+      await new Promise((r) => setTimeout(r, 400));
+      await sendToActivePrinter(chunks);
+    }
+    return { direct: true };
+  }
+  printOrderTicket(order, storeName, extras, storeId);
+  return { direct: false };
+}
+
+export function PrintTicketButton({
+  order,
+  storeName,
+  extras,
+  storeId,
+  driverCode,
+}: {
+  order: OrderWithItems;
+  storeName: string;
+  extras?: PrintOrderExtras;
+  storeId?: string | null;
+  driverCode?: string | null;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={(e) => {
+        e.stopPropagation();
+        const merged = { ...(extras ?? {}), ...(driverCode ? { driverCode } : {}) };
+        void printOrderSafe(order, storeName, merged, storeId).catch(() => {});
+      }}
+      className="h-8 text-xs"
+    >
+      <Printer className="h-3.5 w-3.5 mr-1" />
+      Εκτύπωση
+    </Button>
+  );
+}
