@@ -381,7 +381,13 @@ fun CustomerShell(
     state.modifierPickerItem?.let { item ->
         ModifierPickerDialog(
             item = item,
-            modifiers = state.menuModifiers[item.id].orEmpty(),
+            modifiers = state.menuModifiers[item.id].orEmpty().let { mods ->
+                val blob = "${'$'}{item.category.orEmpty()} ${'$'}{item.name}".lowercase()
+                val offer = blob.contains("προσφορ") || blob.contains("offer") || blob.contains("1+1") ||
+                    blob.contains("έκπτ") || blob.contains("promo")
+                if (offer) mods.filterNot { it.group_name.lowercase().let { g -> g.contains("μέγεθος") || g.contains("size") } }
+                else mods
+            },
             onDismiss = onDismissModifiers,
             onConfirm = { selected -> onConfirmModifiers(item, selected) },
         )

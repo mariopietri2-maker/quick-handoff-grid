@@ -218,6 +218,11 @@ export default function ItemModifiersEditor({
 
   // Single option form
   const [groupName, setGroupName] = useState('Υλικά');
+  const [customSizes, setCustomSizes] = useState([
+    { name: 'Μικρή', price: '0' },
+    { name: 'Μεσαία', price: '2' },
+    { name: 'Μεγάλη', price: '4' },
+  ]);
   const [optionName, setOptionName] = useState('');
   const [priceDelta, setPriceDelta] = useState('0');
   const [isRequired, setIsRequired] = useState(false);
@@ -323,6 +328,32 @@ export default function ItemModifiersEditor({
     }
   };
 
+
+  const saveCustomSizes = async () => {
+    const rows = customSizes
+      .map((s) => ({ name: s.name.trim(), price: Number(s.price) || 0 }))
+      .filter((s) => s.name);
+    if (rows.length < 2) {
+      toast.error('Βάλε τουλάχιστον 2 μεγέθη');
+      return;
+    }
+    const existing = (grouped['Μέγεθος'] ?? []).map((m) => m.id);
+    if (existing.length) {
+      await (supabase as any).from('menu_item_modifiers').delete().in('id', existing);
+    }
+    const ok = await insertRows(
+      rows.map((s, i) => ({
+        group_name: 'Μέγεθος',
+        option_name: s.name,
+        price_delta: s.price,
+        is_required: true,
+        is_multi: false,
+        sort_order: i,
+      })),
+    );
+    if (ok) toast.success('Τα μεγέθη αποθηκεύτηκαν — ο πελάτης διαλέγει');
+  };
+
   const applyTemplate = async (templateId: string) => {
     const tpl = TEMPLATES.find((t) => t.id === templateId);
     if (!tpl) return;
@@ -425,6 +456,39 @@ export default function ItemModifiersEditor({
                 <div className="text-[11px] text-muted-foreground mt-0.5">{tpl.description}</div>
               </button>
             ))}
+          </div>
+        </div>
+
+        
+        <div className="rounded-xl border border-orange-500/40 bg-orange-500/5 p-3 space-y-2">
+          <p className="text-sm font-extrabold">Μεγέθη πίτσας (custom)</p>
+          <p className="text-[11px] text-muted-foreground">
+            Γράψε τα μεγέθη και την επιπλέον τιμή. Ο πελάτης διαλέγει ένα. Οι προσφορές δεν δείχνουν μέγεθος.
+          </p>
+          {customSizes.map((s, i) => (
+            <div key={i} className="flex gap-2">
+              <Input
+                value={s.name}
+                placeholder="π.χ. 30cm"
+                onChange={(e) => setCustomSizes((prev) => prev.map((x, j) => j === i ? { ...x, name: e.target.value } : x))}
+              />
+              <Input
+                type="number"
+                step="0.10"
+                className="w-24"
+                value={s.price}
+                placeholder="+€"
+                onChange={(e) => setCustomSizes((prev) => prev.map((x, j) => j === i ? { ...x, price: e.target.value } : x))}
+              />
+            </div>
+          ))}
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => setCustomSizes((prev) => [...prev, { name: '', price: '0' }])}>
+              + Μέγεθος
+            </Button>
+            <Button type="button" size="sm" disabled={busy} onClick={() => void saveCustomSizes()}>
+              Αποθήκευση μεγεθών
+            </Button>
           </div>
         </div>
 

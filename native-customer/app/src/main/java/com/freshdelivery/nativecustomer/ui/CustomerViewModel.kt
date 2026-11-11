@@ -841,11 +841,24 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
         val mods = _state.value.menuModifiers[item.id].orEmpty()
-        if (mods.isNotEmpty()) {
+        val offer = isOfferItem(item)
+        val usable = if (offer) mods.filterNot { isSizeGroup(it.group_name) } else mods
+        if (usable.isNotEmpty()) {
             _state.value = _state.value.copy(modifierPickerItem = item)
             return
         }
         addToCartWithModifiers(item, emptyList())
+    }
+
+    private fun isOfferItem(item: MenuItemRow): Boolean {
+        val blob = "${'$'}{item.category.orEmpty()} ${'$'}{item.name}".lowercase()
+        return blob.contains("προσφορ") || blob.contains("offer") || blob.contains("1+1") ||
+            blob.contains("έκπτ") || blob.contains("promo") || blob.contains("deal")
+    }
+
+    private fun isSizeGroup(name: String): Boolean {
+        val n = name.lowercase()
+        return n.contains("μέγεθος") || n.contains("μεγεθος") || n.contains("size")
     }
 
     fun dismissModifierPicker() {

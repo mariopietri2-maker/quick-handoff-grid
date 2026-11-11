@@ -25,6 +25,8 @@ type Props = {
   menuItemId: string;
   itemName: string;
   basePrice: number;
+  /** Offers must not ask for size. */
+  hideSize?: boolean;
   open: boolean;
   onClose: () => void;
   onConfirm: (payload: {
@@ -38,6 +40,7 @@ export function ModifierSheet({
   menuItemId,
   itemName,
   basePrice,
+  hideSize = false,
   open,
   onClose,
   onConfirm,
@@ -58,17 +61,30 @@ export function ModifierSheet({
         .eq('menu_item_id', menuItemId)
         .order('sort_order', { ascending: true });
       if (cancelled) return;
-      setRows((data ?? []) as ModRow[]);
+      const loaded = (data ?? []) as ModRow[];
+      setRows(loaded);
       setLoading(false);
+      if (hideSize) {
+        const left = loaded.filter((r) => !/μέγεθος|μεγεθος|size|διάσταση/i.test(r.group_name));
+        if (left.length === 0) {
+          onConfirm({ modifiers: [], unitPrice: basePrice, labelSuffix: '' });
+          onClose();
+        }
+      }
     })();
     return () => {
       cancelled = true;
     };
   }, [open, menuItemId]);
 
+  const visibleRows = useMemo(() => {
+    if (!hideSize) return rows;
+    return rows.filter((r) => !/μέγεθος|μεγεθος|size|διάσταση/i.test(r.group_name));
+  }, [rows, hideSize]);
+
   const groups = useMemo(() => {
     const map = new Map<string, Group>();
-    for (const r of rows) {
+    for (const r of visibleRows) {
       const g = map.get(r.group_name) ?? {
         name: r.group_name,
         required: !!r.is_required,
@@ -81,7 +97,7 @@ export function ModifierSheet({
       map.set(r.group_name, g);
     }
     return [...map.values()];
-  }, [rows]);
+  }, [visibleRows]);
 
   const toggle = (group: Group, optionId: string) => {
     setSelected((prev) => {
