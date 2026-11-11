@@ -15,7 +15,7 @@ import { formatMoneyPlain, lineTotal, orderMoney } from '@/lib/money';
 export type { PrintOrderExtras };
 
 function money(n: number | null | undefined) {
-  return formatMoneyPlain(n);
+  return formatMoneyPlain(n).replace('.', ',');
 }
 
 /** Professional 80mm kitchen / delivery receipt for Fresh2GO.GR. */
@@ -454,44 +454,63 @@ export function printOrderTicket(
           font-weight: 600;
         }
         .fiscal img { max-width: 120px; margin: 6px auto 0; display: block; }
+      
+        .pay-top { text-align:center; font-weight:900; font-size:15px; letter-spacing:0.04em; margin:0 0 4px; }
+        .when, .prep { text-align:center; font-size:11px; font-weight:700; margin:0; }
+        .pay-mid { text-align:center; font-weight:900; font-size:12px; margin:4px 0 2px; letter-spacing:0.06em; }
+        .totals .row { display:flex; justify-content:space-between; font-weight:700; padding:1px 0; }
+        .totals .total { font-weight:900; font-size:14px; margin-top:2px; }
+        .rule { text-align:center; font-weight:900; letter-spacing:0.12em; border-top:2px solid #000; border-bottom:2px solid #000; padding:3px 0; margin:8px 0 6px; }
+        .deliver { text-align:center; }
+        .deliver .lbl { font-size:10px; font-weight:800; letter-spacing:0.14em; margin-top:6px; border-top:1px solid #000; border-bottom:1px solid #000; padding:2px 0; }
+        .deliver .val { font-weight:900; font-size:13px; margin:2px 0; }
+        .deliver .phone { font-weight:900; font-size:16px; letter-spacing:0.04em; margin:2px 0 4px; }
+        .thanks { text-align:center; margin-top:10px; font-weight:800; }
+        .thanks .brand2 { letter-spacing:0.12em; font-weight:700; }
+        .thanks .ref { font-size:11px; font-weight:700; margin-top:2px; }
       </style>
     </head>
     <body>
       ${copies === 2 ? '<div class="copy-banner">— ΑΝΤΙΓΡΑΦΟ ΕΚΤΥΠΩΣΗΣ —</div>' : ''}
-      
-
+      <div class="pay-top">${e(payLabel || 'ΜΕΤΡΗΤΑ')} ${money(displayTotal)}€</div>
+      <div class="title">ΔΕΛΤΙΟ ΠΑΡΑΓΓΕΛΙΑΣ</div>
+      <div class="brand">FRESH2GO.GR</div>
+      <div class="store">${e(storeName || 'Κατάστημα')}</div>
+      <div class="when">${e(created)}</div>
+      ${readyMin ? `<div class="prep">Ετοιμασία ~${readyMin}'</div>` : ''}
+      ${scheduled ? `<div class="prep">Προγραμματισμένη ${e(scheduled)}</div>` : ''}
+      <div class="ticket-no" style="margin-top:8px"><div class="num">${e(orderNo)}</div></div>
+      <div class="pay-mid">${e(payLabel || 'ΜΕΤΡΗΤΑ')}</div>
+      <hr />
+      ${itemsHtml || '<div class="item"><div class="row-main"><span class="name">(χωρίς είδη)</span></div></div>'}
+      <hr />
+      <div class="totals">
+        <div class="row"><span>Υποσύνολο</span><span>${money(subtotal)}€</span></div>
+        ${showDelivery ? `<div class="row"><span>Παράδοση</span><span>${money(om.deliveryFee)}€</span></div>` : ''}
+        ${showTip ? `<div class="row"><span>Φιλοδώρημα</span><span>${money(om.tip)}€</span></div>` : ''}
+        <div class="row total"><span>ΣΥΝΟΛΟ</span><span>${money(displayTotal)}€</span></div>
+      </div>
+      <hr />
       ${
         order.notes
           ? `<div class="note"><strong>ΣΗΜΕΙΩΣΗ · </strong>${e(String(order.notes))}</div>`
           : ''
       }
-
-      <div class="block driver">
-        <strong>ΠΑΡΑΔΟΣΗ</strong>
-        <span class="addr-label">ΟΝΟΜΑ</span>
-        <span class="addr">${recipientName ? e(recipientName) : '—'}</span>
-        <span class="addr-label">ΔΙΕΥΘΥΝΣΗ</span>
-        <span class="addr">${recipientAddr ? e(recipientAddr) : 'ΧΩΡΙΣ ΔΙΕΥΘΥΝΣΗ'}</span>
-        <span class="addr-label">ΤΗΛΕΦΩΝΟ</span>
-        <span class="phone">${recipientPhone ? e(recipientPhone) : 'ΧΩΡΙΣ ΤΗΛΕΦΩΝΟ'}</span>
-        ${doorbell ? `<span class="addr-label">ΚΟΥΔΟΥΝΙ</span><span class="addr">${e(doorbell)}</span>` : ''}
-        ${
-          order.notes
-            ? `<span class="addr-label">ΣΗΜΕΙΩΣΗ</span><span class="addr">${e(String(order.notes))}</span>`
-            : ''
-        }
-        <span class="addr-label">ΠΛΗΡΩΜΗ</span>
-        <span class="addr">${isCash ? `ΜΕΤΡΗΤΑ` : (payLabel ? e(payLabel) + ' · ΠΛΗΡΩΘΗΚΕ' : '—')}</span>
+      <div class="deliver">
+        <div class="rule">${fulfillment}</div>
+        <div class="lbl">ΟΝΟΜΑ</div>
+        <div class="val">${recipientName ? e(recipientName) : '—'}</div>
+        <div class="lbl">ΔΙΕΥΘΥΝΣΗ</div>
+        <div class="val">${recipientAddr ? e(recipientAddr) : 'ΧΩΡΙΣ ΔΙΕΥΘΥΝΣΗ'}</div>
+        <div class="lbl">ΤΗΛΕΦΩΝΟ</div>
+        <div class="phone">${recipientPhone ? e(recipientPhone) : 'ΧΩΡΙΣ ΤΗΛΕΦΩΝΟ'}</div>
+        ${doorbell ? `<div class="lbl">ΚΟΥΔΟΥΝΙ</div><div class="val">${e(doorbell)}</div>` : ''}
+        <div class="val" style="margin-top:6px">${isCash ? 'ΜΕΤΡΗΤΑ' : e(payLabel || 'ΚΑΡΤΑ')}</div>
       </div>
-      
-
-      
-
-      <div class="cut-line">· · · · · · · · · · · · · · · ·</div>
-      <div class="footer">
-        <div>Ευχαριστούμε — Fresh2GO.GR</div>
-        <div class="ref">REF ${e(orderNoPlain)} · ${e(String(order.id ?? '').slice(0, 8).toUpperCase())}</div>
-        <div class="ref" style="margin-top:4px">${e(created)}</div>
+      <div class="thanks">
+        <div>Ευχαριστούμε</div>
+        <div class="brand2">Fresh2GO.GR</div>
+        <div class="ref">REF ${e(orderNoPlain)}</div>
       </div>
       ${
         extras.fiscal && (extras.fiscal.mark || extras.fiscal.uid || extras.fiscal.number)
@@ -518,96 +537,3 @@ export function printOrderTicket(
       </script>
     </body>
     </html>
-  `;
-  win.document.write(html);
-  win.document.close();
-}
-
-export async function printOrderSafe(
-  order: OrderWithItems,
-  storeName: string,
-  extras: PrintOrderExtras = {},
-  storeId?: string | null,
-): Promise<{ direct: boolean }> {
-  // Ensure customer phone is present (profiles.phone) for kitchen tickets
-  let resolved: PrintOrderExtras = { ...extras };
-  try {
-    const orderPhone = String((order as any).customer_phone ?? '').trim();
-    if (orderPhone && !String(resolved.customerPhone ?? '').trim()) {
-      resolved = { ...resolved, customerPhone: orderPhone };
-    }
-    const needPhone = !String(resolved.customerPhone ?? '').trim();
-    const needName = !String(resolved.customerName ?? '').trim();
-    const cid = (order as any).customer_id as string | undefined;
-    if (cid && (needPhone || needName)) {
-      const { supabase } = await import('@/integrations/supabase/client');
-      // Store cannot read profiles directly (RLS). Use the order-scoped contact function.
-      const { data: contact } = await supabase.rpc('store_order_contact' as any, { p_order_id: (order as any).id });
-      const row = Array.isArray(contact) ? contact[0] : contact;
-      if (row) {
-        if (needPhone && row.phone) resolved = { ...resolved, customerPhone: String(row.phone) };
-        if (needName && row.full_name) resolved = { ...resolved, customerName: String(row.full_name) };
-      }
-      if (needPhone && !resolved.customerPhone) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('full_name, phone')
-          .eq('user_id', cid)
-          .maybeSingle();
-        if (data) {
-          if (needPhone && data.phone) resolved = { ...resolved, customerPhone: String(data.phone) };
-          if (needName && data.full_name) resolved = { ...resolved, customerName: String(data.full_name) };
-        }
-      }
-    }
-  } catch {
-    /* non-fatal */
-  }
-  extras = resolved;
-  const prefs = getPrinterPrefs(storeId);
-  const st = getPrinterState();
-  if (prefs.enabled && prefs.mode === 'direct' && st.status === 'connected') {
-    const width = prefs.paperWidth === 58 ? 58 : 80;
-    const chunks = buildOrderEscPos(order, storeName, extras, width);
-    const copies = prefs.printCopies === 2 ? 2 : 1;
-    await sendToActivePrinter(chunks);
-    if (copies === 2) {
-      await new Promise((r) => setTimeout(r, 400));
-      await sendToActivePrinter(chunks);
-    }
-    return { direct: true };
-  }
-  printOrderTicket(order, storeName, extras, storeId);
-  return { direct: false };
-}
-
-export function PrintTicketButton({
-  order,
-  storeName,
-  extras,
-  storeId,
-  driverCode,
-}: {
-  order: OrderWithItems;
-  storeName: string;
-  extras?: PrintOrderExtras;
-  storeId?: string | null;
-  driverCode?: string | null;
-}) {
-  return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      onClick={(e) => {
-        e.stopPropagation();
-        const merged = { ...(extras ?? {}), ...(driverCode ? { driverCode } : {}) };
-        void printOrderSafe(order, storeName, merged, storeId).catch(() => {});
-      }}
-      className="h-8 text-xs"
-    >
-      <Printer className="h-3.5 w-3.5 mr-1" />
-      Εκτύπωση
-    </Button>
-  );
-}

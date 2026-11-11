@@ -44,7 +44,7 @@ export function OfferCard({ item, variant = 'default' }: { item: OfferItem; vari
     });
   };
 
-  const fee = item.delivery_fee ?? 0.99;
+  const fee = item.delivery_fee ?? 0;
   const feeLabel = fee === 0 ? 'Δωρεάν' : `${fee.toFixed(2)}€`;
   const eta = (item.store_prep_buffer_minutes ?? 0);
 

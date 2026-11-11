@@ -369,7 +369,7 @@ const displayAddress = deliveryAddress
             store_name: s.name,
             store_image_url: (s as any).image_url ?? null,
             store_prep_buffer_minutes: (s as any).prep_buffer_minutes ?? 0,
-            delivery_fee: (s as any).covers_delivery_fee ? 0 : 0.99,
+            delivery_fee: (s as any).covers_delivery_fee ? 0 : Number((s as any).delivery_fee ?? 0) || 0,
           } satisfies OfferItem;
         });
       setOfferItems(offers);
@@ -1073,7 +1073,7 @@ const displayAddress = deliveryAddress
                               <>
                                 {etaLow}–{etaHigh} {t('customer.min')}
                                 {' · '}
-                                {(store as any).covers_delivery_fee ? 'Δωρεάν παρ.' : '0,99€ παρ.'}{(Number((store as any).min_order_amount ?? 5) > 0) ? ` · Ελάχ. ${Number((store as any).min_order_amount ?? 5).toFixed(0)}€` : ''}
+                                {(store as any).covers_delivery_fee ? 'Δωρεάν' : (Number((store as any).delivery_fee ?? 0) > 0 ? `${Number((store as any).delivery_fee).toFixed(2)}€` : 'Κατάστημα')}{(Number((store as any).min_order_amount ?? 0) > 0) ? ` · Ελάχ. ${Number((store as any).min_order_amount).toFixed(0)}€` : ''}
                               </>
                             )}
                           </>
@@ -1213,7 +1213,7 @@ const displayAddress = deliveryAddress
                   const se = storeEtas[store.id];
                   const etaLow = Math.min((se?.min ?? baseEta.min + (store.prep_buffer_minutes ?? 0)), etaCap);
                   const etaHigh = Math.min((se?.max ?? baseEta.max + (store.prep_buffer_minutes ?? 0)), etaCap);
-                  const fee = platformDelivers && !store.covers_delivery_fee ? 0.99 : 0;
+                  const fee = platformDelivers && !store.covers_delivery_fee ? (Number((store as any).delivery_fee ?? 0) || 0) : 0;
                   const rating = ratings[store.id];
                   const cover = store.cover_image_url || store.image_url;
                   const highlight = store.highlight_color?.trim();
@@ -1324,20 +1324,19 @@ const displayAddress = deliveryAddress
                                 {etaLow}–{etaHigh} {t('customer.min')}
                               </span>
                             )}
-                            {platformDelivers ? (
+                            {store.covers_delivery_fee ? (
+                              <span className="inline-flex items-center gap-1 rounded-md bg-orange-50 px-1.5 py-0.5 font-extrabold text-orange-800">
+                                Δωρεάν
+                              </span>
+                            ) : platformDelivers ? (
                               <span className="inline-flex items-center gap-1 rounded-md bg-orange-50 px-1.5 py-0.5 font-extrabold text-orange-800">
                                 <Bike className="h-3 w-3" />
-                                Παράδοση Fresh2GO
+                                {fee > 0 ? `${fee.toFixed(2)}€` : 'Fresh2GO'}
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 rounded-md bg-orange-50 px-1.5 py-0.5 font-extrabold text-orange-800">
                                 <Store className="h-3 w-3" />
-                                Παράδοση καταστήματος
-                              </span>
-                            )}
-                            {platformDelivers && (
-                              <span className={fee === 0 ? 'font-extrabold text-orange-800' : 'font-semibold'}>
-                                {fee === 0 ? `0€ ${t('customer.delivery')}` : `${fee.toFixed(2)}€`}
+                                Κατάστημα
                               </span>
                             )}
                           </p>

@@ -26,7 +26,7 @@ export const PAYMENT_LABELS: Record<string, string> = {
 };
 
 function money(n: number | null | undefined) {
-  return formatMoneyPlain(n);
+  return formatMoneyPlain(n).replace('.', ',');
 }
 
 function clen(s: string) {
@@ -138,8 +138,12 @@ export function buildOrderEscPos(
   enc.bold(false);
   enc.feed(1);
 
-  // —— TOP / HEADER (always) ——
+  // —— TOP / HEADER (design: pay+total, title, brand, store, date) ——
   enc.align('center');
+  enc.bold(true);
+  enc.text(escpad(`${payLabel || 'ΜΕΤΡΗΤΑ'} ${money(totalAmt)}€`, cols, 'center'));
+  enc.bold(false);
+  enc.line();
   enc.bold(true);
   enc.tall(true);
   enc.text(escpad('ΔΕΛΤΙΟ ΠΑΡΑΓΓΕΛΙΑΣ', cols, 'center'));
