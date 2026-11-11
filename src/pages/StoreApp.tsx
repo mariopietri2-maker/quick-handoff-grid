@@ -38,7 +38,7 @@ import { StoreDriverIdPanel } from '@/components/store/StoreDriverIdPanel';
 import { Switch } from '@/components/ui/switch';
 import { useStoreOrders } from '@/hooks/useOrders';
 import { useStore } from '@/hooks/useStore';
-import { requestNotificationPermission, installAudioUnlock, unlockAudio } from '@/lib/notifications';
+import { requestNotificationPermission, installAudioUnlock, unlockAudio, startStoreKeepAlive } from '@/lib/notifications';
 import { showOsNotification } from '@/lib/push-notifications';
 import { toast } from 'sonner';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
@@ -104,9 +104,16 @@ export default function StoreApp() {
     }
   };
 
-  // Unlock alert audio on first interaction anywhere (autoplay policy).
+  // Unlock alert audio on first interaction, then keep the tab alive in background.
   useEffect(() => {
     installAudioUnlock();
+    const arm = () => startStoreKeepAlive();
+    window.addEventListener('pointerdown', arm, { passive: true });
+    window.addEventListener('keydown', arm);
+    return () => {
+      window.removeEventListener('pointerdown', arm);
+      window.removeEventListener('keydown', arm);
+    };
   }, []);
 
   // Best-effort reconnection of a previously granted USB printer on app load,

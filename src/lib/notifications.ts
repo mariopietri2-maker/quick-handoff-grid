@@ -21,6 +21,47 @@ function getAudioContext(): AudioContext {
  * unlockAudio() from a tap handler and installAudioUnlock() once on app
  * mount so later alert chimes are actually audible.
  */
+
+let keepAliveAudio: HTMLAudioElement | null = null;
+let wakeLock: { release?: () => Promise<void> } | null = null;
+
+/** Tiny silent loop so Android Chrome does not freeze the store tab in background. */
+const SILENT_WAV =
+  'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+
+export function startStoreKeepAlive() {
+  try {
+    unlockAudio();
+    if (!keepAliveAudio && typeof Audio !== 'undefined') {
+      keepAliveAudio = new Audio(SILENT_WAV);
+      keepAliveAudio.loop = true;
+      keepAliveAudio.volume = 0.01;
+      void keepAliveAudio.play().catch(() => {});
+    } else if (keepAliveAudio?.paused) {
+      void keepAliveAudio.play().catch(() => {});
+    }
+  } catch {}
+  void requestStoreWakeLock();
+}
+
+async function requestStoreWakeLock() {
+  try {
+    const nav = navigator as Navigator & { wakeLock?: { request: (t: string) => Promise<{ release?: () => Promise<void> }> } };
+    if (!nav.wakeLock) return;
+    wakeLock = await nav.wakeLock.request('screen');
+  } catch {}
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      unlockAudio();
+      void requestStoreWakeLock();
+      if (keepAliveAudio?.paused) void keepAliveAudio.play().catch(() => {});
+    }
+  });
+}
+
 export function unlockAudio() {
   try {
     const ctx = getAudioContext();
@@ -86,6 +127,7 @@ function playTones(frequencies: number[], type: OscillatorType = 'sine', duratio
  */
 export function playOrderSound(volume = 0.3) {
   const v = Math.max(0, Math.min(1, volume));
+  unlockAudio();
   try {
     if (typeof Audio !== 'undefined') {
       if (!storeAlertAudio) {
@@ -97,7 +139,6 @@ export function playOrderSound(volume = 0.3) {
       el.currentTime = 0;
       el.volume = v;
       void el.play().catch(() => {
-        // Fallback to synth double ding if autoplay is blocked mid-session.
         playTones([1046.5, 880.0], 'sine', 0.14, 0.12, v);
       });
       return;
@@ -105,7 +146,6 @@ export function playOrderSound(volume = 0.3) {
   } catch {
     /* fall through to synth */
   }
-  // Double ding — efood-style kitchen POS
   playTones([1046.5, 880.0], 'sine', 0.14, 0.12, v);
 }
 
@@ -223,6 +263,7 @@ export function showOrderNotification(orderId: string, itemCount: number) {
     body: `Παραγγελία #${orderId.slice(0, 6)} — ${itemCount} προϊόν${itemCount !== 1 ? 'τα' : ''}`,
     tag: `order-${orderId}`,
     vibrate: true,
+    requireInteraction: true,
   });
 }
 

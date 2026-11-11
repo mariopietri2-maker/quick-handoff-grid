@@ -56,6 +56,8 @@ export async function showOsNotification(opts: {
   tag?: string;
   vibrate?: boolean;
   channelId?: string;
+  /** Stay on screen and play the system sound even in background. */
+  requireInteraction?: boolean;
   /** Deep-link path opened when the local notification is tapped (native). */
   path?: string;
   extra?: Record<string, unknown>;
@@ -93,8 +95,12 @@ export async function showOsNotification(opts: {
         tag: opts.tag,
         data: opts.path ? { path: opts.path, ...(opts.extra ?? {}) } : opts.extra,
         // @ts-expect-error vibrate not in TS lib for all browsers
-        vibrate: opts.vibrate ? [200, 100, 200] : undefined,
+        vibrate: opts.vibrate ? [400, 150, 400, 150, 400] : undefined,
         icon: '/favicon.svg',
+        // @ts-expect-error renotify / requireInteraction
+        renotify: true,
+        requireInteraction: opts.requireInteraction === true,
+        silent: false,
       };
       if (reg) {
         await reg.showNotification(opts.title, init);
