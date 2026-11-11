@@ -861,6 +861,7 @@ export default function RestaurantPage() {
           open={modOpen}
           menuItemId={modItem.id}
           itemName={modItem.name}
+          hideSize={/προσφορ|offer|1\s*\+\s*1|έκπτ|promo/i.test(`${modItem.category ?? ''} ${modItem.name}`)}
           basePrice={Number(modItem.price)}
           onClose={() => { setModOpen(false); setModItem(null); }}
           onConfirm={({ modifiers, unitPrice, labelSuffix }) => {
