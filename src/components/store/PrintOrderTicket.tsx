@@ -538,7 +538,10 @@ export function printOrderTicket(
     </body>
     </html>
   `;
+  win.document.write(html);
+  win.document.close();
 }
+
 export async function printOrderSafe(
   order: OrderWithItems,
   storeName: string,
