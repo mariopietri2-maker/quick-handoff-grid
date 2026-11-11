@@ -53,7 +53,7 @@ export default function PricingSettings() {
   const [pricing, setPricing] = useState<PricingRow>({
     base_pay: 5, first_km_price: 5, per_km_rate: 0.5, min_pay: 5, max_pay: 15,
     customer_base_fee: 1.5, customer_per_km_fee: 0.8,
-    platform_service_fee: 0.99,
+    platform_service_fee: 0,
     peak_multiplier: 1.0, peak_start_hour: 19, peak_end_hour: 22,
     peak_weekdays: [1, 2, 3, 4, 5, 6, 7],
     bike_multiplier: 1.0, motorcycle_multiplier: 1.0, car_multiplier: 1.0,
@@ -78,7 +78,7 @@ export default function PricingSettings() {
             max_pay: Number(d.max_pay ?? 12),
             customer_base_fee: Number(d.customer_base_fee ?? 1.5),
             customer_per_km_fee: Number(d.customer_per_km_fee ?? 0.8),
-            platform_service_fee: Number(d.platform_service_fee ?? 0.99),
+            platform_service_fee: Number(d.platform_service_fee ?? 0),
             peak_multiplier: Number(d.peak_multiplier ?? 1),
             peak_start_hour: Number(d.peak_start_hour ?? 19),
             peak_end_hour: Number(d.peak_end_hour ?? 22),

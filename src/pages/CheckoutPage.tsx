@@ -48,13 +48,13 @@ export default function CheckoutPage() {
   const { token: mapboxToken } = useMapboxToken();
   const [address, setAddress] = useState('');
   const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lon: number } | null>(null);
-  const [deliveryFee, setDeliveryFee] = useState(0.99);
+  const [deliveryFee, setDeliveryFee] = useState(0);
   const [storeCenter, setStoreCenter] = useState<[number, number] | null>(null);
 
   const [cardPaymentsAllowed, setCardPaymentsAllowed] = useState(true);
   const [deliveryEnabled, setDeliveryEnabled] = useState(true);
   const [storeCoversDelivery, setStoreCoversDelivery] = useState(false);
-  const [baseDeliveryFee, setBaseDeliveryFee] = useState(0.99);
+  const [baseDeliveryFee, setBaseDeliveryFee] = useState(0);
   const [vivaPaymentsAllowed, setVivaPaymentsAllowed] = useState(false);
 
   useEffect(() => {
@@ -63,9 +63,14 @@ export default function CheckoutPage() {
         const row = Array.isArray(data) ? data[0] : data;
         if (!row) return;
         if (row.platform_service_fee != null) {
-          const fee = Number(row.platform_service_fee);
+          const fee = Number(row.platform_service_fee) || 0;
           setBaseDeliveryFee(fee);
-          setDeliveryFee((prev) => (prev === 0 && fee > 0 ? prev : fee));
+          // Fee is off unless delivery is enabled and the fee is actually set.
+          if (row.delivery_enabled === false || fee <= 0) {
+            setDeliveryFee(0);
+          } else {
+            setDeliveryFee(fee);
+          }
         }
         if (typeof row.card_payments_enabled === 'boolean') {
           setCardPaymentsAllowed(row.card_payments_enabled);

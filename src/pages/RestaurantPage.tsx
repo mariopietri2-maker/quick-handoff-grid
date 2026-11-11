@@ -585,12 +585,9 @@ export default function RestaurantPage() {
               </span>
             )}
             {platformDelivers && (
-              <>
-                <span className="inline-flex items-center gap-1 font-bold text-orange-700 dark:text-orange-400">
-                  Delivered by fresh2go
-                </span>
-                <span>0.99€ παράδοση</span>
-              </>
+              <span className="inline-flex items-center gap-1 font-bold text-orange-700 dark:text-orange-400">
+                Delivered by fresh2go
+              </span>
             )}
           </div>
           {!storeOpen && (
