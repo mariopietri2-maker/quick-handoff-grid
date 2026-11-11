@@ -62,7 +62,7 @@ export function printOrderTicket(
       const line = lineTotal(i.unit_price ?? (i as any).price, i.quantity);
       const unitHint =
         qty > 1 && unit > 0
-          ? `<span class="unit">${money(unit)}€ × ${qty}</span>`
+          ? `<span class="unit">${money(unit)}&#8364; × ${qty}</span>`
           : '';
       const mods = Array.isArray((i as any).modifiers)
         ? ((i as any).modifiers as { option_name?: string; group_name?: string; price_delta?: number }[])
@@ -74,7 +74,7 @@ export function printOrderTicket(
           const label = [m.group_name, m.option_name].filter(Boolean).join(': ') || m.option_name || '';
           const delta = Number(m.price_delta) || 0;
           if (!label) return '';
-          return `<div class="mod">+ ${e(String(label))}${delta ? ` (${money(delta)}€)` : ''}</div>`;
+          return `<div class="mod">+ ${e(String(label))}${delta ? ` (${money(delta)}&#8364;)` : ''}</div>`;
         })
         .join('');
       const note = String((i as any).notes ?? (i as any).note ?? '').trim();
@@ -84,7 +84,7 @@ export function printOrderTicket(
             <span class="idx">#${idx + 1}</span>
             <span class="qty">${qty}×</span>
             <span class="name">${e(String(i.name ?? 'Προϊόν'))}</span>
-            <span class="price">${money(line)}€</span>
+            <span class="price">${money(line)}&#8364;</span>
           </div>
           ${unitHint ? `<div class="row-sub">${unitHint}</div>` : ''}
           ${modHtml}
@@ -124,7 +124,7 @@ export function printOrderTicket(
         @page { size: ${pageMm}mm auto; margin: ${narrow ? '1.5mm' : '2mm'}; }
         * { box-sizing: border-box; }
         body {
-          font-family: "IBM Plex Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+          font-family: Arial, "Segoe UI", "Noto Sans", "DejaVu Sans", sans-serif;
           color: #000;
           padding: 4px 5px 8px;
           max-width: ${bodyMm}mm; width: ${bodyMm}mm;
@@ -472,7 +472,7 @@ export function printOrderTicket(
     </head>
     <body>
       ${copies === 2 ? '<div class="copy-banner">— ΑΝΤΙΓΡΑΦΟ ΕΚΤΥΠΩΣΗΣ —</div>' : ''}
-      <div class="pay-top">${e(payLabel || 'ΜΕΤΡΗΤΑ')} ${money(displayTotal)}€</div>
+      <div class="pay-top">${e(payLabel || 'ΜΕΤΡΗΤΑ')} ${money(displayTotal)}&#8364;</div>
       <div class="title">ΔΕΛΤΙΟ ΠΑΡΑΓΓΕΛΙΑΣ</div>
       <div class="brand">FRESH2GO.GR</div>
       <div class="store">${e(storeName || 'Κατάστημα')}</div>
@@ -485,10 +485,10 @@ export function printOrderTicket(
       ${itemsHtml || '<div class="item"><div class="row-main"><span class="name">(χωρίς είδη)</span></div></div>'}
       <hr />
       <div class="totals">
-        <div class="row"><span>Υποσύνολο</span><span>${money(subtotal)}€</span></div>
-        ${showDelivery ? `<div class="row"><span>Παράδοση</span><span>${money(om.deliveryFee)}€</span></div>` : ''}
-        ${showTip ? `<div class="row"><span>Φιλοδώρημα</span><span>${money(om.tip)}€</span></div>` : ''}
-        <div class="row total"><span>ΣΥΝΟΛΟ</span><span>${money(displayTotal)}€</span></div>
+        <div class="row"><span>Υποσύνολο</span><span>${money(subtotal)}&#8364;</span></div>
+        ${showDelivery ? `<div class="row"><span>Παράδοση</span><span>${money(om.deliveryFee)}&#8364;</span></div>` : ''}
+        ${showTip ? `<div class="row"><span>Φιλοδώρημα</span><span>${money(om.tip)}&#8364;</span></div>` : ''}
+        <div class="row total"><span>ΣΥΝΟΛΟ</span><span>${money(displayTotal)}&#8364;</span></div>
       </div>
       <hr />
       ${
