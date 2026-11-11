@@ -161,12 +161,10 @@ const TEMPLATES: { id: string; label: string; description: string; groups: Templ
         is_required: true,
         is_multi: false,
         options: [
-          { option_name: 'Μικρή',
-            price_delta: 0 },
-          { option_name: 'Μεσαία',
-            price_delta: 2 },
-          { option_name: 'Μεγάλη',
-            price_delta: 4 },
+          { option_name: '30cm',
+            price_delta: 3 },
+          { option_name: '40cm',
+            price_delta: 5 },
         ],
       },
       {
@@ -219,9 +217,8 @@ export default function ItemModifiersEditor({
   // Single option form
   const [groupName, setGroupName] = useState('Υλικά');
   const [customSizes, setCustomSizes] = useState([
-    { name: 'Μικρή', price: '0' },
-    { name: 'Μεσαία', price: '2' },
-    { name: 'Μεγάλη', price: '4' },
+    { name: '30cm', price: '3' },
+    { name: '40cm', price: '5' },
   ]);
   const [optionName, setOptionName] = useState('');
   const [priceDelta, setPriceDelta] = useState('0');
