@@ -1,0 +1,21 @@
+name: Signup SMS step
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/fix-signup-goto-sms.py"
+      - ".github/workflows/fix-signup-sms-step.yml"
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/fix-signup-goto-sms.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/AuthPage.tsx
+          git commit -m "feat(auth): redirect new signups to SMS verification" || true
+          git push || true
