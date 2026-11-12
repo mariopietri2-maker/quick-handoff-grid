@@ -26,6 +26,7 @@ const ROLE_LABELS: Record<string, string> = {
   driver: 'Οδηγός',
   customer: 'Πελάτης',
   store: 'Κατάστημα',
+  bot: 'Βοηθός',
 };
 
 const TOPIC_LABELS: Record<string, string> = {
