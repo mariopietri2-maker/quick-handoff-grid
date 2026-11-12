@@ -1,0 +1,22 @@
+name: Wire SMS verification
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "src/components/PhoneSmsVerify.tsx"
+      - "scripts/wire-sms-verify-auth.py"
+      - ".github/workflows/wire-sms-verify.yml"
+jobs:
+  wire:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/wire-sms-verify-auth.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/PhoneSmsVerify.tsx src/pages/AuthPage.tsx docs/SMS_VERIFICATION.md
+          git commit -m "feat(auth): SMS verification UI wired to Twilio edge functions" || true
+          git push || true
