@@ -1,0 +1,21 @@
+name: Enable Google Pay native
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/fix-google-pay-enable.py"
+      - ".github/workflows/fix-google-pay.yml"
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/fix-google-pay-enable.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/app/src/main/AndroidManifest.xml native-customer/app/src/main/java/com/freshdelivery/nativecustomer/MainActivity.kt
+          git commit -m "feat(customer): Google Pay enabled on PaymentSheet" || true
+          git push || true
