@@ -424,17 +424,16 @@ export default function StoreApp() {
             {!isNStore && (
               <aside className="hidden md:flex flex-col w-[240px] md:w-[260px] shrink-0 sticky top-14 self-start max-h-[calc(100vh-3.5rem)] overflow-y-auto border-r border-border bg-card/95 backdrop-blur-sm">
                 <div className="px-4 pt-4 pb-3 border-b border-border">
-                  <div className="flex items-center gap-2.5 mb-3">
+                  <div className="flex items-center gap-2.5 mb-1">
                     <Logo className="h-8 w-8" />
                     <div className="min-w-0">
                       <p className="text-[11px] font-bold tracking-wider text-primary uppercase">Fresh2GO Partner</p>
-                      <p className="text-sm font-heading font-bold text-foreground truncate">{store.name}</p>
+                      <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+                        <StoreIcon className="h-3 w-3 shrink-0" />
+                        {store.address || 'Κατάστημα'}
+                      </p>
                     </div>
                   </div>
-                  <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
-                    <StoreIcon className="h-3 w-3 shrink-0" />
-                    {store.address || 'Κατάστημα'}
-                  </p>
                 </div>
                 <nav className="flex-1 px-2 py-3 space-y-0.5">
                   <p className="px-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Παραγγελίες</p>
