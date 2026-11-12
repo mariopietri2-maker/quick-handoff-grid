@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button'
+import { PhoneSmsVerify } from '@/components/PhoneSmsVerify';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -13,7 +14,7 @@ import { Logo } from '@/components/brand/Logo';
 import { mobileHomePath, useMobileFlavor, type MobileAppFlavor } from '@/lib/mobileApp';
 import { passwordErrorMessage, MIN_PASSWORD_LENGTH } from '@/lib/password-policy';
 
-type AuthMode = 'login' | 'signup' | 'forgot' | 'otp' | 'reset';
+type AuthMode = 'login' | 'signup' | 'forgot' | 'otp' | 'reset' | 'phone_sms';
 
 function roleHome(opts: {
   isAdmin: boolean;
@@ -67,7 +68,7 @@ export default function AuthPage() {
   const shellHome = mobileHomePath(flavor);
   const isLogin = mode === 'login';
   const isSignup = mode === 'signup';
-  const isAuthBypass = mode === 'reset' || mode === 'forgot' || mode === 'otp';
+  const isAuthBypass = mode === 'reset' || mode === 'forgot' || mode === 'otp' || mode === 'phone_sms';
 
   const nextPath = (() => {
     try {
@@ -441,6 +442,22 @@ export default function AuthPage() {
                 <button type="button" className="w-full text-sm text-[hsl(220,10%,55%)]" onClick={() => setMode('forgot')}>Αλλαγή email</button>
                 <button type="button" className="w-full text-sm text-[hsl(220,10%,55%)]" onClick={() => setMode('login')}>Πίσω στη σύνδεση</button>
               </form>
+            
+            ) : mode === 'phone_sms' ? (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">Επιβεβαίωσε το κινητό σου με SMS για ασφαλείς παραγγελίες.</p>
+                <PhoneSmsVerify
+                  initialPhone={phone}
+                  onVerified={() => {
+                    void refreshProfile?.();
+                    toast.success('Κινητό επιβεβαιωμένο');
+                    setMode('login');
+                  }}
+                />
+                <button type="button" className="text-xs text-muted-foreground underline" onClick={() => setMode('login')}>
+                  Παράλειψη για τώρα
+                </button>
+              </div>
             ) : mode === 'reset' ? (
               <form onSubmit={handleResetPassword} className="space-y-4">
                 <div className="space-y-2">
