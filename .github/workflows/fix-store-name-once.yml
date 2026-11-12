@@ -1,0 +1,21 @@
+name: Store name once
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/fix-store-app-name-once.py"
+      - ".github/workflows/fix-store-name-once.yml"
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/fix-store-app-name-once.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/StoreApp.tsx
+          git commit -m "fix(store): show store name only once in header" || true
+          git push || true
