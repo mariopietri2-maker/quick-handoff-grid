@@ -543,7 +543,13 @@ fun CustomerShell(
                     onReorderOrder = onReorderOrder,
                     onPayOrder = onPayOrder,
                 )
-                CustomerTab.Track -> TrackTab(state, onRefresh = onRefresh, onPay = onPayOrder)
+                CustomerTab.Track -> TrackTab(
+                    state,
+                    onRefresh = onRefresh,
+                    onPay = onPayOrder,
+                    onGoOrders = { onTab(CustomerTab.Orders) },
+                    onGoHome = { onTab(CustomerTab.Home) },
+                )
                 CustomerTab.Profile -> ProfileTab(state, onSaveProfile, onSignOut, onOpenSupport, onOpenPayments = onOpenPayments, onBackToHome = { onTab(CustomerTab.Home) })
             }
         }
@@ -3371,11 +3377,17 @@ private fun BrowseTab(
                         Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Αρχική", tint = FreshInk)
                     }
                     Spacer(Modifier.width(10.dp))
-                    Text(
-                        "Αναζήτηση",
-                        style = MaterialTheme.typography.headlineMedium,
-                        modifier = Modifier.weight(1f),
-                    )
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            "Αναζήτηση",
+                            style = MaterialTheme.typography.headlineMedium,
+                        )
+                        Text(
+                            "Καταστήματα & προϊόντα",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = FreshMuted,
+                        )
+                    }
                     if (state.cartCount > 0) {
                         IconButton(onClick = onOpenCart) {
                             Icon(Icons.Outlined.ShoppingBag, contentDescription = "Καλάθι", tint = FreshInk)
@@ -3860,7 +3872,7 @@ private fun OrdersTab(
 }
 
 @Composable
-private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}, onPay: (String) -> Unit = {}) {
+private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}, onPay: (String) -> Unit = {}, onGoOrders: () -> Unit = {}, onGoHome: () -> Unit = {}) {
     val order = state.trackingOrder
 
     // Platform does not operate delivery fleet — map shows store + customer only.
@@ -3917,7 +3929,28 @@ private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}, onPay: 
                 ) {
                     Text("Δεν παρακολουθείς παραγγελία", fontWeight = FontWeight.Bold, color = FreshInk)
                     Spacer(Modifier.height(6.dp))
-                    Text("Άνοιξε Παραγγελίες και πάτα μια ενεργή παραγγελία.", color = FreshMuted)
+                    Text(
+                        "Άνοιξε τις παραγγελίες σου ή γύρνα στην αρχική για να παραγγείλεις.",
+                        color = FreshMuted,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Button(
+                        onClick = onGoOrders,
+                        colors = ButtonDefaults.buttonColors(containerColor = FreshGreen),
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("Οι παραγγελίες μου", fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = onGoHome,
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("Αρχική", fontWeight = FontWeight.SemiBold, color = FreshInk)
+                    }
                 }
             } else {
                 val etaMin = estimateEtaMinutes(order.order)

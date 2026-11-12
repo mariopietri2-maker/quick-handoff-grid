@@ -773,8 +773,19 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun selectTab(tab: CustomerTab) {
         refreshNetworkStatus()
-        // Always clear store menu / cart overlays so bottom-nav Home is never "stuck"
-        _state.value = _state.value.copy(
+        val cur = _state.value
+        val terminal = setOf("delivered", "cancelled", "canceled", "completed", "rejected", "failed")
+        val trackOrder = when {
+            tab != CustomerTab.Track -> null
+            cur.trackingOrder != null -> cur.trackingOrder
+            else -> cur.orders.firstOrNull { ou ->
+                val st = ou.order.status?.lowercase().orEmpty()
+                st.isNotBlank() && st !in terminal
+            }
+        }
+        // Home = discovery feed; Browse = search — clear shared query when returning Home
+        val nextQuery = if (tab == CustomerTab.Home) "" else cur.searchQuery
+        _state.value = cur.copy(
             tab = tab,
             showCart = false,
             selectedStore = null,
@@ -782,13 +793,17 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             menuModifiers = emptyMap(),
             modifierPickerItem = null,
             error = null,
-            // Leave live tracking when user explicitly opens another main tab
-            trackingOrder = if (tab == CustomerTab.Track) _state.value.trackingOrder else null,
+            searchQuery = nextQuery,
+            trackingOrder = trackOrder,
         )
         when (tab) {
             CustomerTab.Orders, CustomerTab.Track -> refreshOrders()
             CustomerTab.Home, CustomerTab.Browse -> refreshStores()
             CustomerTab.Profile -> refreshSavedCards()
+        }
+        if (tab == CustomerTab.Track && trackOrder != null) {
+            refreshDriverLocation()
+            ensureDeliveryCoordsOnTrack(trackOrder)
         }
     }
 
@@ -1465,7 +1480,8 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                         launchNativePaymentSheet(placed)
                     }
                 } else {
-                    _state.value = _state.value.copy(tab = CustomerTab.Orders)
+                    // Keep user on tracking / orders — never leave them on cart
+                    _state.value = _state.value.copy(tab = CustomerTab.Track, showCart = false)
                     refreshOrders()
                 }
             }.onFailure { e ->
