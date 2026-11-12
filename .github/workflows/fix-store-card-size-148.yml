@@ -1,0 +1,21 @@
+name: Store card size 148
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/fix-store-card-size-148.py"
+      - ".github/workflows/fix-store-card-size-148.yml"
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/fix-store-card-size-148.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt
+          git commit -m "fix(customer): store card image ~148dp (preferred size)" || true
+          git push || true
