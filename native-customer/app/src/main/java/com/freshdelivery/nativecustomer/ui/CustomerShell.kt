@@ -1512,7 +1512,7 @@ private fun StoreCardSkeleton() {
             .clip(RoundedCornerShape(20.dp))
             .background(Color.White),
     ) {
-        Box(Modifier.fillMaxWidth().height(110.dp).background(FreshChip))
+        Box(Modifier.fillMaxWidth().height(148.dp).background(FreshChip))
         Column(Modifier.padding(14.dp)) {
             Box(Modifier.fillMaxWidth(0.55f).height(16.dp).clip(RoundedCornerShape(6.dp)).background(FreshChip))
             Spacer(Modifier.height(8.dp))
@@ -1552,10 +1552,10 @@ private fun FreshStoreCard(
             .then(if (!active || !openNow) Modifier.graphicsLayer { alpha = 0.88f } else Modifier)
             .clickable(onClick = onClick),
     ) {
-        Box(Modifier.fillMaxWidth().height(72.dp).clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))) {
+        Box(Modifier.fillMaxWidth().height(148.dp).clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))) {
             StoreHeroImage(
                 store.cover_image_url?.takeIf { it.isNotBlank() } ?: store.image_url,
-                height = 72,
+                height = 148,
             )
             Surface(
                 color = if (!active || !openNow) Color.Black.copy(alpha = 0.72f) else FreshGreen,
@@ -1662,7 +1662,7 @@ private fun FreshStoreCard(
                 }
             }
         }
-        Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+        Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
             Text(
                 store.name ?: "Κατάστημα",
                 style = MaterialTheme.typography.titleMedium,
