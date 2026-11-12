@@ -314,7 +314,12 @@ export default function AuthPage() {
             await applyDriverRole();
             toast.success('Η αίτηση οδηγού καταχωρήθηκε. Αναμονή έγκρισης.');
           } else {
-            toast.success('Συνδεθήκατε! Καλώς ήρθατε.');
+            toast.success('Συνδεθήκατε! Επιβεβαίωσε το κινητό με SMS.');
+          }
+          if (phone.trim()) {
+            setMode('phone_sms');
+            setSubmitting(false);
+            return;
           }
         } else {
           toast.error('Η εγγραφή ολοκληρώθηκε αλλά η σύνδεση απέτυχε. Δοκιμάστε Σύνδεση με τον ίδιο κωδικό.');
