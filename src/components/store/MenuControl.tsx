@@ -355,8 +355,7 @@ export function MenuControl({ storeId }: MenuControlProps) {
                         </button>
                       )}
                       <ItemModifiersEditor menuItemId={item.id} itemName={item.name} />
-                      {isAdmin && (
-                        <>
+                      <>
                           <input
                             ref={(el) => {
                               fileRefs.current[`${item.id}:image`] = el;
@@ -396,8 +395,7 @@ export function MenuControl({ storeId }: MenuControlProps) {
                               <Trash2 className="h-4 w-4" />
                             </button>
                           )}
-                        </>
-                      )}
+                      </>
                       <button
                         type="button"
                         onClick={() => setEdit({
