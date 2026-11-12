@@ -1512,7 +1512,7 @@ private fun StoreCardSkeleton() {
             .clip(RoundedCornerShape(20.dp))
             .background(Color.White),
     ) {
-        Box(Modifier.fillMaxWidth().height(148.dp).background(FreshChip))
+        Box(Modifier.fillMaxWidth().height(110.dp).background(FreshChip))
         Column(Modifier.padding(14.dp)) {
             Box(Modifier.fillMaxWidth(0.55f).height(16.dp).clip(RoundedCornerShape(6.dp)).background(FreshChip))
             Spacer(Modifier.height(8.dp))
@@ -1552,10 +1552,10 @@ private fun FreshStoreCard(
             .then(if (!active || !openNow) Modifier.graphicsLayer { alpha = 0.88f } else Modifier)
             .clickable(onClick = onClick),
     ) {
-        Box(Modifier.fillMaxWidth().height(148.dp).clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))) {
+        Box(Modifier.fillMaxWidth().height(110.dp).clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))) {
             StoreHeroImage(
                 store.cover_image_url?.takeIf { it.isNotBlank() } ?: store.image_url,
-                height = 148,
+                height = 110,
             )
             Surface(
                 color = if (!active || !openNow) Color.Black.copy(alpha = 0.72f) else FreshGreen,
@@ -3776,8 +3776,7 @@ private fun OrdersTab(
                 Spacer(Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     StatusPill(item.order.status)
-                    Spacer(Modifier.weight(1f))
-                    item.order.total_amount?.let {
+                        item.order.total_amount?.let {
                         Text("€" + "%.2f".format(it), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                     }
                 }
