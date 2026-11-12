@@ -789,7 +789,11 @@ export default function CheckoutPage() {
               >
                 <CreditCard className="h-5 w-5" />
                 <span>Κάρτα</span>
-                {!cardEnabled && <span className="text-[10px] italic opacity-80">Σύντομα διαθέσιμη</span>}
+                {!cardEnabled && (
+                  <span className="text-[10px] italic opacity-80 px-1 text-center leading-tight">
+                    {!cardPaymentsAllowed ? 'Ανενεργή από admin' : 'Χρειάζεται Stripe key'}
+                  </span>
+                )}
               </button>
                             {vivaPaymentsAllowed && (
                 <button
@@ -820,11 +824,16 @@ export default function CheckoutPage() {
             </div>
             <p className="text-xs text-muted-foreground">
               {paymentMethod === 'card'
-                ? 'Πληρώνετε με ασφάλεια online (Stripe).'
+                ? 'Ασφαλής πληρωμή online (Stripe) — κάρτα, Apple Pay, Google Pay αν είναι ενεργά στο Stripe.'
                 : paymentMethod === 'viva'
-                ? 'Πληρώνετε με Viva Wallet (κάρτα / Apple / Google Pay).'
-                : 'Πληρώνετε στον οδηγό κατά την παράδοση.'}
+                ? 'Viva Wallet: κάρτα / Apple Pay / Google Pay / IRIS (ό,τι έχει ενεργοποιήσει ο λογαριασμός Viva).'
+                : 'Πληρωμή με μετρητά στον διανομέα κατά την παράδοση.'}
             </p>
+            {!cardEnabled && !vivaPaymentsAllowed && (
+              <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1">
+                Online πληρωμές: ρύθμισε Stripe (και προαιρετικά Viva) στο Admin → Πληρωμές.
+              </p>
+            )}
           </CardContent>
         </Card>
 
