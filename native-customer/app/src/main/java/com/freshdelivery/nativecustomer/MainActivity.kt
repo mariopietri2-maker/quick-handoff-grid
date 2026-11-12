@@ -72,11 +72,16 @@ class MainActivity : ComponentActivity() {
                             PaymentSheet.CustomerConfiguration(req.customerId, req.ephemeralKey),
                         )
                     }
-                    // Google Pay (EUR) when device supports it
+                    // Google Pay (EUR) — Test env when using pk_test_ keys
                     runCatching {
+                        val gpEnv =
+                            if (req.publishableKey.startsWith("pk_test"))
+                                PaymentSheet.GooglePayConfiguration.Environment.Test
+                            else
+                                PaymentSheet.GooglePayConfiguration.Environment.Production
                         configBuilder.googlePay(
                             PaymentSheet.GooglePayConfiguration(
-                                environment = PaymentSheet.GooglePayConfiguration.Environment.Production,
+                                environment = gpEnv,
                                 countryCode = "GR",
                                 currencyCode = "EUR",
                             ),
