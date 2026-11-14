@@ -145,10 +145,9 @@ fun SupportScreen(
         }
     }
     LaunchedEffect(state.liveChatMessages.size) {
-        if (state.liveChatMessages.isNotEmpty() && draft.isNotBlank()) {
-            val lastSender = state.liveChatMessages.lastOrNull()?.sender_id
-            if (lastSender == state.userId) draft = ""
-        }
+        if (draft.isBlank()) return@LaunchedEffect
+        val mine = state.liveChatMessages.any { it.sender_id == state.userId && it.message.trim() == draft.trim() }
+        if (mine) draft = ""
     }
     LaunchedEffect(state.ticketMessages.size) {
         if (state.ticketMessages.isNotEmpty() && ticketDraft.isNotBlank()) {
@@ -263,7 +262,11 @@ fun SupportScreen(
                 state = state,
                 draft = draft,
                 onDraftChange = { draft = it },
-                onSend = { onSend(draft) },
+                onSend = {
+                    val msg = draft
+                    draft = ""
+                    onSend(msg)
+                },
                 onClearTopic = onClearTopic,
             )
 
