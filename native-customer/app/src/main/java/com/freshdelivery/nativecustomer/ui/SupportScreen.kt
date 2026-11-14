@@ -146,7 +146,7 @@ fun SupportScreen(
     }
     LaunchedEffect(state.liveChatMessages.size) {
         if (draft.isBlank()) return@LaunchedEffect
-        val mine = state.liveChatMessages.any { it.sender_id == state.userId && it.message.trim() == draft.trim() }
+        val mine = state.liveChatMessages.any { it.sender_id == state.userId && it.message?.trim() == draft.trim() }
         if (mine) draft = ""
     }
     LaunchedEffect(state.ticketMessages.size) {
