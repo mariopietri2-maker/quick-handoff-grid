@@ -18,9 +18,9 @@ on:
   workflow_dispatch:
     inputs:
       version_code:
-        description: "Android versionCode - MUST be higher than the last version in Play Console (currently 7232800)."
+        description: "Android versionCode - MUST be higher than the last version in Play Console (currently 7235800)."
         required: false
-        default: "7233000"
+        default: "7236000"
       version_name:
         description: "Android versionName (default: 1.0.<version_code>)."
         required: false
