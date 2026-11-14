@@ -159,7 +159,7 @@ data class CustomerUiState(
     val appConfig: com.freshdelivery.nativecustomer.data.CustomerAppConfig = com.freshdelivery.nativecustomer.data.CustomerAppConfig(),
     // Emerald v2 games — lucky wheel / mystery cards (mirrors the web prototype)
     val gameActive: String = "wheel",
-    val gameShow: Boolean = false,
+    val gameShow: Boolean = false, // roulette disabled
     val gameEnabled: Boolean = false,
     val wheelSegments: List<WheelSegment> = WHEEL_SEGMENTS,
     val dealSeconds: Int = 899,
@@ -2522,18 +2522,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
      * Exactly one game at a time. If it appears, it stays for [GAME_SHOW_WINDOW_MS]
      * (15 minutes), then hides until the next day's roll.
      */
-    private fun rollDailyGameShow(): Boolean {
-        val prefs = getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
-        val day = java.time.LocalDate.now().toString()
-        val key = "daily_game_show_$day"
-        if (prefs.contains(key)) {
-            val show = prefs.getBoolean(key, false)
-            if (show) {
-                val until = prefs.getLong("daily_game_until_$day", 0L)
-                if (until > 0L && System.currentTimeMillis() < until) {
-                    gameShowUntilMs = until
-                    return true
-                }
+    private fun rollDailyGameShow(): Boolean { return false /* roulette off */ }
                 return false
             }
             return false

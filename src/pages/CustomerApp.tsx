@@ -914,7 +914,8 @@ const displayAddress = deliveryAddress
           <AiSpotlightCard />
         )}
 
-        {!isSearching && selectedCategory === 'all' && cfg.games.enabled && <CustomerGames />}
+        {/* Roulette/games disabled for now */
+        false && !isSearching && selectedCategory === 'all' && cfg.games.enabled && <CustomerGames />}
 
         {/* Free-delivery rail */}
         {!isSearching && selectedCategory === 'all' && freeDeliveryStores.length > 0 && (

@@ -136,7 +136,7 @@ export const DEFAULT_CONFIG: CustomerAppConfig = {
   ],
   hero_cards: [],
   games: {
-    enabled: true,
+    enabled: false, // temporarily off — re-enable from admin or set true
     active: 'wheel',
     wheel_segments: [
       { label: '10%', code: 'FRESH10', pct: 10, free_delivery: false, color: '#F97316' },
@@ -198,7 +198,7 @@ function mergeConfig(cfg: any): CustomerAppConfig {
     tiles: Array.isArray(cfg?.tiles) ? cfg.tiles : DEFAULT_CONFIG.tiles,
     hero_cards: Array.isArray(cfg?.hero_cards) ? cfg.hero_cards : [],
     games: {
-      enabled: games?.enabled ?? DEFAULT_CONFIG.games.enabled,
+      enabled: false, // kill switch: roulette/games off for now
       active: 'wheel' as const,
       wheel_segments: wheelSegments,
       cards: cards,

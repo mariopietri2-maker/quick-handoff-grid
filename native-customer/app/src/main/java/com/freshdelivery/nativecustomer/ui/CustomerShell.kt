@@ -1025,7 +1025,7 @@ Row(
             }
         }
 
-        if (showDiscovery && state.gameShow) {
+        if (false && showDiscovery && state.gameShow) { // roulette off
             item {
                 // Only lucky wheel — mystery cards removed
                 LuckyWheelCard(
