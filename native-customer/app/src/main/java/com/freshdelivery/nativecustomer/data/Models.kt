@@ -259,8 +259,8 @@ val WHEEL_SEGMENTS: List<WheelSegment> = listOf(
     WheelSegment("10%", "FRESH10", 0xFFF97316, pct = 10),
     WheelSegment("15%", "FRESH15", 0xFFEA580C, pct = 15),
     WheelSegment("20%", "FRESH20", 0xFFFF8A3D, pct = 20),
-    WheelSegment("ΔΩΡΕΑΝ", "ΠΑΡΑΔΟΣΗ", 0xFFC2410C, freeDelivery = true),
-    WheelSegment("25%", "FRESH25", 0xFFF4A125, pct = 25),
+    WheelSegment("Καμία", "ΞΑΝΑ", 0xFFC2410C),
+    WheelSegment("Καμία", "ΞΑΝΑ", 0xFFF4A125),
     WheelSegment("5%", "FRESH5", 0xFFFFB03A, pct = 5),
 )
 

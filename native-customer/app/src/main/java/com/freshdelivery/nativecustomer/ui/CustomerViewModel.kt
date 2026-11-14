@@ -1953,12 +1953,23 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
         val segs = s.wheelSegments.ifEmpty { WHEEL_SEGMENTS }
-        val target = Random.nextInt(segs.size)
+        val target = pickRareWheelIndex(segs.size)
         _state.value = s.copy(spinning = true, wheelPendingTarget = target, wheelResult = null)
         viewModelScope.launch {
             delay(4_200)
             val cur = _state.value
             val seg = segs[target]
+            if (seg.pct == null && !seg.freeDelivery) {
+                persistSpinDay()
+                _state.value = cur.copy(
+                    spinning = false,
+                    wheelPendingTarget = null,
+                    spinLocked = true,
+                    wheelResult = GamePrize(label = "Δεν κέρδισες αυτή τη φορά. Δοκίμασε αύριο.", code = "", pct = null, freeDelivery = false),
+                    info = "Καλή τύχη την επόμενη φορά",
+                )
+                return@launch
+            }
             val deal = GameDeal(
                 code = seg.sub,
                 pct = seg.pct,
@@ -2494,6 +2505,20 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun todayKey(): String = java.time.LocalDate.now().toString()
 
+    /** Bias the wheel toward nothing / small prizes so a 7% cut is not eaten. */
+    private fun pickRareWheelIndex(size: Int): Int {
+        if (size <= 1) return 0
+        val roll = Random.nextDouble()
+        return when {
+            roll < 0.55 -> 5.coerceAtMost(size - 1)          // 5% or last slice
+            roll < 0.80 -> 0                                 // 10%
+            roll < 0.93 -> 1.coerceAtMost(size - 1)          // 15%
+            roll < 0.98 -> 2.coerceAtMost(size - 1)          // 20%
+            else -> 3.coerceAtMost(size - 1)                 // rare free delivery
+        }
+    }
+
+
     private fun canSpinToday(): Boolean {
         val prefs = getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
         return prefs.getString("wheel_last_spin_day", null) != todayKey()
@@ -2522,14 +2547,20 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
      * Exactly one game at a time. If it appears, it stays for [GAME_SHOW_WINDOW_MS]
      * (15 minutes), then hides until the next day's roll.
      */
-    private fun rollDailyGameShow(): Boolean { return false /* roulette off */ }
-                return false
-            }
-            return false
+    private fun rollDailyGameShow(): Boolean {
+        val prefs = getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
+        val day = todayKey()
+        val key = "daily_game_show_$day"
+        val untilKey = "daily_game_until_$day"
+        if (prefs.contains(key)) {
+            val until = prefs.getLong(untilKey, 0L)
+            if (until > 0L && System.currentTimeMillis() > until) return false
+            return prefs.getBoolean(key, false)
         }
-        val show = Random.nextDouble() < 0.6
+        // 7% store cut: show the game on ~15% of days so prizes stay rare.
+        val show = Random.nextDouble() < 0.15
         val until = if (show) System.currentTimeMillis() + GAME_SHOW_WINDOW_MS else 0L
-        prefs.edit().putBoolean(key, show).putLong("daily_game_until_$day", until).apply()
+        prefs.edit().putBoolean(key, show).putLong(untilKey, until).apply()
         if (show) gameShowUntilMs = until
         return show
     }
