@@ -9,7 +9,7 @@ export type GameDeal = {
   label: string;
 };
 
-export const GAME_DEAL_WINDOW_MS = 10 * 60 * 1000;
+export const GAME_DEAL_WINDOW_MS = 30 * 60 * 1000; // 30 min to use prize
 
 function todayKey(): string {
   const d = new Date();
@@ -104,7 +104,7 @@ export function resolveDailyGameShow(active: 'wheel' | 'cards' = 'wheel'): {
       /* fall through */
     }
   }
-  const show = Math.random() < 0.6;
+  const show = Math.random() < 0.7;
   const expiresAt = show ? Date.now() + 15 * 60 * 1000 : null;
   localStorage.setItem(key, JSON.stringify({ show, expiresAt }));
   return { show, expiresAt };

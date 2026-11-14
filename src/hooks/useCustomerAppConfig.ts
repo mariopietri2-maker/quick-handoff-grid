@@ -198,7 +198,7 @@ function mergeConfig(cfg: any): CustomerAppConfig {
     tiles: Array.isArray(cfg?.tiles) ? cfg.tiles : DEFAULT_CONFIG.tiles,
     hero_cards: Array.isArray(cfg?.hero_cards) ? cfg.hero_cards : [],
     games: {
-      enabled: false, // kill switch: roulette/games off for now
+      enabled: games?.enabled ?? DEFAULT_CONFIG.games.enabled,
       active: 'wheel' as const,
       wheel_segments: wheelSegments,
       cards: cards,

@@ -22,7 +22,7 @@ export type WheelResult = {
   freeDelivery: boolean;
 };
 
-const SPIN_MS = 4200;
+const SPIN_MS = 2800;
 
 export function useCustomerGames() {
   const cfg = useCustomerAppConfig();

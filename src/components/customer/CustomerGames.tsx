@@ -135,7 +135,7 @@ function LuckyWheel(props: {
             className="absolute inset-0 rounded-full shadow-[0_0_0_6px_rgba(255,255,255,0.10),0_0_0_10px_rgba(255,255,255,0.05),0_18px_40px_-10px_rgba(0,0,0,0.8)]"
             style={{
               background: `conic-gradient(${gradient})`,
-              transform: `rotate(${rotation}deg)`,
+              transform: `rotate(${rotation}deg)`, willChange: 'transform',
               transition: spinning ? 'transform 4200ms cubic-bezier(0.25, 0.1, 0.25, 1)' : 'none',
             }}
           >
@@ -189,7 +189,14 @@ function LuckyWheel(props: {
             <span className="text-[12px] font-extrabold text-[#0E2B1D]">{wheelResult.label}</span>
           </div>
         )}
-        {wheelResult && <RouletteStoreSuggestions />}
+        {wheelResult && (
+          <div className="mt-3 space-y-2">
+            <p className="text-[12px] text-white/80 text-center font-semibold">
+              Έχεις 30 λεπτά να χρησιμοποιήσεις τον κωδικό στο καλάθι
+            </p>
+            <RouletteStoreSuggestions minCount={4} />
+          </div>
+        )}
       </div>
     </section>
   );
@@ -203,14 +210,14 @@ type SuggestedStore = {
   is_active: boolean;
 };
 
-function RouletteStoreSuggestions() {
+function RouletteStoreSuggestions({ minCount = 4 }: { minCount?: number } = {}) {
   const [stores, setStores] = useState<SuggestedStore[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data, error } = await (supabase as any).rpc('list_roulette_suggested_stores', { p_limit: 6 });
+      const { data, error } = await (supabase as any).rpc('list_roulette_suggested_stores', { p_limit: Math.max(6, minCount) });
       if (cancelled || error || !Array.isArray(data)) return;
       setStores(data as SuggestedStore[]);
     })();
@@ -225,7 +232,7 @@ function RouletteStoreSuggestions() {
         Χρησιμοποίησε την έκπτωση εδώ
       </p>
       <div className="grid grid-cols-2 gap-2">
-        {stores.slice(0, 6).map((s) => {
+        {stores.slice(0, Math.max(minCount, 4)).map((s) => {
           const img = s.logo_url || s.image_url;
           return (
             <button
