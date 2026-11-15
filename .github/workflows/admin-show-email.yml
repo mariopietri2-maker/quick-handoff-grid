@@ -1,0 +1,22 @@
+name: Admin users show email
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/admin-show-email.py"
+      - "supabase/migrations/20261115160000_admin_profiles_with_email.sql"
+      - ".github/workflows/admin-show-email.yml"
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/admin-show-email.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(admin): show email next to name in users list" || true
+          git push || true
