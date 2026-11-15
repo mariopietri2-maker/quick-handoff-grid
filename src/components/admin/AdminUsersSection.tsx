@@ -11,11 +11,14 @@ export function UsersSection({ profiles, adminUserIds, driverCodeMap, onChangeRo
       <div className="admin-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="admin-table">
-            <thead><tr><th>Όνομα</th><th>Κωδικός</th><th>Ρόλος</th><th>Admin</th><th>Τηλέφωνο</th><th>Εγγραφή</th></tr></thead>
+            <thead><tr><th>Όνομα</th><th>Email</th><th>Κωδικός</th><th>Ρόλος</th><th>Admin</th><th>Τηλέφωνο</th><th>Εγγραφή</th></tr></thead>
             <tbody>
               {profiles?.map((profile: any) => (
                 <tr key={profile.id}>
                   <td className="font-medium">{profile.full_name || '—'}</td>
+                  <td className="text-[12px] text-muted-foreground max-w-[180px] truncate" title={profile.email || ''}>
+                    {profile.email || '—'}
+                  </td>
                   <td>{driverCodeMap.get(profile.user_id) ? <span className="font-mono text-[11px] text-muted-foreground">{driverCodeMap.get(profile.user_id)}</span> : '—'}</td>
                   <td>
                     <Select value={profile.role} onValueChange={val => onChangeRole(profile.user_id, val)}>
@@ -41,7 +44,7 @@ export function UsersSection({ profiles, adminUserIds, driverCodeMap, onChangeRo
                   <td className="text-[11.5px] text-muted-foreground tabular-nums">{format(new Date(profile.created_at), 'dd MMM yyyy')}</td>
                 </tr>
               ))}
-              {!profiles?.length && <tr><td colSpan={6} className="text-center text-muted-foreground py-10">Κανένας χρήστης</td></tr>}
+              {!profiles?.length && <tr><td colSpan={7} className="text-center text-muted-foreground py-10">Κανένας χρήστης</td></tr>}
             </tbody>
           </table>
         </div>

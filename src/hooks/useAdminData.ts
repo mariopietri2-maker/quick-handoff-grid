@@ -112,6 +112,11 @@ export function useAdminData() {
     queryKey: ['admin-profiles'],
     refetchInterval: poll,
     queryFn: async () => {
+      // Prefer RPC that joins auth.users.email (falls back to profiles only)
+      const rpc = await (supabase as any).rpc('admin_profiles_with_email');
+      if (!rpc.error && Array.isArray(rpc.data)) {
+        return rpc.data as ProfileRow[];
+      }
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
