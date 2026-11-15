@@ -1,0 +1,21 @@
+name: Require name+phone signup
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/require-name-phone-signup.py"
+      - ".github/workflows/require-name-phone-signup.yml"
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/require-name-phone-signup.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/AuthPage.tsx native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/LoginScreen.kt native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt
+          git commit -m "feat(auth): require name and Greek mobile on signup" || true
+          git push || true
