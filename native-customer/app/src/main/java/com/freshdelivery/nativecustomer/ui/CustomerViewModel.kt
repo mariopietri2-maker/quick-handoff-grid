@@ -448,7 +448,11 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             val emailNorm = email.trim()
             val pass = password
             runCatching {
-                repo.signUp(emailNorm, pass, fullName.trim(), phone.trim())
+                run {
+                    if (fullName.trim().length < 2) error("NAME_REQUIRED")
+                    if (phone.filter { it.isDigit() }.length < 10) error("PHONE_REQUIRED")
+                    repo.signUp(emailNorm, pass, fullName.trim(), phone.trim())
+                }
                 // Complete in-app: sign in right after register so user does not leave the app.
                 runCatching { repo.signIn(emailNorm, pass) }
                     .onFailure {
@@ -467,6 +471,10 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                             "Ο κωδικός είναι πολύ απλός (τουλάχιστον 6 χαρακτήρες)."
                         "invalid" in raw && "email" in raw ->
                             "Μη έγκυρο email."
+                        "name_required" in raw ->
+                            "Το όνομα είναι υποχρεωτικό."
+                        "phone_required" in raw ->
+                            "Το κινητό είναι υποχρεωτικό (10 ψηφία)."
                         else -> e.message ?: "Αποτυχία δημιουργίας λογαριασμού"
                     }
                     _state.value = _state.value.copy(busy = false, error = msg)

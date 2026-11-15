@@ -240,7 +240,7 @@ fun LoginScreen(
             OutlinedTextField(
                 value = fullName,
                 onValueChange = { fullName = it },
-                label = { Text("Ονοματεπώνυμο") },
+                label = { Text("Ονοματεπώνυμο *") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -250,7 +250,7 @@ fun LoginScreen(
             OutlinedTextField(
                 value = phone,
                 onValueChange = { phone = it },
-                label = { Text("Τηλέφωνο") },
+                label = { Text("Κινητό *") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 modifier = Modifier.fillMaxWidth(),
@@ -343,11 +343,15 @@ fun LoginScreen(
                     prefs.savedEmail = ""
                     prefs.savedPassword = ""
                 }
-                if (signupMode) onSignUp(email, password, fullName, phone)
-                else onLogin(email, password)
+                if (signupMode) {
+                    if (fullName.trim().length < 2) return@Button
+                    val digits = phone.filter { it.isDigit() }
+                    if (digits.length < 10) return@Button
+                    onSignUp(email, password, fullName.trim(), phone.trim())
+                } else onLogin(email, password)
             },
             enabled = !busy && email.isNotBlank() && password.length >= 6 &&
-                (!signupMode || fullName.isNotBlank()),
+                (!signupMode || (fullName.isNotBlank() && phone.filter { it.isDigit() }.length >= 10)),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp)

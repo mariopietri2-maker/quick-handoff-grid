@@ -288,13 +288,17 @@ export default function AuthPage() {
           toast.success('Καλώς ήρθατε!');
         }
       } else {
-        if (!fullName.trim()) {
-          toast.error('Παρακαλώ εισάγετε το όνομά σας');
+        if (!fullName.trim() || fullName.trim().length < 2) {
+          toast.error('Το όνομα είναι υποχρεωτικό (τουλάχιστον 2 χαρακτήρες)');
           return;
         }
-        if (!phone.trim()) {
-          toast.error('Παρακαλώ εισάγετε το τηλέφωνό σας');
-          return;
+        {
+          const digits = phone.replace(/\D/g, '');
+          const okPhone = /^(30)?69\d{8}$/.test(digits) || /^69\d{8}$/.test(digits);
+          if (!phone.trim() || !okPhone) {
+            toast.error('Το κινητό είναι υποχρεωτικό (π.χ. 69xxxxxxxx)');
+            return;
+          }
         }
         {
       const pwErr = passwordErrorMessage(password);
@@ -489,7 +493,7 @@ export default function AuthPage() {
                 {isSignup && (
                   <div className="space-y-2">
                     <Label className="text-[hsl(220,14%,96%)]">Τηλέφωνο</Label>
-                    <Input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="69xxxxxxxx" className="bg-[hsl(220,20%,14%)] border-[hsl(220,20%,20%)] text-[hsl(220,14%,96%)]" required />
+                    <Input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="69xxxxxxxx" className="bg-[hsl(220,20%,14%)] border-[hsl(220,20%,20%)] text-[hsl(220,14%,96%)]" required minLength={10} />
                   </div>
                 )}
                 <div className="space-y-2">
