@@ -317,7 +317,7 @@ export default function AuthPage() {
             toast.success('Συνδεθήκατε! Επιβεβαίωσε το κινητό με SMS.');
           }
           if (phone.trim()) {
-            /* Twilio removed */ // setMode('phone_sms');
+            setMode('phone_sms');
             setSubmitting(false);
             return;
           }
