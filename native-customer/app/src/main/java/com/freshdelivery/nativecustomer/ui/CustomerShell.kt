@@ -1021,7 +1021,25 @@ Row(
         // Admin promo banners (customer_app_config.promos)
         if (showDiscovery && enabledPromos.isNotEmpty()) {
             item(key = "promo-carousel") {
-                PromoCarousel(promos = enabledPromos, onPromoClick = { applyFilter(HomeFilter.Deals); onSearch("") })
+                PromoCarousel(
+                    promos = enabledPromos,
+                    onPromoClick = { promo ->
+                        // Only open a real store when promo maps to one (e.g. Pizza Pan).
+                        // Generic brand promos (HOT/FRESH/etc.) land nowhere.
+                        val needle = listOf(promo.title, promo.code, promo.tag)
+                            .joinToString(" ")
+                            .lowercase()
+                        val store = state.stores.firstOrNull { s ->
+                            val n = s.name.lowercase()
+                            ("pizza pan" in needle || "pizzapan" in needle || promo.code.equals("PIZZAPAN", true))
+                                && ("pizza pan" in n || "pizzapan" in n.replace(" ", ""))
+                        } ?: state.stores.firstOrNull { s ->
+                            val n = s.name.lowercase()
+                            promo.title.isNotBlank() && n.contains(promo.title.lowercase().take(8))
+                        }
+                        if (store != null) onOpenStore(store)
+                    },
+                )
             }
         }
 

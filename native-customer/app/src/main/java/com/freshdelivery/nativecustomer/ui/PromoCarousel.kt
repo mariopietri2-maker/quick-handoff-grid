@@ -48,7 +48,7 @@ import kotlinx.coroutines.delay
 @Composable
 internal fun PromoCarousel(
     promos: List<com.freshdelivery.nativecustomer.data.PromoBanner>,
-    onPromoClick: () -> Unit = {},
+    onPromoClick: (com.freshdelivery.nativecustomer.data.PromoBanner) -> Unit = {},
 ) {
     val pagerState = rememberPagerState(pageCount = { promos.size })
     LaunchedEffect(promos.size) {
@@ -110,7 +110,7 @@ internal fun PromoCarousel(
                     .shadow(8.dp, RoundedCornerShape(24.dp))
                     .clip(RoundedCornerShape(24.dp))
                     .background(gradient)
-                    .clickable { onPromoClick() },
+                    .clickable { onPromoClick(promo) },
             ) {
                 val img = promo.imageUrl
                 if (!img.isNullOrBlank()) {
