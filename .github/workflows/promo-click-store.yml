@@ -1,0 +1,21 @@
+name: Promo click to store
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/promo-click-store.py"
+      - ".github/workflows/promo-click-store.yml"
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/promo-click-store.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/PromoCarousel.kt native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt
+          git commit -m "feat(native): Pizza Pan promo opens store; other promos no-op" || true
+          git push || true
