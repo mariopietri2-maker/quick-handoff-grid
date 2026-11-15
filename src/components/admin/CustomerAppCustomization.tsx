@@ -294,7 +294,7 @@ export default function CustomerAppCustomization() {
             <CardHeader>
               <CardTitle className="text-base flex items-center justify-between">
                 Promo banners
-                <Button size="sm" variant="outline" onClick={() => setDraft({ ...draft, promos: [...draft.promos, { tag: 'NEW', title: 'Τίτλος', subtitle: 'Υπότιτλος', code: 'CODE', gradient: 'hero', enabled: true, image_url: null }] })}>
+                <Button size="sm" variant="outline" onClick={() => setDraft({ ...draft, promos: [...draft.promos, { tag: 'NEW', title: 'Τίτλος', subtitle: 'Υπότιτλος', code: 'CODE', gradient: 'hero', enabled: true, image_url: null, store_id: null }] })}>
                   <Plus className="h-4 w-4 mr-1" /> Προσθήκη
                 </Button>
               </CardTitle>
@@ -346,6 +346,8 @@ export default function CustomerAppCustomization() {
                         }}
                       />
                       <Input className="col-span-2" placeholder="ή επικόλλησε URL εικόνας" value={p.image_url ?? ''} onChange={e => { const promos = [...draft.promos]; promos[i] = { ...p, image_url: e.target.value || null }; setDraft({ ...draft, promos }); }} />
+                    <Input className="col-span-2" placeholder="Σύνδεση καταστήματος: store_id ή όνομα (π.χ. Pizza Pan)" value={(p as any).store_id ?? ''} onChange={e => { const promos = [...draft.promos]; promos[i] = { ...p, store_id: e.target.value || null }; setDraft({ ...draft, promos }); }} />
+                    <p className="col-span-2 text-[11px] text-muted-foreground">Αν συμπληρωθεί, το κλικ στο promo ανοίγει αυτό το κατάστημα στην εφαρμογή.</p>
                       {p.image_url && (
                         <div className="h-24 rounded-lg overflow-hidden border bg-muted/30 relative">
                           <img src={p.image_url} alt="" className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />

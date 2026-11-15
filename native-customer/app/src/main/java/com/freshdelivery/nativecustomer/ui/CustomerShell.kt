@@ -1024,19 +1024,14 @@ Row(
                 PromoCarousel(
                     promos = enabledPromos,
                     onPromoClick = { promo ->
-                        // Only open a real store when promo maps to one (e.g. Pizza Pan).
-                        // Generic brand promos (HOT/FRESH/etc.) land nowhere.
-                        val needle = listOf(promo.title, promo.code, promo.tag)
-                            .joinToString(" ")
-                            .lowercase()
-                        val store = state.stores.firstOrNull { s ->
+                        val sid = promo.storeId?.trim().orEmpty()
+                        val byId = if (sid.isNotEmpty()) state.stores.firstOrNull { it.id == sid } else null
+                        val q = (sid.ifBlank { promo.title }).lowercase()
+                        val byName = state.stores.firstOrNull { s ->
                             val n = s.name.lowercase()
-                            ("pizza pan" in needle || "pizzapan" in needle || promo.code.equals("PIZZAPAN", true))
-                                && ("pizza pan" in n || "pizzapan" in n.replace(" ", ""))
-                        } ?: state.stores.firstOrNull { s ->
-                            val n = s.name.lowercase()
-                            promo.title.isNotBlank() && n.contains(promo.title.lowercase().take(8))
+                            q.isNotBlank() && (n.contains(q) || q.contains(n))
                         }
+                        val store = byId ?: byName
                         if (store != null) onOpenStore(store)
                     },
                 )

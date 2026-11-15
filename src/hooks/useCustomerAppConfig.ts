@@ -85,6 +85,8 @@ export type CustomerAppConfig = {
     enabled: boolean;
     /** Optional custom cover; falls back to stock promo art. */
     image_url?: string | null;
+    /** Optional store to open when customer taps the promo. */
+    store_id?: string | null;
   }[];
   hero_cards: HeroCard[];
   games: GameConfig;
