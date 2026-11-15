@@ -1018,8 +1018,8 @@ Row(
                 }
             }
         }
-        // Promo cards hidden for now.
-        if (false && showDiscovery && enabledPromos.isNotEmpty()) {
+        // Admin promo banners (customer_app_config.promos)
+        if (showDiscovery && enabledPromos.isNotEmpty()) {
             item(key = "promo-carousel") {
                 PromoCarousel(promos = enabledPromos, onPromoClick = { applyFilter(HomeFilter.Deals); onSearch("") })
             }
