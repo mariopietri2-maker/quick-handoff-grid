@@ -8,11 +8,13 @@ import { useAuth } from "@/hooks/useAuth";
 type LegalKey = "terms" | "privacy" | "refunds";
 
 const COMPANY = {
-  name: "Riverstone Flow",
-  legal: "Riverstone Flow IKE",
-  email: "support@riverstoneflow.gr",
-  address: "Αθήνα, Ελλάδα",
-  vat: "EL000000000",
+  name: "Fresh2GO",
+  legal: "Fresh2GO",
+  responsible: "Mario Pietri",
+  afm: "152193390",
+  email: "support@fresh2go.gr",
+  address: "Ιωάννινα, Ελλάδα",
+  site: "https://fresh2go.gr",
 };
 
 const CONTENT: Record<LegalKey, { icon: any; el: { title: string; updated: string; sections: { h: string; p: string }[] }; en: { title: string; updated: string; sections: { h: string; p: string }[] } }> = {
@@ -20,34 +22,46 @@ const CONTENT: Record<LegalKey, { icon: any; el: { title: string; updated: strin
     icon: FileText,
     el: {
       title: "Όροι Χρήσης",
-      updated: "Τελευταία ενημέρωση: 30 Απριλίου 2026",
+      updated: "Τελευταία ενημέρωση: Νοέμβριος 2026",
       sections: [
-        { h: "1. Αποδοχή Όρων", p: `Η χρήση της πλατφόρμας ${COMPANY.name} (η «Πλατφόρμα») προϋποθέτει την πλήρη και ανεπιφύλακτη αποδοχή των παρόντων όρων. Εάν δεν συμφωνείτε, παρακαλούμε διακόψτε τη χρήση.` },
-        { h: "2. Περιγραφή Υπηρεσίας", p: `Η Πλατφόρμα διασυνδέει πελάτες με καταστήματα εστίασης και ανεξάρτητους οδηγούς διανομής. Η ${COMPANY.legal} ενεργεί ως τεχνολογικός μεσάζων και δεν παρασκευάζει τρόφιμα.` },
-        { h: "3. Λογαριασμός Χρήστη", p: "Είστε υπεύθυνοι για την ακρίβεια των στοιχείων σας και για την ασφάλεια των διαπιστευτηρίων σας. Πρέπει να είστε τουλάχιστον 18 ετών για να δημιουργήσετε λογαριασμό." },
-        { h: "4. Παραγγελίες & Πληρωμές", p: "Οι τιμές, διαθεσιμότητα και χρόνοι παράδοσης ορίζονται από τα καταστήματα. Πληρωμές γίνονται μέσω Stripe ή μετρητών στον οδηγό. Με την υποβολή παραγγελίας συνάπτετε σύμβαση πώλησης απευθείας με το κατάστημα." },
-        { h: "5. Υποχρεώσεις Οδηγών", p: "Οι οδηγοί είναι ανεξάρτητοι συνεργάτες, υπεύθυνοι για τα έγγραφα οχήματος, ασφάλιση, φορολογικές υποχρεώσεις και τήρηση ΚΟΚ." },
-        { h: "6. Απαγορευμένες Συμπεριφορές", p: "Απαγορεύεται η χρήση της Πλατφόρμας για παράνομους σκοπούς, η παρενόχληση άλλων χρηστών, η υποβολή ψευδών παραγγελιών και η απόπειρα παράκαμψης μέτρων ασφαλείας." },
-        { h: "7. Περιορισμός Ευθύνης", p: `Η ${COMPANY.legal} δεν ευθύνεται για ποιότητα τροφίμων, αλλεργικές αντιδράσεις, καθυστερήσεις λόγω κυκλοφοριακών συνθηκών ή ζημιές πέραν του ποσού της παραγγελίας.` },
-        { h: "8. Τροποποιήσεις", p: "Διατηρούμε το δικαίωμα τροποποίησης των όρων με ειδοποίηση 30 ημερών μέσω email ή εντός της εφαρμογής." },
-        { h: "9. Εφαρμοστέο Δίκαιο", p: "Οι παρόντες όροι διέπονται από το Ελληνικό Δίκαιο. Αρμόδια δικαστήρια είναι αυτά των Αθηνών." },
-        { h: "10. Επικοινωνία", p: `Για ερωτήσεις: ${COMPANY.email} | ${COMPANY.address} | ΑΦΜ: ${COMPANY.vat}` },
+        { h: "1. Ταυτότητα παρόχου", p: `Η πλατφόρμα ${COMPANY.name} (εφεξής «η Πλατφόρμα») διατίθεται μέσω του ${COMPANY.site} και των εφαρμογών για κινητά. Υπεύθυνος / σε επιμέλεια: ${COMPANY.responsible}. Α.Φ.Μ.: ${COMPANY.afm}. Περιοχή δραστηριότητας: κυρίως Ιωάννινα και όποια άλλη περιοχή ανακοινωθεί στην Πλατφόρμα. Επικοινωνία: ${COMPANY.email}.` },
+        { h: "2. Αντικείμενο", p: `Η ${COMPANY.name} παρέχει διαδικτυακή υπηρεσία διαμεσολάβησης για προβολή καταστημάτων, ηλεκτρονική παραγγελία και συντονισμό παράδοσης όπου διατίθεται. Η Πλατφόρμα δεν είναι ο παραγωγός/πωλητής των προϊόντων των καταστημάτων, εκτός αν ρητά αναφέρεται διαφορετικά.` },
+        { h: "3. Αποδοχή όρων", p: "Με την εγγραφή, σύνδεση ή χρήση της Πλατφόρμας δηλώνετε ότι είστε τουλάχιστον 18 ετών (ή έχετε νόμιμη συναίνεση όπου απαιτείται), αποδέχεστε τους παρόντες Όρους και την Πολιτική Απορρήτου και ότι τα στοιχεία σας είναι αληθή. Αν δεν συμφωνείτε, μην χρησιμοποιείτε την Πλατφόρμα." },
+        { h: "4. Λογαριασμός χρήστη", p: "Απαιτείται λογαριασμός με email, ονοματεπώνυμο και κινητό τηλέφωνο. Είστε υπεύθυνοι για την ασφάλεια των κωδικών σας. Μπορούμε να περιορίσουμε ή να απενεργοποιήσουμε λογαριασμό σε περίπτωση παραβίασης όρων, απάτης ή κατάχρησης." },
+        { h: "5. Παραγγελίες", p: "Η παραγγελία υποβάλλεται μέσω της Πλατφόρμας προς το επιλεγμένο κατάστημα. Η αποδοχή γίνεται από το κατάστημα (ή σύμφωνα με τις ρυθμίσεις της Πλατφόρμας). Τιμές, διαθεσιμότητα, χρόνοι και ελάχιστη παραγγελία εμφανίζονται πριν την ολοκλήρωση και μπορεί να αλλάζουν." },
+        { h: "6. Τιμές, χρεώσεις και πληρωμές", p: "Μπορεί να ισχύουν κόστος παράδοσης, ελάχιστη παραγγελία, προμήθειες ή προσφορές, όπως αναγράφονται πριν την ολοκλήρωση. Πληρωμή: μετρητά και/ή ηλεκτρονικά μέσα όπου διατίθενται." },
+        { h: "7. Παράδοση", p: "Οι χρόνοι παράδοσης είναι εκτιμήσεις και δεν αποτελούν εγγύηση. Ο πελάτης οφείλει ακριβή διεύθυνση και διαθεσιμότητα παραλαβής. Αδυναμία παράδοσης λόγω εσφαλμένων στοιχείων ή απουσίας μπορεί να επιφέρει χρέωση σύμφωνα με την πολιτική παραγγελίας." },
+        { h: "8. Καταστήματα και οδηγοί", p: "Τα καταστήματα είναι ανεξάρτητες επιχειρήσεις. Ευθύνη για ποιότητα, σύνθεση, αλλεργιογόνα και συμμόρφωση τροφίμων φέρει το κατάστημα, εκτός όπου ο νόμος ορίζει διαφορετικά. Οι οδηγοί/διανομείς λειτουργούν στο πλαίσιο συνεργασίας με την Πλατφόρμα ή το κατάστημα." },
+        { h: "9. Προσφορές και κουπόνια", p: "Προσφορές, κωδικοί και τυχόν παιχνίδια ισχύουν με τους ειδικούς όρους κάθε προσφοράς. Μπορούν να ανακληθούν ή να τροποποιηθούν. Κατάχρηση οδηγεί σε ακύρωση οφέλους." },
+        { h: "10. Υποχρεώσεις χρήστη", p: "Απαγορεύεται ενδεικτικά: ψευδή στοιχεία ή παραγγελίες, κακόβουλη χρήση ή παρεμβολή στα συστήματα, παρενόχληση καταστημάτων/οδηγών/προσωπικού, χρήση για παράνομους σκοπούς." },
+        { h: "11. Διανοητική ιδιοκτησία", p: `Λογότυπα, σήματα, λογισμικό και περιεχόμενο ${COMPANY.name} ανήκουν στον πάροχο ή στους δικαιούχους.` },
+        { h: "12. Περιορισμός ευθύνης", p: "Στο μέγιστο βαθμό που επιτρέπει ο νόμος, η Πλατφόρμα παρέχεται «ως έχει». Δεν ευθυνόμαστε για καθυστερήσεις ή σφάλματα που οφείλονται σε κατάστημα, δίκτυα τρίτων, ανωτέρα βία ή εσφαλμένα στοιχεία χρήστη. Δεν θίγονται αναγκαστικά δικαιώματα καταναλωτή." },
+        { h: "13. Προσωπικά δεδομένα", p: `Η επεξεργασία δεδομένων γίνεται σύμφωνα με την Πολιτική Απορρήτου της ${COMPANY.name} και τον GDPR / ν. 4624/2019.` },
+        { h: "14. Τροποποιήσεις", p: "Μπορούμε να ενημερώνουμε τους παρόντες όρους. Η συνέχιση χρήσης μετά τη δημοσίευση συνιστά αποδοχή, εκτός αν ο νόμος απαιτεί ρητή συναίνεση." },
+        { h: "15. Εφαρμοστέο δίκαιο", p: "Εφαρμοστέο δίκαιο: Ελληνικό, με επιφύλαξη κανόνων προστασίας καταναλωτή." },
+        { h: "16. Επικοινωνία", p: `Για παράπονα ή αιτήματα: ${COMPANY.email} · ${COMPANY.site}. Υπεύθυνος: ${COMPANY.responsible} — Α.Φ.Μ. ${COMPANY.afm}.` },
       ],
     },
     en: {
-      title: "Terms of Service",
-      updated: "Last updated: April 30, 2026",
+      title: "Terms of Use",
+      updated: "Last updated: November 2026",
       sections: [
-        { h: "1. Acceptance", p: `By using the ${COMPANY.name} platform (the "Platform"), you fully accept these terms. If you disagree, please discontinue use.` },
-        { h: "2. Service Description", p: `The Platform connects customers with restaurants and independent delivery drivers. ${COMPANY.legal} acts as a technology intermediary and does not prepare food.` },
-        { h: "3. User Account", p: "You are responsible for the accuracy of your information and the security of your credentials. You must be at least 18 years old." },
-        { h: "4. Orders & Payments", p: "Prices, availability and delivery times are set by stores. Payments via Stripe or cash to the driver. Submitting an order forms a contract directly with the store." },
-        { h: "5. Driver Obligations", p: "Drivers are independent contractors responsible for their vehicle documents, insurance, tax obligations and compliance with traffic laws." },
-        { h: "6. Prohibited Conduct", p: "Use for illegal purposes, harassment, fake orders, or attempts to bypass security are forbidden." },
-        { h: "7. Limitation of Liability", p: `${COMPANY.legal} is not liable for food quality, allergic reactions, traffic-related delays, or damages exceeding the order amount.` },
-        { h: "8. Changes", p: "We may modify these terms with 30 days notice via email or in-app." },
-        { h: "9. Governing Law", p: "These terms are governed by Greek law. Athens courts have exclusive jurisdiction." },
-        { h: "10. Contact", p: `Questions: ${COMPANY.email} | ${COMPANY.address} | VAT: ${COMPANY.vat}` },
+        { h: "1. Provider identity", p: `The ${COMPANY.name} platform (the "Platform") is available at ${COMPANY.site} and related mobile apps. Responsible person: ${COMPANY.responsible}. Tax ID (Α.Φ.Μ.): ${COMPANY.afm}. Main area: Ioannina, Greece. Contact: ${COMPANY.email}.` },
+        { h: "2. Scope", p: `${COMPANY.name} provides an online intermediation service for browsing stores, placing orders and coordinating delivery where available.` },
+        { h: "3. Acceptance", p: "By registering, signing in or using the Platform you accept these Terms and the Privacy Policy. If you disagree, do not use the Platform." },
+        { h: "4. User account", p: "An account with email, full name and mobile phone is required. You are responsible for credential security." },
+        { h: "5. Orders", p: "Orders are submitted via the Platform to the selected store. Prices, availability and times are shown before checkout." },
+        { h: "6. Prices and payments", p: "Delivery fees, minimum order or offers may apply as shown before checkout. Payment: cash and/or electronic methods where available." },
+        { h: "7. Delivery", p: "Delivery times are estimates. Customers must provide an accurate address and be available to receive." },
+        { h: "8. Stores and drivers", p: "Stores are independent businesses. Food quality and compliance responsibility lies with the store, except where law provides otherwise." },
+        { h: "9. Offers and coupons", p: "Offers and codes are subject to each offer's specific terms and may be changed or withdrawn." },
+        { h: "10. User obligations", p: "Prohibited: false details or orders, malicious use, harassment, illegal use." },
+        { h: "11. Intellectual property", p: `${COMPANY.name} logos, software and content belong to the provider or rights holders.` },
+        { h: "12. Limitation of liability", p: "To the maximum extent permitted by law, the Platform is provided 'as is'. Mandatory consumer rights are not affected." },
+        { h: "13. Personal data", p: `Processing is governed by the ${COMPANY.name} Privacy Policy and GDPR / Greek Law 4624/2019.` },
+        { h: "14. Changes", p: "We may update these Terms. Continued use after publication constitutes acceptance unless law requires explicit consent." },
+        { h: "15. Governing law", p: "Greek law applies, subject to consumer protection rules." },
+        { h: "16. Contact", p: `${COMPANY.email} · ${COMPANY.site} · ${COMPANY.responsible} — Tax ID ${COMPANY.afm}.` },
       ],
     },
   },
@@ -55,33 +69,33 @@ const CONTENT: Record<LegalKey, { icon: any; el: { title: string; updated: strin
     icon: Shield,
     el: {
       title: "Πολιτική Απορρήτου",
-      updated: "Τελευταία ενημέρωση: 30 Απριλίου 2026",
+      updated: "Τελευταία ενημέρωση: Νοέμβριος 2026",
       sections: [
-        { h: "1. Υπεύθυνος Επεξεργασίας", p: `${COMPANY.legal}, ${COMPANY.address}. Email: ${COMPANY.email}.` },
-        { h: "2. Δεδομένα που Συλλέγουμε", p: "Όνομα, email, τηλέφωνο, διευθύνσεις παράδοσης, ιστορικό παραγγελιών, στοιχεία πληρωμής (μέσω Stripe — δεν αποθηκεύουμε αριθμούς καρτών), τοποθεσία οδηγών κατά την παράδοση, αξιολογήσεις." },
-        { h: "3. Νομική Βάση (GDPR Άρθρο 6)", p: "α) Εκτέλεση σύμβασης (παραγγελίες), β) Έννομο συμφέρον (πρόληψη απάτης), γ) Συγκατάθεση (marketing), δ) Νομική υποχρέωση (φορολογικά αρχεία)." },
-        { h: "4. Διάρκεια Διατήρησης", p: "Παραγγελίες: 5 έτη (φορολογικός νόμος). Λογαριασμός: όσο είναι ενεργός. Δεδομένα τοποθεσίας οδηγών: 90 ημέρες. Αναλυτικά δεδομένα: ανώνυμα μετά τους 24 μήνες." },
-        { h: "5. Διαμοιρασμός Δεδομένων", p: "Με καταστήματα (στοιχεία παραγγελίας), οδηγούς (όνομα, διεύθυνση παράδοσης, τηλέφωνο), Stripe (πληρωμές), Mapbox (χάρτες). Δεν πωλούμε δεδομένα τρίτους." },
-        { h: "6. Δικαιώματά σας (GDPR)", p: `Πρόσβαση, διόρθωση, διαγραφή, φορητότητα, εναντίωση, περιορισμός. Στείλτε αίτημα στο ${COMPANY.email}. Έχετε δικαίωμα καταγγελίας στην Αρχή Προστασίας Δεδομένων Προσωπικού Χαρακτήρα (www.dpa.gr).` },
-        { h: "6α. Διαγραφή λογαριασμού και δεδομένων", p: "Μπορείτε να ζητήσετε τη διαγραφή του λογαριασμού σας και των συσχετισμένων δεδομένων (προφίλ, διευθύνσεις, ιστορικό παραγγελιών, αποθηκευμένες κάρτες) ανά πάσα στιγμή. Το αίτημα υποβάλλεται από τον σύνδεσμο στην ενότητα «Διαγραφή λογαριασμού» παρακάτω ή με email στο support@fresh2go.gr με θέμα «Διαγραφή λογαριασμού». Θα διαγράψουμε ή θα ανωνυμοποιήσουμε τα δεδομένα εντός 30 ημερών, εκτός από όσα πρέπει να κρατήσουμε για φορολογικές/νομικές υποχρεώσεις." },
-        { h: "7. Cookies", p: "Χρησιμοποιούμε απαραίτητα cookies (συνεδρία) και προαιρετικά analytics. Μπορείτε να τα απορρίψετε από τις ρυθμίσεις του browser." },
-        { h: "8. Ασφάλεια", p: "Κρυπτογράφηση TLS, Row-Level Security στη βάση δεδομένων, ρόλοι πρόσβασης, τακτικά security audits." },
+        { h: "1. Υπεύθυνος επεξεργασίας", p: `${COMPANY.name}. Υπεύθυνος: ${COMPANY.responsible}. Α.Φ.Μ.: ${COMPANY.afm}. Διεύθυνση: ${COMPANY.address}. Email: ${COMPANY.email}.` },
+        { h: "2. Δεδομένα που συλλέγουμε", p: "Ενδεικτικά: όνομα, email, τηλέφωνο, διευθύνσεις παράδοσης, ιστορικό παραγγελιών, δεδομένα πληρωμής μέσω παρόχου, δεδομένα συσκευής/χρήσης, τοποθεσία όταν την ενεργοποιείτε για παράδοση." },
+        { h: "3. Σκοποί και νομική βάση", p: "Εκτέλεση σύμβασης (λογαριασμός, παραγγελίες, παράδοση), έννομο συμφέρον (βελτίωση υπηρεσίας, ασφάλεια, πρόληψη απάτης), νομική υποχρέωση (φορολογία), συναίνεση όπου απαιτείται (π.χ. marketing)." },
+        { h: "4. Αποδέκτες", p: "Καταστήματα και οδηγοί στο μέτρο που απαιτείται για την παραγγελία/παράδοση, πάροχοι φιλοξενίας/πληρωμών/μηνυμάτων, και αρχές όπου επιβάλλεται από τον νόμο. Δεν πωλούμε δεδομένα σε τρίτους." },
+        { h: "5. Χρόνος διατήρησης", p: "Διατηρούμε δεδομένα όσο διαρκεί ο λογαριασμός και για όσο απαιτείται για παραγγελίες, υποστήριξη και φορολογικές/νομικές υποχρεώσεις, και στη συνέχεια διαγραφή ή ανωνυμοποίηση." },
+        { h: "6. Δικαιώματά σας (GDPR)", p: `Πρόσβαση, διόρθωση, διαγραφή, περιορισμός, φορητότητα, εναντίωση και ανάκληση συναίνεσης. Αίτημα: ${COMPANY.email}. Δικαίωμα καταγγελίας στην Αρχή Προστασίας Δεδομένων (www.dpa.gr).` },
+        { h: "6α. Διαγραφή λογαριασμού και δεδομένων", p: `Μπορείτε να ζητήσετε διαγραφή λογαριασμού και σχετικών δεδομένων από το προφίλ ή με email στο ${COMPANY.email} (θέμα: «Διαγραφή λογαριασμού»). Εντός 30 ημερών διαγράφουμε ή ανωνυμοποιούμε, με εξαίρεση αρχεία που πρέπει να τηρηθούν για φορολογικούς/νομικούς λόγους.` },
+        { h: "7. Cookies", p: "Χρησιμοποιούμε απαραίτητα cookies συνεδρίας και προαιρετικά analytics. Μπορείτε να τα περιορίσετε από τις ρυθμίσεις του browser." },
+        { h: "8. Ασφάλεια", p: `Εφαρμόζουμε κατάλληλα τεχνικά και οργανωτικά μέτρα. Αναφέρετε ύποπτη δραστηριότητα στο ${COMPANY.email}.` },
         { h: "9. Παιδιά", p: "Η υπηρεσία δεν απευθύνεται σε άτομα κάτω των 18 ετών." },
       ],
     },
     en: {
       title: "Privacy Policy",
-      updated: "Last updated: April 30, 2026",
+      updated: "Last updated: November 2026",
       sections: [
-        { h: "1. Data Controller", p: `${COMPANY.legal}, ${COMPANY.address}. Email: ${COMPANY.email}.` },
-        { h: "2. Data We Collect", p: "Name, email, phone, delivery addresses, order history, payment details (via Stripe — we don't store card numbers), driver location during delivery, ratings." },
-        { h: "3. Legal Basis (GDPR Art. 6)", p: "(a) Contract performance (orders), (b) Legitimate interest (fraud prevention), (c) Consent (marketing), (d) Legal obligation (tax records)." },
-        { h: "4. Retention", p: "Orders: 5 years (tax law). Account: while active. Driver location data: 90 days. Analytics: anonymized after 24 months." },
-        { h: "5. Sharing", p: "With stores (order details), drivers (name, address, phone), Stripe (payments), Mapbox (maps). We never sell data to third parties." },
-        { h: "6. Your Rights (GDPR)", p: `Access, rectification, erasure, portability, objection, restriction. Send a request to ${COMPANY.email}. You may file complaints with the Hellenic Data Protection Authority (www.dpa.gr).` },
-        { h: "6a. Account and data deletion", p: "You can request deletion of your account and associated data (profile, addresses, order history, saved cards) at any time. Use the Delete account link in the section below, or email support@fresh2go.gr with the subject “Account deletion”. We will delete or anonymize the data within 30 days, except records we must keep for tax or legal obligations." },
-        { h: "7. Cookies", p: "We use essential session cookies and optional analytics. You can refuse via browser settings." },
-        { h: "8. Security", p: "TLS encryption, Row-Level Security on the database, role-based access, regular audits." },
+        { h: "1. Controller", p: `${COMPANY.name}. Responsible: ${COMPANY.responsible}. Tax ID: ${COMPANY.afm}. Address: ${COMPANY.address}. Email: ${COMPANY.email}.` },
+        { h: "2. Data we collect", p: "Including name, email, phone, delivery addresses, order history, payment data via providers, device/usage data, and location when enabled for delivery." },
+        { h: "3. Purposes and legal bases", p: "Contract performance, legitimate interests (security, fraud prevention, improvement), legal obligation, and consent where required." },
+        { h: "4. Recipients", p: "Stores and drivers as needed for the order/delivery, hosting/payment/messaging providers, and authorities where required by law. We do not sell personal data." },
+        { h: "5. Retention", p: "While the account is active and as needed for orders, support, tax/legal duties, then delete or anonymize." },
+        { h: "6. Your rights (GDPR)", p: `Access, rectification, erasure, restriction, portability, objection and withdrawal of consent. Requests: ${COMPANY.email}. Complaints: Hellenic DPA (www.dpa.gr).` },
+        { h: "6a. Account and data deletion", p: `Request deletion from profile or email ${COMPANY.email} (subject: "Account deletion"). Within 30 days we delete or anonymize, except records we must keep for tax or legal reasons.` },
+        { h: "7. Cookies", p: "Essential session cookies and optional analytics. You can limit them in browser settings." },
+        { h: "8. Security", p: `Appropriate technical and organisational measures. Report suspicious activity to ${COMPANY.email}.` },
         { h: "9. Children", p: "The service is not directed at persons under 18." },
       ],
     },
@@ -89,29 +103,27 @@ const CONTENT: Record<LegalKey, { icon: any; el: { title: string; updated: strin
   refunds: {
     icon: RefreshCw,
     el: {
-      title: "Πολιτική Επιστροφών",
-      updated: "Τελευταία ενημέρωση: 30 Απριλίου 2026",
+      title: "Πολιτική Επιστροφών & Ακυρώσεων",
+      updated: "Τελευταία ενημέρωση: Νοέμβριος 2026",
       sections: [
-        { h: "1. Φύση των Προϊόντων", p: "Τα τρόφιμα είναι αναλώσιμα προϊόντα και εξαιρούνται από το δικαίωμα υπαναχώρησης 14 ημερών (Π.Δ. 131/2003, άρθρο 3θ)." },
-        { h: "2. Πότε Δικαιούστε Επιστροφή", p: "α) Λάθος προϊόν, β) Σημαντικά κατεστραμμένα τρόφιμα κατά την παράδοση, γ) Ακύρωση από το κατάστημα, δ) Παράδοση που ποτέ δεν έγινε, ε) Σημαντική καθυστέρηση (>60 λεπτά πέραν της εκτίμησης)." },
-        { h: "3. Διαδικασία", p: `Επικοινωνήστε με την υποστήριξη εντός 24 ωρών από την παράδοση μέσω της εφαρμογής (κουμπί «Υποστήριξη») ή στο ${COMPANY.email}. Επισυνάψτε φωτογραφίες αν υπάρχει ζημιά.` },
-        { h: "4. Χρονικά Πλαίσια", p: "Απάντηση εντός 24 ωρών. Εγκεκριμένες επιστροφές πιστώνονται στο πορτοφόλι Fresh2GO.GR άμεσα. Επιστροφή στην κάρτα μέσω Stripe γίνεται μόνο χειροκίνητα από την υποστήριξη όταν απαιτείται (5–10 εργάσιμες)." },
-        { h: "5. Μερικές Επιστροφές", p: "Μπορεί να προσφερθεί μερική επιστροφή ή πίστωση πορτοφολιού όταν μέρος της παραγγελίας ήταν ελαττωματικό." },
-        { h: "6. Ακυρώσεις", p: "Δωρεάν ακύρωση πριν το κατάστημα αποδεχθεί την παραγγελία. Μετά την αποδοχή, χρέωση 100% αν τα τρόφιμα έχουν ήδη παρασκευαστεί." },
-        { h: "7. Φιλοδωρήματα Οδηγών", p: "Φιλοδωρήματα είναι μη επιστρέψιμα εκτός εξαιρετικών περιπτώσεων (π.χ. μη παράδοση)." },
+        { h: "1. Γενικά", p: `Η ${COMPANY.name} διευκολύνει παραγγελίες μεταξύ πελατών και καταστημάτων. Ακυρώσεις και επιστροφές εξετάζονται κατά περίπτωση.` },
+        { h: "2. Φύση προϊόντων", p: "Τα τρόφιμα είναι αναλώσιμα και κατά κανόνα εξαιρούνται από το δικαίωμα υπαναχώρησης 14 ημερών, με επιφύλαξη ειδικών διατάξεων προστασίας καταναλωτή." },
+        { h: "3. Ακύρωση από πελάτη", p: "Πριν την αποδοχή από το κατάστημα, η ακύρωση είναι συνήθως δυνατή από την εφαρμογή. Μετά την αποδοχή ή κατά την προετοιμασία/παράδοση, μπορεί να μην είναι διαθέσιμη ή να υπόκειται σε χρέωση." },
+        { h: "4. Ζητήματα ποιότητας / λάθος παραγγελία", p: `Επικοινωνήστε άμεσα μέσω της εφαρμογής ή στο ${COMPANY.email} με στοιχεία παραγγελίας. Θα συντονίσουμε με το κατάστημα για εύλογη λύση (αντικατάσταση, μερική/ολική επιστροφή κ.λπ.).` },
+        { h: "5. Επιστροφές χρημάτων", p: "Για ηλεκτρονικές πληρωμές, εγκεκριμένες επιστροφές γίνονται στο αρχικό μέσο πληρωμής εντός των προθεσμιών παρόχου/τράπεζας." },
+        { h: "6. Επικοινωνία", p: `${COMPANY.email} · ${COMPANY.site} · Υπεύθυνος: ${COMPANY.responsible} (Α.Φ.Μ. ${COMPANY.afm}).` },
       ],
     },
     en: {
-      title: "Refund Policy",
-      updated: "Last updated: April 30, 2026",
+      title: "Refunds & Cancellations",
+      updated: "Last updated: November 2026",
       sections: [
-        { h: "1. Nature of Goods", p: "Food is perishable and exempt from the 14-day withdrawal right (Greek P.D. 131/2003, art. 3θ)." },
-        { h: "2. When You're Entitled to a Refund", p: "(a) Wrong item, (b) Significantly damaged food on delivery, (c) Store cancellation, (d) Delivery never made, (e) Significant delay (>60 min over estimate)." },
-        { h: "3. Process", p: `Contact support within 24 hours of delivery via the in-app "Support" button or ${COMPANY.email}. Attach photos for damage claims.` },
-        { h: "4. Timing", p: "Response within 24 hours. Approved refunds are credited instantly to your Fresh2GO.GR wallet. Original-card Stripe refunds are issued only manually by support when required (5–10 business days)." },
-        { h: "5. Partial Refunds", p: "We may offer a partial refund or wallet credit when only part of the order was defective." },
-        { h: "6. Cancellations", p: "Free cancellation before the store accepts. After acceptance, 100% charge if food has been prepared." },
-        { h: "7. Driver Tips", p: "Tips are non-refundable except in exceptional cases (e.g. non-delivery)." },
+        { h: "1. General", p: `${COMPANY.name} facilitates orders between customers and stores. Cancellations and refunds are handled case by case.` },
+        { h: "2. Nature of goods", p: "Food is perishable and generally exempt from the 14-day withdrawal right, subject to mandatory consumer protection rules." },
+        { h: "3. Customer cancellation", p: "Before store acceptance, cancellation is usually available in the app. After acceptance, it may be unavailable or subject to a charge." },
+        { h: "4. Quality issues / wrong order", p: `Contact us promptly in the app or at ${COMPANY.email}. We will coordinate with the store for a reasonable remedy.` },
+        { h: "5. Refunds", p: "Approved electronic refunds go to the original payment method within provider/bank timelines." },
+        { h: "6. Contact", p: `${COMPANY.email} · ${COMPANY.site} · ${COMPANY.responsible} (Tax ID ${COMPANY.afm}).` },
       ],
     },
   },
@@ -173,17 +185,17 @@ export default function LegalPage() {
                 </h2>
                 <p className="text-sm text-foreground/80 leading-relaxed mb-3">
                   {lang === "el"
-                    ? "Χρησιμοποιήστε τον παρακάτω σύνδεσμο για να ζητήσετε τη διαγραφή του λογαριασμού σας και όλων των συσχετισμένων δεδομένων (προφίλ, διευθύνσεις, παραγγελίες, κάρτες)."
-                    : "Use the link below to request deletion of your account and all associated data (profile, addresses, orders, cards)."}
+                    ? "Χρησιμοποιήστε τον παρακάτω σύνδεσμο για να ζητήσετε τη διαγραφή του λογαριασμού σας και όλων των συσχετισμένων δεδομένων."
+                    : "Use the link below to request deletion of your account and all associated data."}
                 </p>
                 <a
-                  href="mailto:support@fresh2go.gr?subject=Account%20deletion%20request&body=Please%20delete%20my%20Fresh2GO%20account%20and%20associated%20data.%0A%0AEmail%20of%20the%20account%3A%20"
+                  href={`mailto:${COMPANY.email}?subject=Account%20deletion%20request&body=Please%20delete%20my%20Fresh2GO%20account%20and%20associated%20data.`}
                   className="inline-flex items-center text-sm font-semibold text-primary underline underline-offset-4"
                 >
                   {lang === "el" ? "Αίτημα διαγραφής λογαριασμού" : "Request account deletion"}
                 </a>
                 <p className="text-xs text-muted-foreground mt-3">
-                  support@fresh2go.gr · https://fresh2go.gr/legal/privacy#delete-account
+                  {COMPANY.email} · {COMPANY.site}/legal/privacy#delete-account
                 </p>
               </section>
             )}
@@ -197,6 +209,10 @@ export default function LegalPage() {
             </Button>
           ))}
         </nav>
+
+        <p className="mt-8 text-center text-xs text-muted-foreground">
+          {COMPANY.name} · {COMPANY.responsible} · Α.Φ.Μ. {COMPANY.afm} · {COMPANY.email}
+        </p>
       </main>
     </div>
   );
