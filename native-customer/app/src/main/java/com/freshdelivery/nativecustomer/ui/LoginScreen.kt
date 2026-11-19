@@ -4,6 +4,7 @@ import com.freshdelivery.nativecustomer.BuildConfig
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -88,6 +89,8 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var fullName by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
+    var acceptTerms by remember { mutableStateOf(false) }
+    var acceptPrivacy by remember { mutableStateOf(false) }
     var rememberMe by remember { mutableStateOf(false) }
     var showPassword by remember { mutableStateOf(false) }
     var showForgot by remember { mutableStateOf(false) }
@@ -331,6 +334,21 @@ fun LoginScreen(
             Spacer(Modifier.height(12.dp))
             Text(info, color = FreshGreenDark, style = MaterialTheme.typography.bodySmall)
         }
+        
+        if (signupMode) {
+            Spacer(Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Checkbox(checked = acceptTerms, onCheckedChange = { acceptTerms = it }, colors = CheckboxDefaults.colors(checkedColor = FreshGreen, checkmarkColor = Color.White))
+                Text(text = "Αποδέχομαι τους ", color = FreshInk, style = MaterialTheme.typography.bodySmall)
+                Text(text = "Όρους Χρήσης", color = FreshGreenDark, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, modifier = Modifier.clickable { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://fresh2go.gr/legal/terms"))) })
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Checkbox(checked = acceptPrivacy, onCheckedChange = { acceptPrivacy = it }, colors = CheckboxDefaults.colors(checkedColor = FreshGreen, checkmarkColor = Color.White))
+                Text(text = "Αποδέχομαι την ", color = FreshInk, style = MaterialTheme.typography.bodySmall)
+                Text(text = "Πολιτική Απορρήτου", color = FreshGreenDark, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, modifier = Modifier.clickable { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://fresh2go.gr/legal/privacy"))) })
+            }
+        }
+
         // Google Sign-In disabled for soft launch (email/password only)
         // Re-enable when GOOGLE_WEB_CLIENT_ID is configured in the release build.
         Button(
@@ -347,11 +365,12 @@ fun LoginScreen(
                     if (fullName.trim().length < 2) return@Button
                     val digits = phone.filter { it.isDigit() }
                     if (digits.length < 10) return@Button
+                    if (!acceptTerms || !acceptPrivacy) return@Button
                     onSignUp(email, password, fullName.trim(), phone.trim())
                 } else onLogin(email, password)
             },
             enabled = !busy && email.isNotBlank() && password.length >= 6 &&
-                (!signupMode || (fullName.isNotBlank() && phone.filter { it.isDigit() }.length >= 10)),
+                (!signupMode || (fullName.isNotBlank() && phone.filter { it.isDigit() }.length >= 10 && acceptTerms && acceptPrivacy)),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp)
