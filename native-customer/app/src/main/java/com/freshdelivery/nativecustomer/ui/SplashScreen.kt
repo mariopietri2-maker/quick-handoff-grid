@@ -49,7 +49,7 @@ import kotlin.math.sin
 @Composable
 fun SplashScreen(
     appName: String = "Fresh2GO",
-    tagline: String = "Fresh Meals. Fast Delivery.",
+    tagline: String = "Φρέσκο φαγητό. Γρήγορη παράδοση.",
 ) {
     val infinite = rememberInfiniteTransition(label = "splash")
 

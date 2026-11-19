@@ -179,7 +179,7 @@ data class PromoBanner(
 data class CustomerAppConfig(
     val appName: String = "Fresh2GO",
     val cityLabel: String = "Ιωάννινα",
-    val tagline: String = "Fresh Meals. Fast Delivery.",
+    val tagline: String = "Φρέσκο φαγητό. Γρήγορη παράδοση.",
     val logoUrl: String? = null,
     /** Show logo/wordmark chip in the home header (web `branding.show_header_brand`). */
     val showHeaderBrand: Boolean = true,
@@ -193,7 +193,7 @@ data class CustomerAppConfig(
     ),
     val promos: List<PromoBanner> = listOf(
         PromoBanner("1+1", "Pizza Pan · 1+1", "Πίτσα — αγόρασε 1 πάρε 1", "PIZZAPAN", "hero", true),
-        PromoBanner("HOT", "Fresh Meals. Fast Delivery.", "Ιωάννινα · φρέσκο & γρήγορα", "FRESH", "hero", true),
+        PromoBanner("HOT", "Φρέσκο φαγητό. Γρήγορη παράδοση.", "Ιωάννινα · φρέσκο & γρήγορα", "FRESH", "hero", true),
         PromoBanner("−20%", "Έκπτωση 20% σε νέους", "στις 3 πρώτες παραγγελίες", "NEW20", "dark", true),
         PromoBanner("FREE", "Δωρεάν παράδοση", "σε επιλεγμένα καταστήματα", "FREESHIP", "hero", true),
         PromoBanner("CREPE", "Los Andreas · κρέπες", "Φτιάξε τη δική σου κρέπα", "CREPE", "dark", true),

@@ -687,7 +687,7 @@ Column(
                                 maxLines = 1,
                             )
                             Text(
-                                "Fresh Meals. Fast Delivery.",
+                                "Φρέσκο φαγητό. Γρήγορη παράδοση.",
                                 color = FreshMuted,
                                 style = MaterialTheme.typography.labelSmall,
                                 maxLines = 1,

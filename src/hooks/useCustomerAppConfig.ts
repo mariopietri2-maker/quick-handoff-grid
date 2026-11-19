@@ -126,7 +126,7 @@ export const DEFAULT_CONFIG: CustomerAppConfig = {
   ],
   promos: [
     { tag: '1+1', title: 'Pizza Pan · 1+1', subtitle: 'Πίτσα — αγόρασε 1 πάρε 1', code: 'PIZZAPAN', gradient: 'hero', enabled: true, image_url: null },
-    { tag: 'HOT', title: 'Fresh Meals. Fast Delivery.', subtitle: 'Ιωάννινα · φρέσκο & γρήγορα', code: 'FRESH', gradient: 'hero', enabled: true, image_url: null },
+    { tag: 'HOT', title: 'Φρέσκο φαγητό. Γρήγορη παράδοση.', subtitle: 'Ιωάννινα · φρέσκο & γρήγορα', code: 'FRESH', gradient: 'hero', enabled: true, image_url: null },
     { tag: '−20%', title: 'Έκπτωση 20% σε νέους', subtitle: 'στις 3 πρώτες παραγγελίες', code: 'NEW20', gradient: 'dark', enabled: true, image_url: null },
     { tag: 'FREE', title: 'Δωρεάν παράδοση', subtitle: 'σε επιλεγμένα καταστήματα', code: 'FREESHIP', gradient: 'hero', enabled: true, image_url: null },
     { tag: 'CREPE', title: 'Los Andreas · κρέπες', subtitle: 'Φτιάξε τη δική σου κρέπα', code: 'CREPE', gradient: 'dark', enabled: true, image_url: null },
