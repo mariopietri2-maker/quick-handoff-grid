@@ -1,0 +1,21 @@
+name: Restore auth terms signup
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/restore-auth/**"
+      - ".github/workflows/restore-auth-terms.yml"
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/restore-auth/restore_z.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/AuthPage.tsx native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/LoginScreen.kt
+          git commit -m "feat(auth): Terms + Privacy required on signup (web + native)" || true
+          git push || true
