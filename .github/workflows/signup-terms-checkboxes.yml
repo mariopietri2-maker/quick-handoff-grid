@@ -1,0 +1,21 @@
+name: Signup terms checkboxes
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/signup-terms-checkboxes.py"
+      - ".github/workflows/signup-terms-checkboxes.yml"
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/signup-terms-checkboxes.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/AuthPage.tsx native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/LoginScreen.kt
+          git commit -m "feat(auth): require Terms + Privacy on signup with links" || true
+          git push || true
