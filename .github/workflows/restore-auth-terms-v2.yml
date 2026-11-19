@@ -1,0 +1,129 @@
+name: Restore Auth terms v2
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/restore-auth-terms-v2.yml"
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore AuthPage from last good commit and add checkboxes
+        run: |
+          set -euo pipefail
+          # Last known good AuthPage before accidental overwrite
+          curl -fsSL -o src/pages/AuthPage.tsx \
+            "https://raw.githubusercontent.com/mariopietri2-maker/quick-handoff-grid/6e2e51dcc3a8787d7d7880080b6f343ceea40f04/src/pages/AuthPage.tsx"
+          test -s src/pages/AuthPage.tsx
+          grep -q "export default function AuthPage" src/pages/AuthPage.tsx
+          python3 <<'PY'
+          from pathlib import Path
+          t = Path("src/pages/AuthPage.tsx").read_text()
+          if "acceptTerms" not in t:
+              t = t.replace(
+                  "const [submitting, setSubmitting] = useState(false);",
+                  "const [submitting, setSubmitting] = useState(false);\n  const [acceptTerms, setAcceptTerms] = useState(false);\n  const [acceptPrivacy, setAcceptPrivacy] = useState(false);",
+                  1,
+              )
+              marker = "const { error, session } = await signUp(emailNorm, password, fullName, driverIntent ? 'driver' : 'customer', phone.trim());"
+              if marker in t:
+                  t = t.replace(
+                      marker,
+                      "if (!acceptTerms || !acceptPrivacy) {\n"
+                      "          toast.error('Πρέπει να αποδεχτείτε τους Όρους Χρήσης και την Πολιτική Απορρήτου.');\n"
+                      "          setSubmitting(false);\n"
+                      "          return;\n"
+                      "        }\n        " + marker,
+                      1,
+                  )
+              old = "<Button type=\"submit\" className=\"w-full\" disabled={submitting}>{submitting ? <Loader2 className=\"h-4 w-4 animate-spin\" /> : isLogin ? 'Σύνδεση' : 'Εγγραφή'}</Button>"
+              new = '''{isSignup && (
+                  <div className="space-y-3 rounded-lg border border-[hsl(220,20%,20%)] bg-[hsl(220,20%,12%)] p-3">
+                    <label className="flex items-start gap-2 text-sm text-[hsl(220,14%,90%)] cursor-pointer">
+                      <input type="checkbox" className="mt-1 h-4 w-4 rounded border-[hsl(220,20%,30%)]" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} />
+                      <span>Αποδέχομαι τους{' '}<a href="/legal/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">Όρους Χρήσης</a></span>
+                    </label>
+                    <label className="flex items-start gap-2 text-sm text-[hsl(220,14%,90%)] cursor-pointer">
+                      <input type="checkbox" className="mt-1 h-4 w-4 rounded border-[hsl(220,20%,30%)]" checked={acceptPrivacy} onChange={(e) => setAcceptPrivacy(e.target.checked)} />
+                      <span>Αποδέχομαι την{' '}<a href="/legal/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">Πολιτική Απορρήτου</a></span>
+                    </label>
+                  </div>
+                )}
+                <Button type="submit" className="w-full" disabled={submitting || (isSignup && (!acceptTerms || !acceptPrivacy))}>{submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : isLogin ? 'Σύνδεση' : 'Εγγραφή'}</Button>'''
+              if old not in t:
+                  raise SystemExit('submit button pattern missing')
+              t = t.replace(old, new, 1)
+              Path("src/pages/AuthPage.tsx").write_text(t)
+              print('AuthPage patched')
+          else:
+              print('AuthPage already has acceptTerms')
+          PY
+
+      - name: Patch native LoginScreen for terms acceptance
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+          p = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/LoginScreen.kt')
+          if not p.exists():
+              print('LoginScreen missing'); raise SystemExit(0)
+          lt = p.read_text()
+          if 'acceptTerms' in lt and 'Όρους Χρήσης' in lt:
+              print('native already ok'); raise SystemExit(0)
+          if 'import android.content.Intent' not in lt:
+              idx = lt.find('import ')
+              lt = lt[:idx] + 'import android.content.Intent\nimport android.net.Uri\n' + lt[idx:]
+          if 'LocalContext' not in lt:
+              lt = lt.replace('import androidx.compose.ui.Modifier', 'import androidx.compose.ui.Modifier\nimport androidx.compose.ui.platform.LocalContext', 1)
+          if 'import androidx.compose.foundation.clickable' not in lt:
+              lt = lt.replace('import androidx.compose.foundation.', 'import androidx.compose.foundation.clickable\nimport androidx.compose.foundation.', 1)
+          if 'import androidx.compose.material3.Checkbox' not in lt:
+              lt = lt.replace('import androidx.compose.material3.Button', 'import androidx.compose.material3.Checkbox\nimport androidx.compose.material3.CheckboxDefaults\nimport androidx.compose.material3.Button', 1)
+          if 'var acceptTerms' not in lt:
+              if 'var rememberMe by remember' in lt:
+                  lt = lt.replace('var rememberMe by remember', 'var acceptTerms by remember { mutableStateOf(false) }\n    var acceptPrivacy by remember { mutableStateOf(false) }\n    var rememberMe by remember', 1)
+              else:
+                  lt = re.sub(r'(var email by remember[^\n]+\n)', r'\1    var acceptTerms by remember { mutableStateOf(false) }\n    var acceptPrivacy by remember { mutableStateOf(false) }\n', lt, count=1)
+          if 'val context = LocalContext.current' not in lt:
+              lt = re.sub(r'(fun LoginScreen\([\s\S]*?\) \{)\n', r'\1\n    val context = LocalContext.current\n', lt, count=1)
+          insert_ui = '''
+        if (signupMode) {
+            Spacer(Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Checkbox(checked = acceptTerms, onCheckedChange = { acceptTerms = it }, colors = CheckboxDefaults.colors(checkedColor = FreshGreen, checkmarkColor = Color.White))
+                Text(text = "Αποδέχομαι τους ", color = FreshInk, style = MaterialTheme.typography.bodySmall)
+                Text(text = "Όρους Χρήσης", color = FreshGreenDark, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, modifier = Modifier.clickable { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://fresh2go.gr/legal/terms"))) })
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Checkbox(checked = acceptPrivacy, onCheckedChange = { acceptPrivacy = it }, colors = CheckboxDefaults.colors(checkedColor = FreshGreen, checkmarkColor = Color.White))
+                Text(text = "Αποδέχομαι την ", color = FreshInk, style = MaterialTheme.typography.bodySmall)
+                Text(text = "Πολιτική Απορρήτου", color = FreshGreenDark, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, modifier = Modifier.clickable { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://fresh2go.gr/legal/privacy"))) })
+            }
+        }
+'''
+          if 'Όρους Χρήσης' not in lt:
+              if '// Google Sign-In disabled' in lt:
+                  lt = lt.replace('// Google Sign-In disabled', insert_ui + '\n        // Google Sign-In disabled', 1)
+              else:
+                  lt = lt.replace('Button(\n            onClick = {', insert_ui + '\n        Button(\n            onClick = {', 1)
+          if 'acceptTerms && acceptPrivacy' not in lt:
+              lt = lt.replace('phone.filter { it.isDigit() }.length >= 10)', 'phone.filter { it.isDigit() }.length >= 10 && acceptTerms && acceptPrivacy)', 1)
+          if 'if (!acceptTerms || !acceptPrivacy) return@Button' not in lt:
+              lt = lt.replace('if (digits.length < 10) return@Button\n                    onSignUp', 'if (digits.length < 10) return@Button\n                    if (!acceptTerms || !acceptPrivacy) return@Button\n                    onSignUp', 1)
+          p.write_text(lt)
+          print('native patched', 'acceptTerms' in lt)
+          PY
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/AuthPage.tsx native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/LoginScreen.kt
+          git status
+          git commit -m "feat(auth): require Terms + Privacy on signup with links" || true
+          git push || true
