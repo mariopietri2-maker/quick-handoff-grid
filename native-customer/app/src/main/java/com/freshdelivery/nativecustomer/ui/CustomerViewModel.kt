@@ -2565,8 +2565,8 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             if (until > 0L && System.currentTimeMillis() > until) return false
             return prefs.getBoolean(key, false)
         }
-        // 7% store cut: show the game on ~15% of days so prizes stay rare.
-        val show = Random.nextDouble() < 0.15
+        // 7% store cut: show the game on ~30% of days so prizes stay rare.
+        val show = Random.nextDouble() < 0.30
         val until = if (show) System.currentTimeMillis() + GAME_SHOW_WINDOW_MS else 0L
         prefs.edit().putBoolean(key, show).putLong(untilKey, until).apply()
         if (show) gameShowUntilMs = until
