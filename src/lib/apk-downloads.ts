@@ -9,10 +9,10 @@ export const APK_RELEASE_TAG = 'mobile-apks-v1';
 export const APK_BUILD_VERSION = '1.0.0';
 
 /** Native Kotlin/Compose driver (replaces Capacitor driver when installed). */
-export const APK_NATIVE_DRIVER_VERSION = '1.0.5';
+export const APK_NATIVE_DRIVER_VERSION = '1.0.46';
 
 /** Native Kotlin/Compose customer. */
-export const APK_NATIVE_CUSTOMER_VERSION = '1.0.38';
+export const APK_NATIVE_CUSTOMER_VERSION = '1.0.46';
 
 /** Native Kotlin/Compose admin ops console. */
 export const APK_NATIVE_ADMIN_VERSION = '1.0.0';
@@ -38,22 +38,12 @@ export const APK_DOWNLOADS = {
   customerNative: {
     id: 'customerNative' as const,
     title: 'Πελάτης Native',
-    subtitle: 'Καλάθι · Mapbox · FCM · promo carousel',
+    subtitle: 'Kotlin + Compose · Mapbox · παραγγελίες',
     filename: 'fresh2go-customer-native-debug.apk',
     fileUrl: `${RELEASE_BASE}/fresh2go-customer-native-debug.apk`,
-    sizeLabel: '~21 MB',
+    sizeLabel: '~45 MB',
     versionLabel: APK_NATIVE_CUSTOMER_VERSION,
     badge: 'Native',
-  },
-  adminNative: {
-    id: 'adminNative' as const,
-    title: 'Admin Native',
-    subtitle: 'Ops console · drivers · orders · stores',
-    filename: 'fresh2go-admin-native-debug.apk',
-    fileUrl: `${RELEASE_BASE}/fresh2go-admin-native-debug.apk`,
-    sizeLabel: '~15 MB',
-    versionLabel: APK_NATIVE_ADMIN_VERSION,
-    badge: 'Admin',
   },
   driver: {
     id: 'driver' as const,
@@ -63,7 +53,7 @@ export const APK_DOWNLOADS = {
     fileUrl: `${RELEASE_BASE}/fresh2go-driver-debug.apk`,
     sizeLabel: '~8.5 MB',
     versionLabel: APK_BUILD_VERSION,
-    badge: null as string | null,
+    badge: 'Legacy',
   },
   customer: {
     id: 'customer' as const,
