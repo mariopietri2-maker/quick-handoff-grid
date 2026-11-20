@@ -17,8 +17,8 @@ android {
         applicationId = "com.freshdelivery.customer"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7236700
-        versionName = "1.0.47"
+        versionCode = 7236800
+        versionName = "1.0.48"
 
         val googleWebClientId = (project.findProperty("GOOGLE_WEB_CLIENT_ID") as String?)
             ?: System.getenv("GOOGLE_WEB_CLIENT_ID")
