@@ -8,6 +8,9 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+    <!-- Portrait is preferred, not required — keeps phones, tablets, desktop and XR eligible. -->
+    <uses-feature android:name="android.hardware.screen.portrait" android:required="false" />
+
     <application
         android:name=".FreshCustomerApp"
         android:allowBackup="true"
