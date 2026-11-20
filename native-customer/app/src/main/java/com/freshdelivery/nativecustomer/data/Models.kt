@@ -174,6 +174,8 @@ data class PromoBanner(
     val gradient: String = "hero",
     val enabled: Boolean = true,
     val imageUrl: String? = null,
+    /** Optional store id/name from admin promo link. */
+    val storeId: String? = null,
 )
 
 data class CustomerAppConfig(

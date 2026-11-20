@@ -151,6 +151,7 @@ class CustomerRepository(
                     gradient = o["gradient"]?.jsonPrimitive?.contentOrNull ?: "hero",
                     enabled = true,
                     imageUrl = o["image_url"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() },
+                    storeId = (o["store_id"] ?: o["storeId"])?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() },
                 )
             }?.filter { it.title.isNotBlank() }.orEmpty()
             defaults.copy(
