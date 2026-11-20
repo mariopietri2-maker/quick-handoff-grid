@@ -1028,7 +1028,7 @@ Row(
                         val byId = if (sid.isNotEmpty()) state.stores.firstOrNull { it.id == sid } else null
                         val q = (sid.ifBlank { promo.title }).lowercase()
                         val byName = state.stores.firstOrNull { s ->
-                            val n = s.name.lowercase()
+                            val n = s.name?.lowercase().orEmpty()
                             q.isNotBlank() && (n.contains(q) || q.contains(n))
                         }
                         val store = byId ?: byName
