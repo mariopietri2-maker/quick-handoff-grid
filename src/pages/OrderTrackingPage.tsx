@@ -1,3 +1,4 @@
+import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Phone, ChevronUp, ChevronDown, Package, Utensils, CheckCircle2, MapPin, Star, Copy } from 'lucide-react';
@@ -64,6 +65,13 @@ export default function OrderTrackingPage() {
   const [showThankYou, setShowThankYou] = useState(false);
   const [thankYouCountdown, setThankYouCountdown] = useState(6);
   const [liveDriverPos, setLiveDriverPos] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const paid = params.get("paid") || params.get("session_id");
+    if (!paid || !id) return;
+    void supabase.functions.invoke("confirm-card-payment", { body: { orderId: id } });
+  }, [id]);
 
   useDriverProximityAlert({
     orderId: order?.id,

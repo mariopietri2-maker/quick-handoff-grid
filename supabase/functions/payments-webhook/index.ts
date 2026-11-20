@@ -63,11 +63,8 @@ async function markOrderPaid(
   // cannot false-positive while still catching underpriced/tampered orders.
   let mismatch = false;
   if (paidCents != null) {
-    if (taxCents != null) {
-      mismatch = Math.abs(paidCents - (expected + taxCents)) > 5;
-    } else {
-      mismatch = paidCents < expected - 5;
-    }
+    // Accept any charge at or above the agreed amount. Tax/fees on top are fine.
+    mismatch = paidCents < expected - 5;
   }
 
   // Allow small rounding drift (±5¢). Prefer expected_charge_cents from checkout.

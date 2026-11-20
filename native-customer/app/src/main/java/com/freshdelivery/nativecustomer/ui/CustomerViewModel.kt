@@ -1638,19 +1638,21 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 info = "Η πληρωμή ολοκληρώθηκε! Πληρωμή OK — η παραγγελία πάει στο κατάστημα μόνο μετά την επιβεβαίωση Stripe…",
                 busy = true,
             )
+            val orderId = _state.value.trackingOrder?.order?.id
             viewModelScope.launch {
-                // Webhook may lag a second — poll a few times
-                repeat(6) {
-                    kotlinx.coroutines.delay(800)
-                    refreshOrders()
-                    val pending = _state.value.orders.any {
-                        it.order.id == _state.value.trackingOrder?.order?.id &&
-                            it.order.status == "pending" &&
-                            it.order.payment_method == "card"
+                if (!orderId.isNullOrBlank()) {
+                    repeat(4) {
+                        val ok = runCatching { repo.confirmCardPayment(orderId) }.getOrDefault(false)
+                        refreshOrders()
+                        val stillPending = _state.value.orders.any {
+                            it.order.id == orderId && it.order.status == "pending"
+                        }
+                        if (ok && !stillPending) return@launch
+                        kotlinx.coroutines.delay(700)
                     }
-                    if (!pending) return@repeat
                 }
                 refreshSavedCards()
+                refreshOrders()
                 _state.value = _state.value.copy(
                     busy = false,
                     info = "Η πληρωμή ολοκληρώθηκε!",

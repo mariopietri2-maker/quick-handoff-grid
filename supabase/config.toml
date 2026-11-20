@@ -51,3 +51,6 @@ verify_jwt = false
 
 [functions.api-poll]
 verify_jwt = false
+
+[functions.confirm-card-payment]
+verify_jwt = false

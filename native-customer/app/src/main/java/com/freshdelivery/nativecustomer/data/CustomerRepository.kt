@@ -426,6 +426,18 @@ class CustomerRepository(
     }
 
 
+    suspend fun confirmCardPayment(orderId: String): Boolean {
+        val raw = client.functions.invoke(
+            function = "confirm-card-payment",
+            body = buildJsonObject { put("orderId", orderId) },
+        )
+        val text = raw.bodyAsText()
+        val el = Json.parseToJsonElement(text).jsonObject
+        el["error"]?.jsonPrimitive?.contentOrNull?.let { error(it) }
+        return el["status"]?.jsonPrimitive?.contentOrNull == "placed" ||
+            el["ok"]?.jsonPrimitive?.booleanOrNull == true
+    }
+
     suspend fun createSetupIntent(): PaymentSheetPayload {
         val env = getStripeEnvironment()
         val raw = client.functions.invoke(
