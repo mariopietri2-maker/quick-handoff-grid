@@ -4064,16 +4064,31 @@ private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}, onPay: 
                     }
                 }
                 if (order.order.status == "pending" && order.order.payment_method == "card") {
-                    Spacer(Modifier.height(10.dp))
-                    Button(
-                        onClick = { onPay(order.order.id) },
-                        colors = ButtonDefaults.buttonColors(containerColor = FreshGreen),
+                    Spacer(Modifier.height(12.dp))
+                    Surface(
+                        color = FreshGreen.copy(alpha = 0.08f),
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Icon(Icons.Outlined.CreditCard, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Πλήρωσε τώρα με κάρτα", fontWeight = FontWeight.Bold)
+                        Column(Modifier.padding(14.dp)) {
+                            Text("Η παραγγελία δεν στάλθηκε ακόμα", fontWeight = FontWeight.Bold, color = FreshInk)
+                            Text("Πλήρωσε με κάρτα για να πάει στο κατάστημα.", color = FreshMuted, style = MaterialTheme.typography.bodySmall)
+                            Spacer(Modifier.height(10.dp))
+                            Button(
+                                onClick = { onPay(order.order.id) },
+                                colors = ButtonDefaults.buttonColors(containerColor = FreshGreen),
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.fillMaxWidth().height(52.dp),
+                            ) {
+                                Icon(Icons.Outlined.CreditCard, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Πλήρωσε τώρα με κάρτα", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                    val payId = order.order.id
+                    androidx.compose.runtime.LaunchedEffect(payId) {
+                        onPay(payId)
                     }
                 }
             }
