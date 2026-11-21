@@ -4810,7 +4810,7 @@ private fun StoreInfoSheet(
                 } else {
                     InfoLine("Διεύθυνση", store.address ?: "—")
                     InfoLine("Ελάχιστη παραγγελία", "€%.0f".format(min))
-                    InfoLine("Παράδοση", if (store.covers_delivery_fee == true) "Δωρεάν παράδοση" else "Fresh2GO")
+                    InfoLine("Παράδοση", if (store.covers_delivery_fee == true) "Δωρεάν παράδοση" else storeFulfilmentLabel(store))
                     InfoLine("Κατάσταση", if (isStoreOpenNow(store)) "Ανοιχτό" else (nextOpenHint(store)?.let { "Κλειστό · $it" } ?: "Κλειστό"))
                     Spacer(Modifier.height(12.dp))
                     Text("Ωράριο", fontWeight = FontWeight.Bold)
