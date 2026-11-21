@@ -70,7 +70,16 @@ export default function OrderTrackingPage() {
     const params = new URLSearchParams(window.location.search);
     const paid = params.get("paid") || params.get("session_id");
     if (!paid || !id) return;
-    void supabase.functions.invoke("confirm-card-payment", { body: { orderId: id } });
+    let cancelled = false;
+    const run = async () => {
+      for (let i = 0; i < 5 && !cancelled; i++) {
+        const { data } = await supabase.functions.invoke("confirm-card-payment", { body: { orderId: id } });
+        if (data?.status === "placed" || data?.ok === true && data?.status !== "pending") break;
+        await new Promise((r) => setTimeout(r, 800));
+      }
+    };
+    void run();
+    return () => { cancelled = true; };
   }, [id]);
 
   useDriverProximityAlert({
