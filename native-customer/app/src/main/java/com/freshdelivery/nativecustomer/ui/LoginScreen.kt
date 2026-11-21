@@ -395,14 +395,12 @@ fun LoginScreen(
                 fontWeight = FontWeight.SemiBold,
             )
         }
-    }
         Text(
             text = "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
             color = FreshMuted,
             style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp),
+            modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
         )
+    }
     }
 }
