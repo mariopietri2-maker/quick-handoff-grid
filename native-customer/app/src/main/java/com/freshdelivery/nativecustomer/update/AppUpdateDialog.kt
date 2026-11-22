@@ -16,7 +16,9 @@ import androidx.compose.ui.unit.dp
 fun AppUpdateDialog(
     state: UpdateUiState,
     onDownload: () -> Unit,
+    onOpenPlayStore: () -> Unit = {},
     onDismiss: () -> Unit,
+    playStoreOnly: Boolean = true,
 ) {
     when (state) {
         is UpdateUiState.Available,
@@ -52,7 +54,7 @@ fun AppUpdateDialog(
         },
         confirmButton = {
             if (state is UpdateUiState.Available || state is UpdateUiState.Failed) {
-                TextButton(onClick = onDownload) { Text("Λήψη & εγκατάσταση") }
+                if (playStoreOnly) { TextButton(onClick = onOpenPlayStore) { Text("Ενημέρωση στο Play Store") } } else { TextButton(onClick = onDownload) { Text("Λήψη & εγκατάσταση") } }
             }
         },
         dismissButton = {

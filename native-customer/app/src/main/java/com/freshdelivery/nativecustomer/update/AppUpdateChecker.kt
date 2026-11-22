@@ -226,4 +226,23 @@ class AppUpdateChecker(
             _state.value = UpdateUiState.Failed(e.message ?: "Αποτυχία εγκατάστασης")
         }
     }
+    fun openPlayStore() {
+        val pkg = appContext.packageName
+        try {
+            val market = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$pkg")).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                setPackage("com.android.vending")
+            }
+            appContext.startActivity(market)
+        } catch (_: Exception) {
+            val web = Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("https://play.google.com/store/apps/details?id=$pkg"),
+            ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+            appContext.startActivity(web)
+        }
+        _state.value = UpdateUiState.Dismissed
+    }
+
+
 }

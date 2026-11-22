@@ -3967,7 +3967,18 @@ private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}, onPay: 
                 }
             } else {
                 val etaMin = estimateEtaMinutes(order.order)
-                val headline = trackHeadline(order.order.status, state.driverLocation != null)
+                val headline = run {
+                    val store = state.stores.firstOrNull { it.id == order.order.store_id }
+                    val platform = store == null || isPlatformFulfilment(store)
+                    val paid = isOrderPaid(order.order.payment_method, order.order.payment_status, order.order.status)
+                    trackHeadline(
+                        order.order.status,
+                        state.driverLocation != null,
+                        platformDelivery = platform,
+                        paid = paid,
+                        paymentMethod = order.order.payment_method,
+                    )
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(
@@ -3979,6 +3990,21 @@ private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}, onPay: 
                         }
                     }
                     StatusPill(order.order.status)
+                    paymentStatusLabel(order.order.payment_method, order.order.payment_status, order.order.status)?.let { payLabel ->
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Surface(
+                            color = if (payLabel.contains("Πληρώθηκε")) FreshGreenSoft else FreshChip,
+                            shape = RoundedCornerShape(999.dp),
+                        ) {
+                            Text(
+                                payLabel,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (payLabel.contains("Πληρώθηκε")) FreshGreenDark else FreshInk,
+                            )
+                        }
+                    }
                 }
                 Spacer(Modifier.height(10.dp))
                 // ETA + headline
@@ -4051,8 +4077,15 @@ private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}, onPay: 
                                             "Το κατάστημα όρισε ~$prep λεπτά ετοιμασίας. Η παράδοση γίνεται από το κατάστημα."
                                         else
                                             "Το κατάστημα ετοιμάζει την παραγγελία. Η παράδοση γίνεται από το κατάστημα."
-                                    order.order.status in listOf("ready", "picked_up", "on_the_way", "in_transit", "arrived") ->
-                                        "Το κατάστημα παραδίδει με τον δικό του διανομέα."
+                                    order.order.status in listOf("ready", "picked_up", "on_the_way", "in_transit", "arrived") -> {
+                                        val store = state.stores.firstOrNull { it.id == order.order.store_id }
+                                        if (store != null && !isPlatformFulfilment(store))
+                                            "Το κατάστημα παραδίδει με τον δικό του διανομέα — δεν περιμένεις οδηγό συστήματος."
+                                        else if (order.order.status == "ready")
+                                            "Έτοιμη — αναζητούμε οδηγό Fresh2GO."
+                                        else
+                                            "Ο οδηγός Fresh2GO είναι καθ' οδόν."
+                                    }
                                     else ->
                                         "Το κατάστημα διαχειρίζεται την ετοιμασία και την παράδοση."
                                 }
@@ -4155,14 +4188,34 @@ private fun OrderStatusTimeline(status: String) {
     }
 }
 
-private fun trackHeadline(status: String, hasDriverLoc: Boolean): Pair<String, String> = when (status) {
-    "pending" -> "Αναμονή πληρωμής" to "Ολοκλήρωσε την κάρτα για να σταλεί στο κατάστημα"
-    "placed" -> "Στείλαμε την παραγγελία" to "Περιμένουμε επιβεβαίωση από το κατάστημα"
-    "accepted", "confirmed" -> "Το κατάστημα αποδέχτηκε" to "Χρόνος ετοιμασίας από το κατάστημα"
-    "preparing" -> "Ετοιμάζεται" to "Με βάση τον χρόνο που όρισε το κατάστημα"
-    "ready" -> "Έτοιμη" to "Το κατάστημα ετοιμάζει την παράδοση"
-    "picked_up", "on_the_way", "in_transit", "arrived" ->
-        "Καθ' οδόν" to "Η παράδοση γίνεται από το κατάστημα"
+private fun trackHeadline(
+    status: String,
+    hasDriverLoc: Boolean,
+    platformDelivery: Boolean = true,
+    paid: Boolean = true,
+    paymentMethod: String? = null,
+): Pair<String, String> = when (status) {
+    "pending" -> {
+        if (!paid && paymentMethod?.lowercase() == "card")
+            "Ολοκλήρωσε την πληρωμή" to "Με κάρτα — μόλις πληρωθεί, η παραγγελία πάει στο κατάστημα"
+        else
+            "Σε επεξεργασία" to "Επιβεβαιώνουμε την παραγγελία"
+    }
+    "placed" -> "Στάλθηκε στο κατάστημα" to (if (paid) "Πληρωμή OK · περιμένουμε αποδοχή" else "Περιμένουμε επιβεβαίωση από το κατάστημα")
+    "accepted", "confirmed" -> "Το κατάστημα αποδέχτηκε" to "Ετοιμάζουν την παραγγελία σου"
+    "preparing" -> "Ετοιμάζεται" to "Το κατάστημα μαγειρεύει / ετοιμάζει"
+    "ready" -> {
+        if (platformDelivery)
+            "Έτοιμη από το κατάστημα" to (if (hasDriverLoc) "Ο οδηγός Fresh2GO πλησιάζει" else "Αναζητούμε οδηγό Fresh2GO")
+        else
+            "Έτοιμη" to "Το κατάστημα θα την παραδώσει · δεν περιμένεις οδηγό πλατφόρμας"
+    }
+    "picked_up", "on_the_way", "in_transit", "arrived" -> {
+        if (platformDelivery)
+            "Καθ' οδόν" to (if (hasDriverLoc) "Ο οδηγός είναι στο δρόμο" else "Παράδοση Fresh2GO")
+        else
+            "Καθ' οδόν από το κατάστημα" to "Παράδοση από το κατάστημα — ολοκληρώνεται χωρίς οδηγό συστήματος"
+    }
     "delivered" -> "Παραδόθηκε" to "Καλή όρεξη!"
     "cancelled" -> "Ακυρώθηκε" to "Η παραγγελία ακυρώθηκε"
     else -> statusLabel(status) to ""

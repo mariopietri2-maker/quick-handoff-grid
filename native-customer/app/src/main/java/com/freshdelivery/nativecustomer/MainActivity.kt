@@ -123,7 +123,9 @@ class MainActivity : ComponentActivity() {
                     LaunchedEffect(Unit) { updateChecker.check() }
                     AppUpdateDialog(
                         state = updateState,
-                        onDownload = { updateScope.launch { updateChecker.download() } },
+                        onOpenPlayStore = { updateChecker.openPlayStore() },
+                    playStoreOnly = true,
+                    onDownload = { updateScope.launch { updateChecker.download() } },
                         onDismiss = { updateChecker.dismiss() },
                     )
                 }

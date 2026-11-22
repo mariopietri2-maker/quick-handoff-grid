@@ -1613,7 +1613,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                             ephemeralKey = payload.ephemeralKey,
                             customerId = payload.customerId,
                         ),
-                        info = "Ολοκλήρωσε την πληρωμή στο φύλλο κάρτας.",
+                        info = "Συμπλήρωσε τα στοιχεία κάρτας για άμεση πληρωμή.",
                     )
                 }
                 .onFailure { e ->
@@ -1635,7 +1635,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         if (success) {
             refreshSavedCards()
             _state.value = _state.value.copy(
-                info = "Η πληρωμή ολοκληρώθηκε! Πληρωμή OK — η παραγγελία πάει στο κατάστημα μόνο μετά την επιβεβαίωση Stripe…",
+                info = "Πληρώθηκε ✓ — στέλνουμε την παραγγελία στο κατάστημα…",
                 busy = true,
             )
             val orderId = _state.value.trackingOrder?.order?.id
@@ -1655,7 +1655,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 refreshOrders()
                 _state.value = _state.value.copy(
                     busy = false,
-                    info = "Η πληρωμή ολοκληρώθηκε!",
+                    info = "Πληρώθηκε ✓ Η παραγγελία στάλθηκε στο κατάστημα.",
                 )
             }
         } else if (!message.isNullOrBlank()) {

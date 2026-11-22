@@ -75,3 +75,29 @@ internal fun StatusPill(status: String) {
         )
     }
 }
+
+
+internal fun paymentStatusLabel(method: String?, status: String?, orderStatus: String?): String? {
+    val m = method?.lowercase().orEmpty()
+    if (m != "card" && m != "stripe") {
+        if (m == "cash") return "Πληρωμή: μετρητά"
+        return null
+    }
+    val ps = status?.lowercase().orEmpty()
+    return when {
+        ps in setOf("paid", "succeeded", "complete", "completed") -> "Πληρώθηκε με κάρτα ✓"
+        orderStatus != null && orderStatus !in setOf("pending", "placed") && ps !in setOf("failed", "unpaid") ->
+            "Πληρώθηκε με κάρτα ✓"
+        ps in setOf("failed", "canceled", "cancelled") -> "Πληρωμή απέτυχε"
+        else -> "Αναμονή πληρωμής κάρτας"
+    }
+}
+
+internal fun isOrderPaid(method: String?, paymentStatus: String?, orderStatus: String?): Boolean {
+    val m = method?.lowercase().orEmpty()
+    if (m == "cash" || m == "cod") return true
+    val ps = paymentStatus?.lowercase().orEmpty()
+    if (ps in setOf("paid", "succeeded", "complete", "completed")) return true
+    if (orderStatus != null && orderStatus !in setOf("pending", "placed")) return m == "card" || m == "stripe" || m.isEmpty()
+    return false
+}

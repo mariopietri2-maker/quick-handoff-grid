@@ -109,6 +109,7 @@ data class OrderRow(
     val predicted_ready_at: String? = null,
     val accepted_at: String? = null,
     val payment_method: String? = null,
+    val payment_status: String? = null,
 )
 
 @Serializable
