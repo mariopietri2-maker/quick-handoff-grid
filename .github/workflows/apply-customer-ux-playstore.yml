@@ -1,0 +1,21 @@
+name: Apply customer UX Play Store payment delivery
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/patch_customer_playstore_payment_delivery.py"
+      - ".github/workflows/apply-customer-ux-playstore.yml"
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/patch_customer_playstore_payment_delivery.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer
+          git commit -m "feat(customer-native): Play Store updates, paid status, store self-delivery" || true
+          git push || true
