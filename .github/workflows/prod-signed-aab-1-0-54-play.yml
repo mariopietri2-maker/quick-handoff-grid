@@ -1,0 +1,107 @@
+name: Production signed AAB 1.0.54 Play
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/prod-signed-aab-1-0-54-play.yml"
+concurrency:
+  group: native-play-aabs-1054
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    permissions:
+      contents: write
+    env:
+      MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
+      PLAY_CUSTOMER_KEYSTORE_B64: ${{ secrets.PLAY_CUSTOMER_KEYSTORE_B64 }}
+      PLAY_DRIVER_KEYSTORE_B64: ${{ secrets.PLAY_DRIVER_KEYSTORE_B64 }}
+      PLAY_STORE_PASSWORD: ${{ secrets.PLAY_STORE_PASSWORD }}
+      PLAY_KEY_PASSWORD: ${{ secrets.PLAY_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version 1.0.54 / 7237400
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          VER, CODE = "1.0.54", "7237400"
+          for rel in ["native-customer/app/build.gradle.kts", "native-driver/app/build.gradle.kts"]:
+              p = Path(rel)
+              t = p.read_text()
+              t = re.sub(r"versionCode\s*=\s*\d+", f"versionCode = {CODE}", t)
+              t = re.sub(r'versionName\s*=\s*"[^"]*"', f'versionName = "{VER}"', t)
+              p.write_text(t)
+          print(VER, CODE)
+          PY
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v4
+
+      - name: SDK packages
+        run: sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+
+      - name: Mapbox token
+        run: |
+          mkdir -p ~/.gradle
+          echo "MAPBOX_DOWNLOADS_TOKEN=${MAPBOX_DOWNLOADS_TOKEN:-}" >> ~/.gradle/gradle.properties
+          echo "systemProp.mapboxDownloadsToken=${MAPBOX_DOWNLOADS_TOKEN:-}" >> ~/.gradle/gradle.properties
+
+      - name: Keystores
+        run: |
+          set -euo pipefail
+          mkdir -p mobile-signing
+          echo "$PLAY_CUSTOMER_KEYSTORE_B64" | base64 -d > mobile-signing/fresh2go-customer-upload.jks
+          if [ -n "${PLAY_DRIVER_KEYSTORE_B64:-}" ]; then
+            echo "$PLAY_DRIVER_KEYSTORE_B64" | base64 -d > mobile-signing/fresh2go-driver-upload.jks
+          fi
+          cat > mobile-signing/key.properties <<EOF
+          storePassword=${PLAY_STORE_PASSWORD}
+          keyPassword=${PLAY_KEY_PASSWORD:-$PLAY_STORE_PASSWORD}
+          keyAlias=fresh2go-customer
+          storeFile=fresh2go-customer-upload.jks
+          customerStoreFile=fresh2go-customer-upload.jks
+          EOF
+
+      - name: Customer wrapper + bundle
+        working-directory: native-customer
+        env:
+          PLAY_KEYSTORE_FILE: ${{ github.workspace }}/mobile-signing/fresh2go-customer-upload.jks
+          PLAY_KEY_ALIAS: fresh2go-customer
+          PLAY_STORE_PASSWORD: ${{ secrets.PLAY_STORE_PASSWORD }}
+          PLAY_KEY_PASSWORD: ${{ secrets.PLAY_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          cp -R ../native-driver/gradle .
+          cp ../native-driver/gradlew ../native-driver/gradlew.bat .
+          chmod +x gradlew
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          ./gradlew :app:bundleRelease --no-daemon --stacktrace
+
+      - name: Publish releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          AAB=native-customer/app/build/outputs/bundle/release/app-release.aab
+          test -f "$AAB"
+          cp "$AAB" /tmp/fresh2go-customer-native-signed.aab
+          cp "$AAB" /tmp/fresh2go-customer-native-v1.0.54-vc7237400-signed.aab
+          mkdir -p store-bundles
+          cp "$AAB" store-bundles/fresh2go-customer-native-release.aab
+          for TAG in mobile-apks-v1 native-play-aabs-v1; do
+            gh release view "$TAG" >/dev/null 2>&1 || \
+              gh release create "$TAG" --title "$TAG" --notes "Fresh2GO native signed AABs"
+          done
+          gh release upload mobile-apks-v1 \
+            /tmp/fresh2go-customer-native-signed.aab \
+            /tmp/fresh2go-customer-native-v1.0.54-vc7237400-signed.aab --clobber
+          gh release upload native-play-aabs-v1 store-bundles/fresh2go-customer-native-release.aab --clobber
+          echo AAB_1_0_54_OK
