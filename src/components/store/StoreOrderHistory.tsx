@@ -197,13 +197,11 @@ export default function StoreOrderHistory({ storeId }: { storeId: string }) {
                   {open ? <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />}
                 </button>
                 {open && (
-                  <div className="border-t border-border bg-white">
-                    <div className="px-4 pt-3 pb-2 flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-[11px] font-bold tracking-wide text-primary uppercase">{STATUS_BANNER[o.status] ?? STATUS_LABEL[o.status] ?? o.status}</p>
-                        <p className="text-3xl font-heading font-bold tracking-tight text-foreground mt-0.5">{formatOrderNumber(o as never)}</p>
-                      </div>
-                      <p className="text-xs text-muted-foreground">{format(new Date(o.created_at), 'dd/MM/yyyy HH:mm', { locale: el })}</p>
+                  <div className="border-t border-border bg-muted/40">
+                    <div className="px-4 pt-3 pb-2 bg-background/70">
+                      <p className="text-[11px] font-bold tracking-wide text-primary uppercase">{STATUS_BANNER[o.status] ?? STATUS_LABEL[o.status] ?? o.status}</p>
+                      <p className="text-2xl font-heading font-bold tracking-tight text-foreground mt-1">{o.customer_phone || '—'}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{formatOrderNumber(o as never)} · {format(new Date(o.created_at), 'dd/MM/yyyy HH:mm', { locale: el })}</p>
                     </div>
 
                     <div className="px-4 py-2 flex items-center justify-between text-sm border-t border-border/60">
@@ -234,7 +232,10 @@ export default function StoreOrderHistory({ storeId }: { storeId: string }) {
                       )}
                       <div className="flex justify-between"><span className="text-muted-foreground">Προμήθεια{pnl.commissionPct != null ? ` ${pnl.commissionPct}%` : ''}</span><span className="tabular-nums text-destructive">{signedEuro(-fee)}</span></div>
                       <div className="flex justify-between"><span className="text-muted-foreground">ΦΠΑ 24%</span><span className="tabular-nums text-destructive">{signedEuro(-vat)}</span></div>
-                      <div className="flex justify-between font-bold text-base pt-1"><span>Εκτιμώμενα κέρδη</span><span className="tabular-nums">{euro(earnings)}</span></div>
+                      {(o.payment_method || '').toLowerCase() === 'card' && (
+                        <div className="flex justify-between"><span className="text-muted-foreground">Χρέωση κάρτας</span><span className="tabular-nums text-destructive">{signedEuro(-0.25)}</span></div>
+                      )}
+                      <div className="flex justify-between font-bold text-base pt-1"><span>Το κατάστημα παίρνει</span><span className="tabular-nums">{euro((o.payment_method || '').toLowerCase() === 'card' ? roundMoney(earnings - 0.25) : earnings)}</span></div>
                       {Number(o.cash_received || 0) > 0 && (
                         <div className="flex justify-between"><span className="text-muted-foreground">Μετρητά που εισπράχθηκαν</span><span className="tabular-nums font-semibold">{euro(o.cash_received)}</span></div>
                       )}
