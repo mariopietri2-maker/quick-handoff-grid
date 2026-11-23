@@ -38,6 +38,8 @@ type HistoryOrder = {
   }> | null;
   customer_name?: string | null;
   customer_phone?: string | null;
+  discount_amount?: number | null;
+  promo_code?: string | null;
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -88,7 +90,7 @@ export default function StoreOrderHistory({ storeId }: { storeId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, created_at, updated_at, status, total_amount, delivery_fee, tip_amount, payment_method, delivery_address, notes, store_order_number, customer_id, customer_phone, source, store_charge, cash_received, estimated_prep_time, predicted_prep_minutes, order_items(id, name, quantity, unit_price)')
+        .select('id, created_at, updated_at, status, total_amount, delivery_fee, tip_amount, payment_method, delivery_address, notes, store_order_number, customer_id, customer_phone, source, store_charge, cash_received, estimated_prep_time, predicted_prep_minutes, discount_amount, promo_code, order_items(id, name, quantity, unit_price)')
         .eq('store_id', storeId)
         .in('status', ['delivered', 'cancelled', 'picked_up', 'ready'])
         .order('created_at', { ascending: false })
@@ -228,6 +230,10 @@ export default function StoreOrderHistory({ storeId }: { storeId: string }) {
 
                     <div className="px-4 py-2 space-y-1.5 text-sm border-t border-border/60">
                       <div className="flex justify-between"><span className="text-muted-foreground">Υποσύνολο</span><span className="tabular-nums">{euro(pnl.subtotal)}</span></div>
+                      {Number(o.discount_amount || 0) > 0 && (
+                        <div className="flex justify-between"><span className="text-muted-foreground">Έκπτωση τροχού{o.promo_code ? ` · ${o.promo_code}` : ''}</span><span className="tabular-nums text-destructive">{signedEuro(-Number(o.discount_amount))}</span></div>
+                      )}
+                      <div className="flex justify-between"><span className="text-muted-foreground">ΦΠΑ φαγητού 13% (συμπεριλαμβάνεται)</span><span className="tabular-nums">{euro(roundMoney(pnl.subtotal - pnl.subtotal / 1.13))}</span></div>
                       <div className="flex justify-between"><span className="text-muted-foreground">Κόστος διανομής</span><span className="tabular-nums">{euro(pnl.deliveryFee)}</span></div>
                       {pnl.tip > 0 && (
                         <div className="flex justify-between"><span className="text-muted-foreground">Φιλοδώρημα</span><span className="tabular-nums">{euro(pnl.tip)}</span></div>
