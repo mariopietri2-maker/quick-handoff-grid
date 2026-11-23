@@ -475,6 +475,27 @@ export function OrderQueue({
                 {customerName || (order.driver_id ? `Οδηγός ${formatDriverCode(driverCodes[order.driver_id] || '')}` : 'Πελάτης')}
               </span>
             </p>
+            {order.status === 'placed' && (() => {
+              const phone = String((order as any).customer_phone ?? (order as any).phone ?? '').trim();
+              const addr = String(order.delivery_address ?? '').trim();
+              const preview = (order.order_items ?? []).slice(0, 3);
+              return (
+                <div className="mt-1 space-y-1">
+                  {phone && (
+                    <a href={`tel:${phone.replace(/\s/g, '')}`} className="inline-flex items-center gap-1 text-[13px] font-bold text-primary" onClick={(e) => e.stopPropagation()}>
+                      <Phone className="h-3.5 w-3.5" />
+                      {phone}
+                    </a>
+                  )}
+                  {addr && <p className="text-[12px] text-muted-foreground truncate">{addr}</p>}
+                  {preview.map((item) => (
+                    <p key={item.id} className="text-[12px] text-foreground">
+                      <span className="font-semibold tabular-nums">{item.quantity}×</span> {item.name}
+                    </p>
+                  ))}
+                </div>
+              );
+            })()}
           </button>
 
           {countdown !== null && order.status !== 'ready' && (
