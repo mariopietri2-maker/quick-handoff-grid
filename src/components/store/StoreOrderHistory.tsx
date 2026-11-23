@@ -198,10 +198,12 @@ export default function StoreOrderHistory({ storeId }: { storeId: string }) {
                 </button>
                 {open && (
                   <div className="border-t border-border bg-muted/40">
-                    <div className="px-4 pt-3 pb-2 bg-background/70">
+                    <div className="px-4 pt-3 pb-3 bg-background/70">
                       <p className="text-[11px] font-bold tracking-wide text-primary uppercase">{STATUS_BANNER[o.status] ?? STATUS_LABEL[o.status] ?? o.status}</p>
-                      <p className="text-2xl font-heading font-bold tracking-tight text-foreground mt-1">{o.customer_phone || '—'}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{formatOrderNumber(o as never)} · {format(new Date(o.created_at), 'dd/MM/yyyy HH:mm', { locale: el })}</p>
+                      <p className="text-base font-heading font-bold text-foreground mt-1">{o.customer_name || 'Χωρίς όνομα'}</p>
+                      <p className="text-2xl font-heading font-bold tracking-tight text-foreground">{o.customer_phone || '—'}</p>
+                      <p className="text-sm text-foreground/80 mt-0.5">{o.delivery_address || 'Χωρίς διεύθυνση'}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{formatOrderNumber(o as never)} · {format(new Date(o.created_at), 'dd/MM/yyyy HH:mm', { locale: el })}</p>
                     </div>
 
                     <div className="px-4 py-2 flex items-center justify-between text-sm border-t border-border/60">
