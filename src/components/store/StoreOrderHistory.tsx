@@ -88,7 +88,7 @@ export default function StoreOrderHistory({ storeId }: { storeId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, created_at, updated_at, status, total_amount, delivery_fee, tip_amount, payment_method, delivery_address, notes, store_order_number, customer_id, source, store_charge, cash_received, estimated_prep_time, predicted_prep_minutes, order_items(id, name, quantity, unit_price)')
+        .select('id, created_at, updated_at, status, total_amount, delivery_fee, tip_amount, payment_method, delivery_address, notes, store_order_number, customer_id, customer_phone, source, store_charge, cash_received, estimated_prep_time, predicted_prep_minutes, order_items(id, name, quantity, unit_price)')
         .eq('store_id', storeId)
         .in('status', ['delivered', 'cancelled', 'picked_up', 'ready'])
         .order('created_at', { ascending: false })
@@ -109,7 +109,7 @@ export default function StoreOrderHistory({ storeId }: { storeId: string }) {
       return rows.map((o) => ({
         ...o,
         customer_name: nameById[o.customer_id ?? '']?.full_name ?? null,
-        customer_phone: nameById[o.customer_id ?? '']?.phone ?? null,
+        customer_phone: o.customer_phone ?? nameById[o.customer_id ?? '']?.phone ?? null,
       }));
     },
   });
