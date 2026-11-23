@@ -276,24 +276,45 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                         if (uid != null) onSignedIn(uid)
                     }
                     is SessionStatus.NotAuthenticated -> {
-                        pollJob?.cancel()
-                        ordersRealtimeJob?.cancel()
-                        driverRealtimeJob?.cancel()
-                        driverChannelFor = null
-                        liveChatJob?.cancel()
-                        liveChatJob = null
-                        liveChatSessionJob?.cancel()
-                        liveChatSessionJob = null
-                        ticketJob?.cancel()
-                        ticketJob = null
-                        repo.unsubscribeAll()
-                        val gameActive = _state.value.gameActive
-                        val cards = _state.value.cards
-                        _state.value = CustomerUiState(bootstrapping = false, signedIn = false).copy(
-                            gameActive = gameActive,
-                            cards = cards,
-                            gameShow = rollDailyGameShow(),
-                        )
+                        // Only a real sign-out logs the user out. Transient NotAuthenticated
+                        // (refresh, background, storage reload) must not kick them to login.
+                        if (!status.isSignOut && _state.value.signedIn) {
+                            _state.value = _state.value.copy(bootstrapping = false)
+                            viewModelScope.launch {
+                                kotlinx.coroutines.delay(1500)
+                                runCatching { SupabaseModule.client.auth.refreshCurrentSession() }
+                            }
+                        } else {
+                            pollJob?.cancel()
+                            ordersRealtimeJob?.cancel()
+                            driverRealtimeJob?.cancel()
+                            driverChannelFor = null
+                            liveChatJob?.cancel()
+                            liveChatJob = null
+                            liveChatSessionJob?.cancel()
+                            liveChatSessionJob = null
+                            ticketJob?.cancel()
+                            ticketJob = null
+                            repo.unsubscribeAll()
+                            val gameActive = _state.value.gameActive
+                            val cards = _state.value.cards
+                            _state.value = CustomerUiState(bootstrapping = false, signedIn = false).copy(
+                                gameActive = gameActive,
+                                cards = cards,
+                                gameShow = rollDailyGameShow(),
+                            )
+                        }
+                    }
+                    is SessionStatus.RefreshFailure -> {
+                        // Keep the user in. Retry once the network is back.
+                        _state.value = _state.value.copy(bootstrapping = false)
+                        viewModelScope.launch {
+                            kotlinx.coroutines.delay(2500)
+                            runCatching { SupabaseModule.client.auth.refreshCurrentSession() }
+                        }
+                    }
+                    is SessionStatus.Initializing -> {
+                        // Loading or returning from background. Do not clear the session.
                     }
                     else -> Unit
                 }

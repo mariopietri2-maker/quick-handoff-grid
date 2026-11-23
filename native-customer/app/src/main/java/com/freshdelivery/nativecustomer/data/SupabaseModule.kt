@@ -13,7 +13,9 @@ object SupabaseModule {
             supabaseUrl = BuildConfig.SUPABASE_URL,
             supabaseKey = BuildConfig.SUPABASE_ANON_KEY,
         ) {
-            install(Auth)
+            install(Auth) {
+                alwaysAutoRefresh = true
+            }
             install(Postgrest)
             install(Realtime)
             install(Functions)
