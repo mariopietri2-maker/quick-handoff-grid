@@ -112,23 +112,18 @@ class MainActivity : ComponentActivity() {
                     delay(1_600)
                     splashMinElapsed = true
                 }
-                // Sideload self-update disabled on Play Store builds.
+                // Play Store builds open Play Store. Sideload builds can still download.
                 val updateScope = rememberCoroutineScope()
-                val updateChecker = remember {
-                    if (BuildConfig.PLAY_STORE_BUILD) null
-                    else AppUpdateChecker(applicationContext, "customerNative")
-                }
-                if (updateChecker != null) {
-                    val updateState by updateChecker.state.collectAsState()
-                    LaunchedEffect(Unit) { updateChecker.check() }
-                    AppUpdateDialog(
-                        state = updateState,
-                        onOpenPlayStore = { updateChecker.openPlayStore() },
-                    playStoreOnly = true,
+                val updateChecker = remember { AppUpdateChecker(applicationContext, "customerNative") }
+                val updateState by updateChecker.state.collectAsState()
+                LaunchedEffect(Unit) { updateChecker.check() }
+                AppUpdateDialog(
+                    state = updateState,
+                    onOpenPlayStore = { updateChecker.openPlayStore() },
+                    playStoreOnly = BuildConfig.PLAY_STORE_BUILD,
                     onDownload = { updateScope.launch { updateChecker.download() } },
-                        onDismiss = { updateChecker.dismiss() },
-                    )
-                }
+                    onDismiss = { updateChecker.dismiss() },
+                )
                 when {
                     state.bootstrapping || !splashMinElapsed -> {
                         // Fixed brand — one splash only (no flash when remote config loads).
