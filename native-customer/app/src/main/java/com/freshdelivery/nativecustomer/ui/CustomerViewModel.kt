@@ -230,7 +230,7 @@ data class CustomerUiState(
             val lat = deliveryLat
             val lng = deliveryLng
             if (lat == null || lng == null) return base
-            return base.filter { storeDistanceKm(lat, lng, it) <= 5.0 }
+            return base.filter { storeDistanceKm(lat, lng, it) <= 7.0 }
         }
     val activeOrders: List<OrderUi>
         get() = orders.filter { it.order.status !in TERMINAL_STATUSES }
@@ -1414,8 +1414,8 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         }
         val dLat0 = s.deliveryLat
         val dLng0 = s.deliveryLng
-        if (dLat0 != null && dLng0 != null && storeDistanceKm(dLat0, dLng0, store) > 5.0) {
-            _state.value = s.copy(error = "Η διεύθυνση είναι πάνω από 5 km από το κατάστημα")
+        if (dLat0 != null && dLng0 != null && storeDistanceKm(dLat0, dLng0, store) > 7.0) {
+            _state.value = s.copy(error = "Η διεύθυνση είναι πάνω από 7 km από το κατάστημα")
             return
         }
         val minOrder = store.min_order_amount ?: 0.0

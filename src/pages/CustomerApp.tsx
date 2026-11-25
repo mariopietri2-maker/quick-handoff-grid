@@ -524,7 +524,7 @@ const displayAddress = deliveryAddress
           const a = Math.sin(dLat / 2) ** 2 +
             Math.cos(toRad(pendingCoords.lat)) * Math.cos(toRad(Number(s.latitude))) * Math.sin(dLon / 2) ** 2;
           const km = 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-          if (km > 5) return false;
+          if (km > 7) return false;
         }
         return true;
       }),

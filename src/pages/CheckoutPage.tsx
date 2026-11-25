@@ -384,8 +384,8 @@ export default function CheckoutPage() {
             submittingRef.current = false; setSubmitting(false);
             return;
           }
-          if (meters > 5000) {
-            toast.error('Η διεύθυνση είναι πάνω από 5 km από το κατάστημα');
+          if (meters > 7000) {
+            toast.error('Η διεύθυνση είναι πάνω από 7 km από το κατάστημα');
             submittingRef.current = false; setSubmitting(false);
             return;
           }
