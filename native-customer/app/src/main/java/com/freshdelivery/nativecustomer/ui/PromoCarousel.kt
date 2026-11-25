@@ -74,7 +74,7 @@ internal fun PromoCarousel(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .padding(top = 2.dp, bottom = 0.dp)
-            .height(168.dp),
+            .height(220.dp),
     ) {
         // Let vertical drags pass through to the parent LazyColumn (home scroll).
         val passVertical = remember {
@@ -116,11 +116,10 @@ internal fun PromoCarousel(
                 if (!img.isNullOrBlank()) {
                     AsyncImage(
                         model = img,
-                        contentDescription = null,
+                        contentDescription = promo.title,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
                     )
-                    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.58f)))
                 }
                 Box(
                     Modifier
@@ -135,11 +134,11 @@ internal fun PromoCarousel(
                             ),
                         ),
                 )
-                Row(
+                if (img.isNullOrBlank()) Row(
                     Modifier.fillMaxSize().padding(18.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (img.isNullOrBlank()) {
+                    if (true) {
                         Box(
                             Modifier
                                 .padding(end = 12.dp)
