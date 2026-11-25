@@ -384,6 +384,11 @@ export default function CheckoutPage() {
             submittingRef.current = false; setSubmitting(false);
             return;
           }
+          if (meters > 5000) {
+            toast.error('Η διεύθυνση είναι πάνω από 5 km από το κατάστημα');
+            submittingRef.current = false; setSubmitting(false);
+            return;
+          }
           const token = mapboxToken || (import.meta.env.VITE_MAPBOX_TOKEN as string | undefined);
           // Use cached address to reduce Mapbox API calls
           distanceKm = await mapboxDrivingKmWithCache(

@@ -517,6 +517,15 @@ const displayAddress = deliveryAddress
         if (filterTopRated && (ratings[s.id]?.avg ?? 0) < 4.5) return false;
         if (filterFast && (s.prep_buffer_minutes ?? 0) > 5) return false;
         if (filterOpenOnly && !isStoreOpenNow(s.opening_hours, s.holiday_dates, s.status_override)) return false;
+        if (pendingCoords && s.latitude != null && s.longitude != null) {
+          const toRad = (d: number) => (d * Math.PI) / 180;
+          const dLat = toRad(Number(s.latitude) - pendingCoords.lat);
+          const dLon = toRad(Number(s.longitude) - pendingCoords.lon);
+          const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(pendingCoords.lat)) * Math.cos(toRad(Number(s.latitude))) * Math.sin(dLon / 2) ** 2;
+          const km = 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          if (km > 5) return false;
+        }
         return true;
       }),
     [
@@ -530,6 +539,7 @@ const displayAddress = deliveryAddress
       filterFast,
       filterOpenOnly,
       ratings,
+      pendingCoords,
     ],
   );
 

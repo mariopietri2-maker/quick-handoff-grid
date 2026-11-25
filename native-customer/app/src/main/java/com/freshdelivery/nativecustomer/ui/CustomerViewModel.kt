@@ -225,7 +225,13 @@ data class CustomerUiState(
     val grandTotal: Double
         get() = (cartSubtotal + effectiveDeliveryFee + tipAmount - gameDiscount).coerceAtLeast(0.0)
     val visibleStores: List<StoreRow>
-        get() = if (searchQuery.isBlank()) stores else stores
+        get() {
+            val base = if (searchQuery.isBlank()) stores else stores
+            val lat = deliveryLat
+            val lng = deliveryLng
+            if (lat == null || lng == null) return base
+            return base.filter { storeDistanceKm(lat, lng, it) <= 5.0 }
+        }
     val activeOrders: List<OrderUi>
         get() = orders.filter { it.order.status !in TERMINAL_STATUSES }
 }
@@ -1404,6 +1410,12 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         }
         if (!isStoreOpenNow(store)) {
             _state.value = s.copy(error = "Το κατάστημα φαίνεται κλειστό τώρα — δοκίμασε όταν ανοίξει")
+            return
+        }
+        val dLat0 = s.deliveryLat
+        val dLng0 = s.deliveryLng
+        if (dLat0 != null && dLng0 != null && storeDistanceKm(dLat0, dLng0, store) > 5.0) {
+            _state.value = s.copy(error = "Η διεύθυνση είναι πάνω από 5 km από το κατάστημα")
             return
         }
         val minOrder = store.min_order_amount ?: 0.0
