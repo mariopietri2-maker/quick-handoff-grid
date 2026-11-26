@@ -39,10 +39,8 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
 
 @Composable
@@ -50,6 +48,7 @@ internal fun PromoCarousel(
     promos: List<com.freshdelivery.nativecustomer.data.PromoBanner>,
     onPromoClick: (com.freshdelivery.nativecustomer.data.PromoBanner) -> Unit = {},
 ) {
+    if (promos.isEmpty()) return
     val pagerState = rememberPagerState(pageCount = { promos.size })
     LaunchedEffect(promos.size) {
         if (promos.size <= 1) return@LaunchedEffect
@@ -76,11 +75,9 @@ internal fun PromoCarousel(
             .padding(top = 2.dp, bottom = 0.dp)
             .height(160.dp),
     ) {
-        // Let vertical drags pass through to the parent LazyColumn (home scroll).
         val passVertical = remember {
             object : NestedScrollConnection {
                 override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                    // Do not consume vertical pre-scroll — parent LazyColumn handles it.
                     return Offset(0f, 0f)
                 }
             }
@@ -112,14 +109,6 @@ internal fun PromoCarousel(
                     .background(gradient)
                     .clickable { onPromoClick(promo) },
             ) {
-                if (false) {
-                    // AsyncImage(
-                        model = img,
-                        contentDescription = promo.title,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
                 Box(
                     Modifier
                         .fillMaxSize()
@@ -137,16 +126,14 @@ internal fun PromoCarousel(
                     Modifier.fillMaxSize().padding(18.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (true) {
-                        Box(
-                            Modifier
-                                .padding(end = 12.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(Color.Black.copy(alpha = 0.35f))
-                                .padding(12.dp),
-                        ) {
-                            Text("🎁", style = MaterialTheme.typography.headlineMedium)
-                        }
+                    Box(
+                        Modifier
+                            .padding(end = 12.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color.Black.copy(alpha = 0.35f))
+                            .padding(12.dp),
+                    ) {
+                        Text("\uD83C\uDF81", style = MaterialTheme.typography.headlineMedium)
                     }
                     Column(Modifier.weight(1f)) {
                         if (promo.tag.isNotBlank()) {
@@ -162,49 +149,36 @@ internal fun PromoCarousel(
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.titleMedium,
+                            maxLines = 2,
                         )
                         if (promo.subtitle.isNotBlank()) {
                             Text(
                                 promo.subtitle,
-                                color = Color.White.copy(alpha = 0.92f),
+                                color = Color.White.copy(alpha = 0.9f),
                                 style = MaterialTheme.typography.bodySmall,
+                                maxLines = 2,
                             )
-                        }
-                        if (promo.code.isNotBlank()) {
-                            Spacer(Modifier.height(8.dp))
-                            Box(
-                                Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(Color.Black.copy(alpha = 0.45f))
-                                    .padding(horizontal = 10.dp, vertical = 4.dp),
-                            ) {
-                                Text(
-                                    promo.code,
-                                    color = Color.White,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    style = MaterialTheme.typography.labelLarge,
-                                )
-                            }
                         }
                     }
                 }
             }
         }
         if (promos.size > 1) {
+            Spacer(Modifier.height(8.dp))
             Row(
-                Modifier.fillMaxWidth().padding(top = 6.dp),
+                Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
             ) {
                 repeat(promos.size) { i ->
-                    val on = pagerState.currentPage == i
                     Box(
                         Modifier
                             .padding(horizontal = 3.dp)
                             .height(6.dp)
-                            .width(if (on) 18.dp else 6.dp)
+                            .width(if (i == pagerState.currentPage) 16.dp else 6.dp)
                             .clip(RoundedCornerShape(99.dp))
                             .background(
-                                if (on) Color(0xFFEA580C) else Color.Gray.copy(alpha = 0.35f),
+                                if (i == pagerState.currentPage) Color(0xFFEA580C)
+                                else Color(0xFFCBD5E1),
                             ),
                     )
                 }
