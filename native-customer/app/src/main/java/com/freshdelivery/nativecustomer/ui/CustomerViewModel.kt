@@ -1831,6 +1831,22 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             runCatching {
                 val now = System.currentTimeMillis()
+                if (allStoresCache.isEmpty()) {
+                    runCatching {
+                        val prefs = getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
+                        val raw = prefs.getString("stores_disk_cache", null)
+                        if (!raw.isNullOrBlank()) {
+                            val disk = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+                                .decodeFromString(kotlinx.serialization.builtins.ListSerializer(com.freshdelivery.nativecustomer.data.StoreRow.serializer()), raw)
+                            if (disk.isNotEmpty()) {
+                                allStoresCache = disk
+                                storesCacheAtMs = prefs.getLong("stores_disk_cache_at", 0L)
+                                val q0 = _state.value.searchQuery.trim()
+                                _state.value = _state.value.copy(stores = if (q0.isBlank()) disk else filterStoresLocal(disk, q0))
+                            }
+                        }
+                    }
+                }
                 val cached = allStoresCache
                 val list = if (!force && cached.isNotEmpty() && now - storesCacheAtMs < 5 * 60 * 1000L) {
                     cached
@@ -1838,6 +1854,16 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     val fetched = repo.fetchStores()
                     allStoresCache = fetched
                     storesCacheAtMs = now
+                    runCatching {
+                        getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
+                            .edit()
+                            .putString("stores_disk_cache", kotlinx.serialization.json.Json.encodeToString(
+                                kotlinx.serialization.builtins.ListSerializer(com.freshdelivery.nativecustomer.data.StoreRow.serializer()),
+                                fetched,
+                            ))
+                            .putLong("stores_disk_cache_at", now)
+                            .apply()
+                    }
                     fetched
                 }
                 // Don't clobber an active search with the full catalogue.

@@ -14,7 +14,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-internal enum class HomeFilter { All, Open, Near, Fav, Deals }
+internal enum class HomeFilter { All, Open, Near, Fav, Deals, Soon }
 
 private const val EARTH_RADIUS_KM = 6371.0
 
@@ -71,6 +71,35 @@ private fun withinSchedule(store: StoreRow): Boolean {
 }
 
 /** Next open window label for closed stores, e.g. "Ανοίγει 12:00" or null. */
+
+/** True if store is closed now but opens within [withinMin] minutes (Europe/Athens). */
+internal fun isOpeningSoon(store: StoreRow, withinMin: Int = 60): Boolean {
+    if (isStoreOpenNow(store)) return false
+    if (store.is_active == false) return false
+    if (store.status_override?.trim()?.lowercase() in setOf("closed", "force_closed")) return false
+    val hours = store.opening_hours ?: return false
+    val now = LocalDateTime.now(ZoneId.of("Europe/Athens"))
+    val key = when (now.dayOfWeek) {
+        DayOfWeek.MONDAY -> "mon"
+        DayOfWeek.TUESDAY -> "tue"
+        DayOfWeek.WEDNESDAY -> "wed"
+        DayOfWeek.THURSDAY -> "thu"
+        DayOfWeek.FRIDAY -> "fri"
+        DayOfWeek.SATURDAY -> "sat"
+        DayOfWeek.SUNDAY -> "sun"
+    }
+    val obj = hours.jsonObject[key]?.jsonObject ?: return false
+    val enabled = obj["enabled"]?.jsonPrimitive?.booleanOrNull ?: true
+    if (!enabled) return false
+    val open = obj["open"]?.jsonPrimitive?.contentOrNull ?: return false
+    val parts = open.trim().split(":")
+    if (parts.size != 2) return false
+    val openMin = (parts[0].toIntOrNull() ?: return false) * 60 + (parts[1].toIntOrNull() ?: 0)
+    val nowMin = now.hour * 60 + now.minute
+    val delta = openMin - nowMin
+    return delta in 1..withinMin
+}
+
 internal fun nextOpenHint(store: StoreRow): String? {
     if (isStoreOpenNow(store)) return null
     if (store.status_override == "closed") return "Κλειστό σήμερα"

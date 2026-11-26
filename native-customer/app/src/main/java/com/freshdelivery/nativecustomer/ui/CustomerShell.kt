@@ -601,6 +601,7 @@ private fun HomeTab(
             HomeFilter.Near -> near
             HomeFilter.Fav -> base.filter { state.favoriteStoreIds.contains(it.id) }
             // Promo badge, free delivery, or any visible discount tag.
+            HomeFilter.Soon -> base.filter { isOpeningSoon(it) }
             HomeFilter.Deals -> base.filter {
                 !it.promo_badge.isNullOrBlank() ||
                     it.covers_delivery_fee == true ||
@@ -810,6 +811,7 @@ Row(
                 FreshFilterChip("Ανοιχτά (${state.visibleStores.count { isStoreOpenNow(it) }})", selected = filter == HomeFilter.Open) { applyFilter(HomeFilter.Open) }
                 FreshFilterChip("Κοντά μου", selected = filter == HomeFilter.Near) { applyFilter(HomeFilter.Near) }
                 FreshFilterChip("Αγαπημένα", selected = filter == HomeFilter.Fav) { applyFilter(HomeFilter.Fav) }
+                FreshFilterChip("Ανοίγουν σύντομα", selected = filter == HomeFilter.Soon) { applyFilter(HomeFilter.Soon) }
             }
             if (state.searchQuery.isNotBlank()) {
                 Text(
@@ -1252,6 +1254,7 @@ Row(
                     HomeFilter.Near -> "Κοντά σου"
                     HomeFilter.Deals -> "Προσφορές & δωρεάν delivery"
                     HomeFilter.Fav -> "Αγαπημένα"
+                    HomeFilter.Soon -> "Ανοίγουν σύντομα"
                 }
                 Column(Modifier.weight(1f)) {
                     Text(heading, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
@@ -2729,6 +2732,27 @@ item {
             }
             item {
                 Column(Modifier.fillMaxWidth()) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("1 · Στοιχεία", "2 · Πληρωμή", "3 · Επιβεβαίωση").forEachIndexed { i, label ->
+                            val active = when {
+                                state.paymentMethod == "card" && i >= 1 -> true
+                                else -> i <= 1
+                            }
+                            Surface(
+                                color = if (active) FreshGreenSoft else FreshChip,
+                                shape = RoundedCornerShape(999.dp),
+                            ) {
+                                Text(
+                                    label,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (active) FreshGreenDark else FreshMuted,
+                                )
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(10.dp))
                     Text("Πληρωμή", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.height(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
