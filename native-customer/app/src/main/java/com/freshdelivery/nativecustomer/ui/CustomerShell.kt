@@ -596,9 +596,7 @@ private fun HomeTab(
         } else base
         when (filter) {
             // Open stores float to the top of the default feed
-            HomeFilter.All -> base.filter { isStoreOpenNow(it) }.ifEmpty {
-                base.sortedBy { if (isStoreOpenNow(it)) 0 else 1 }
-            }
+            HomeFilter.All -> base.sortedBy { if (isStoreOpenNow(it)) 0 else 1 }
             HomeFilter.Open -> open
             HomeFilter.Near -> near
             HomeFilter.Fav -> base.filter { state.favoriteStoreIds.contains(it.id) }

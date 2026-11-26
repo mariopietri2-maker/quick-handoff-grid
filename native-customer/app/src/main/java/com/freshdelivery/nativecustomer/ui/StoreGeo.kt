@@ -34,7 +34,9 @@ internal fun storeDistanceKm(lat: Double, lng: Double, store: StoreRow): Double 
 internal fun isStoreOpenNow(store: StoreRow): Boolean {
     if (store.is_active == false) return false
     // Store must open manually. Schedule still gates the window.
-    if (store.status_override != "open") return false
+    val ov = store.status_override?.trim()?.lowercase().orEmpty()
+    if (ov in setOf("closed", "force_closed")) return false
+    if (ov == "force_open") return true
     return withinSchedule(store)
 }
 

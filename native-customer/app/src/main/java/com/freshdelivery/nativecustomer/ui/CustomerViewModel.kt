@@ -226,11 +226,12 @@ data class CustomerUiState(
         get() = (cartSubtotal + effectiveDeliveryFee + tipAmount - gameDiscount).coerceAtLeast(0.0)
     val visibleStores: List<StoreRow>
         get() {
-            val base = if (searchQuery.isBlank()) stores else stores
+            val base = stores
             val lat = deliveryLat
             val lng = deliveryLng
             if (lat == null || lng == null) return base
-            return base.filter { storeDistanceKm(lat, lng, it) <= 7.0 }
+            val nearby = base.filter { storeDistanceKm(lat, lng, it) <= 15.0 }
+            return nearby.ifEmpty { base }
         }
     val activeOrders: List<OrderUi>
         get() = orders.filter { it.order.status !in TERMINAL_STATUSES }

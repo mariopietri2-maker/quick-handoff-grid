@@ -74,7 +74,7 @@ internal fun PromoCarousel(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .padding(top = 2.dp, bottom = 0.dp)
-            .height(220.dp),
+            .height(160.dp),
     ) {
         // Let vertical drags pass through to the parent LazyColumn (home scroll).
         val passVertical = remember {
@@ -89,7 +89,7 @@ internal fun PromoCarousel(
             state = pagerState,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(148.dp)
+                .height(120.dp)
                 .nestedScroll(passVertical)
                 .clip(RoundedCornerShape(24.dp)),
             pageSpacing = 0.dp,
@@ -112,9 +112,8 @@ internal fun PromoCarousel(
                     .background(gradient)
                     .clickable { onPromoClick(promo) },
             ) {
-                val img = promo.imageUrl
-                if (!img.isNullOrBlank()) {
-                    AsyncImage(
+                if (false) {
+                    // AsyncImage(
                         model = img,
                         contentDescription = promo.title,
                         contentScale = ContentScale.Crop,
@@ -134,7 +133,7 @@ internal fun PromoCarousel(
                             ),
                         ),
                 )
-                if (img.isNullOrBlank()) Row(
+                Row(
                     Modifier.fillMaxSize().padding(18.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
