@@ -91,7 +91,7 @@ fun LoginScreen(
     var phone by remember { mutableStateOf("") }
     var acceptTerms by remember { mutableStateOf(false) }
     var acceptPrivacy by remember { mutableStateOf(false) }
-    var rememberMe by remember { mutableStateOf(false) }
+    var rememberMe by remember { mutableStateOf(true) }
     var showPassword by remember { mutableStateOf(false) }
     var showForgot by remember { mutableStateOf(false) }
     var forgotStep by remember { mutableStateOf(0) }

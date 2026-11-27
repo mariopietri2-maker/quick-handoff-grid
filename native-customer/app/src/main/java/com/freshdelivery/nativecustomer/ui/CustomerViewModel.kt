@@ -283,13 +283,28 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                         if (uid != null) onSignedIn(uid)
                     }
                     is SessionStatus.NotAuthenticated -> {
-                        // Only a real sign-out logs the user out. Transient NotAuthenticated
-                        // (refresh, background, storage reload) must not kick them to login.
-                        if (!status.isSignOut && _state.value.signedIn) {
-                            _state.value = _state.value.copy(bootstrapping = false)
-                            viewModelScope.launch {
-                                kotlinx.coroutines.delay(1500)
-                                runCatching { SupabaseModule.client.auth.refreshCurrentSession() }
+                        // ONLY explicit sign-out may clear the session UI.
+                        // Startup, refresh, airplane mode, and storage reload all emit
+                        // NotAuthenticated briefly — never treat those as logout.
+                        val explicitSignOut = runCatching { status.isSignOut }.getOrDefault(false)
+                        if (!explicitSignOut) {
+                            if (_state.value.bootstrapping) {
+                                viewModelScope.launch {
+                                    kotlinx.coroutines.delay(800)
+                                    runCatching { SupabaseModule.client.auth.refreshCurrentSession() }
+                                    kotlinx.coroutines.delay(2000)
+                                    val still = SupabaseModule.client.auth.currentSessionOrNull()
+                                    if (still == null && _state.value.bootstrapping) {
+                                        _state.value = _state.value.copy(bootstrapping = false, signedIn = false)
+                                    }
+                                }
+                            } else if (_state.value.signedIn) {
+                                viewModelScope.launch {
+                                    kotlinx.coroutines.delay(1200)
+                                    runCatching { SupabaseModule.client.auth.refreshCurrentSession() }
+                                }
+                            } else {
+                                _state.value = _state.value.copy(bootstrapping = false, signedIn = false)
                             }
                         } else {
                             pollJob?.cancel()

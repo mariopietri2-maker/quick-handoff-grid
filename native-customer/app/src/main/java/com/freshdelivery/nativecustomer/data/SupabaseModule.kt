@@ -14,6 +14,7 @@ object SupabaseModule {
             supabaseKey = BuildConfig.SUPABASE_ANON_KEY,
         ) {
             install(Auth) {
+                // Keep JWT refreshed in background so the user is not kicked to login.
                 alwaysAutoRefresh = true
             }
             install(Postgrest)

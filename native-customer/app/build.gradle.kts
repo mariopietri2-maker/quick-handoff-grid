@@ -17,8 +17,8 @@ android {
         applicationId = "com.freshdelivery.customer"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7238100
-        versionName = "1.0.61"
+        versionCode = 7238200
+        versionName = "1.0.62"
 
         val googleWebClientId = (project.findProperty("GOOGLE_WEB_CLIENT_ID") as String?)
             ?: System.getenv("GOOGLE_WEB_CLIENT_ID")
@@ -135,6 +135,7 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
     implementation("io.github.jan-tennert.supabase:realtime-kt")
     implementation("io.github.jan-tennert.supabase:functions-kt")
+    implementation("com.russhwolf:multiplatform-settings-no-arg:1.2.0")
 
     implementation("io.ktor:ktor-client-android:3.0.3")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
