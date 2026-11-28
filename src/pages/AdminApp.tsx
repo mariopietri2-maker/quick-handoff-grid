@@ -499,7 +499,7 @@ export default function AdminApp() {
       case 'orders':
         return <OrdersKanban />;
       case 'orders_table':
-        return <OrdersSection orders={orders.data} drivers={allDrivers} statusColors={statusColors} statusLabels={statusLabelsEl} onUpdateStatus={handleUpdateOrderStatus} onAssignDriver={handleAssignDriver} onRefund={handleRefundOrder} onForceStatus={handleForceOrderStatus} />;
+        return <OrdersSection orders={orders.data} profiles={profiles.data} drivers={allDrivers} statusColors={statusColors} statusLabels={statusLabelsEl} onUpdateStatus={handleUpdateOrderStatus} onAssignDriver={handleAssignDriver} onRefund={handleRefundOrder} onForceStatus={handleForceOrderStatus} />;
       case 'stores':
         return <StoresSection stores={filteredStores} allStores={allStores} storeWallets={storeWallets.data ?? []} filter={storeFilter} setFilter={setStoreFilter} onToggle={handleToggleStoreActive} onDelete={handleDeleteStore} />;
       case 'store_registry':
@@ -896,7 +896,8 @@ function SectionHeader({ title, sub, count, children }: { title: string; sub?: s
   );
 }
 
-function OrdersSection({ orders, drivers, statusColors, statusLabels, onUpdateStatus, onAssignDriver, onRefund, onForceStatus }: any) {
+function OrdersSection({ orders, profiles, drivers, statusColors, statusLabels, onUpdateStatus, onAssignDriver, onRefund, onForceStatus }: any) {
+  const byUser = Object.fromEntries((profiles ?? []).map((p: any) => [p.user_id, p]));
   return (
     <div className="space-y-3">
       <SectionHeader title="Παραγγελίες" count={orders?.length ?? 0} sub="ζωντανή ροή & ανάθεση" />
@@ -905,7 +906,7 @@ function OrdersSection({ orders, drivers, statusColors, statusLabels, onUpdateSt
           <table className="admin-table">
             <thead>
               <tr>
-                <th>ID</th><th>Κατάσταση</th><th>Οδηγός</th>
+                <th>ID</th><th>Πελάτης</th><th>Κατάσταση</th><th>Οδηγός</th>
                 <th className="text-right">Σύνολο</th><th>Ημερομηνία</th><th>Ενέργειες</th>
               </tr>
             </thead>
@@ -913,6 +914,10 @@ function OrdersSection({ orders, drivers, statusColors, statusLabels, onUpdateSt
               {orders?.map((order: any) => (
                 <tr key={order.id}>
                   <td className="font-mono text-[11.5px] text-muted-foreground">#{order.id.slice(0, 8)}</td>
+                  <td className="text-[12px]">
+                    <div className="font-medium">{byUser[order.customer_id]?.full_name || 'Άγνωστος'}</div>
+                    <div className="text-[10.5px] text-muted-foreground">{byUser[order.customer_id]?.email || order.customer_phone || ''}</div>
+                  </td>
                   <td>
                     <span className={`admin-pill ${statusColors[order.status] ?? ''}`}>
                       {statusLabels[order.status] ?? order.status}
@@ -963,7 +968,7 @@ function OrdersSection({ orders, drivers, statusColors, statusLabels, onUpdateSt
               ))}
               {!orders?.length && (
                 <tr>
-                  <td colSpan={7} className="py-14 text-center">
+                  <td colSpan={8} className="py-14 text-center">
                     <div className="inline-flex flex-col items-center gap-2 text-muted-foreground">
                       <ShoppingBag className="h-8 w-8 opacity-40" />
                       <p className="text-[12.5px] font-medium">Δεν υπάρχουν παραγγελίες ακόμη</p>

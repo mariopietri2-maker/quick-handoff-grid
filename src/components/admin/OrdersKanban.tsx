@@ -72,6 +72,10 @@ function OrderCard({ order, columnId, drivers, onAssign }: OrderCardProps) {
           {elapsed}
         </span>
       </div>
+      <p className="mt-1 text-[11.5px] font-semibold text-foreground line-clamp-1">
+        {order.customer_name || 'Άγνωστος πελάτης'}
+        {order.customer_phone ? ` · ${order.customer_phone}` : ''}
+      </p>
       <div className="mt-1.5 flex items-center justify-between gap-2">
         <span className="font-semibold tabular-nums text-[13px]">€{Number(order.total_amount || 0).toFixed(2)}</span>
         <Badge variant="outline" className="h-4 px-1.5 text-[9.5px] font-normal">
@@ -120,7 +124,7 @@ export default function OrdersKanban() {
     queryFn: async () => {
       const q = supabase
         .from('orders')
-        .select('id, status, driver_id, total_amount, payment_method, delivery_address, created_at, updated_at, predicted_ready_at')
+        .select('id, customer_id, customer_phone, status, driver_id, total_amount, payment_method, delivery_address, created_at, updated_at, predicted_ready_at')
         .order('created_at', { ascending: false })
         .limit(120);
       if (statusFilter === 'live') {
@@ -128,7 +132,16 @@ export default function OrdersKanban() {
       }
       const { data, error } = await q;
       if (error) throw error;
-      return data ?? [];
+      const rows = data ?? [];
+      const ids = [...new Set(rows.map((o: any) => o.customer_id).filter(Boolean))];
+      let names: Record<string, string> = {};
+      if (ids.length) {
+        const { data: people } = await supabase.from('profiles').select('user_id, full_name, phone').in('user_id', ids);
+        for (const person of people ?? []) {
+          names[person.user_id] = person.full_name || person.phone || person.user_id.slice(0, 8);
+        }
+      }
+      return rows.map((o: any) => ({ ...o, customer_name: names[o.customer_id] || null }));
     },
   });
 
