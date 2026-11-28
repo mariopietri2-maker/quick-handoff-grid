@@ -1,6 +1,6 @@
 // Native PaymentSheet: create or reuse a PaymentIntent for a pending card order.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { type StripeEnv, createStripeClient, resolveStripeEnv } from "../_shared/stripe.ts";
+import { type StripeEnv, createStripeClient, resolveStripeEnv, STRIPE_API_VERSION } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -75,8 +75,9 @@ Deno.serve(async (req) => {
     if (orderErr || !order) return jsonError("Order not found", 404);
     if (order.customer_id !== userId) return jsonError("Forbidden", 403);
     if (order.payment_method !== "card") return jsonError("Order is not card-payment", 400);
-    if (order.status !== "pending") {
-      return jsonError(`Order is no longer payable (status=${order.status})`, 400);
+    const st = String(order.status || "");
+    if (st !== "pending") {
+      return jsonError(`Order is no longer payable (status=${st})`, 400);
     }
 
     const expectedCents = Math.round(
@@ -106,10 +107,9 @@ Deno.serve(async (req) => {
 
     const ephemeralKey = await stripe.ephemeralKeys.create(
       { customer: customerId },
-      { apiVersion: "2024-11-20.acacia" },
+      { apiVersion: STRIPE_API_VERSION },
     );
 
-    // Reuse open PaymentIntent when possible (retry pay without double charge setup)
     let paymentIntent: any = null;
     if (order.stripe_payment_intent_id) {
       try {
@@ -158,7 +158,6 @@ Deno.serve(async (req) => {
     if (!publishableKey) return jsonError("Stripe publishable key missing", 500);
     if (!paymentIntent.client_secret) return jsonError("Stripe did not return client secret", 500);
 
-    // How many cards already saved (for client UX)
     const { count: savedCount } = await admin
       .from("customer_payment_methods")
       .select("id", { count: "exact", head: true })
