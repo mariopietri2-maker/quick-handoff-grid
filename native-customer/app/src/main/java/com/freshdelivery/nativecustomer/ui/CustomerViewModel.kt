@@ -1428,12 +1428,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = s.copy(error = "Το κατάστημα φαίνεται κλειστό τώρα — δοκίμασε όταν ανοίξει")
             return
         }
-        val dLat0 = s.deliveryLat
-        val dLng0 = s.deliveryLng
-        if (dLat0 != null && dLng0 != null && storeDistanceKm(dLat0, dLng0, store) > 7.0) {
-            _state.value = s.copy(error = "Η διεύθυνση είναι πάνω από 7 km από το κατάστημα")
-            return
-        }
+        // No hard km limit — Ioannina soft launch delivers city-wide.
         val minOrder = store.min_order_amount ?: 0.0
         if (minOrder > 0 && s.cartSubtotal < minOrder) {
             val need = minOrder - s.cartSubtotal
