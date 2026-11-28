@@ -61,7 +61,7 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(Unit) {
                     PaymentSheetBridge.handler = { ok, msg -> vm.onPaymentSheetResult(ok, msg) }
                 }
-                LaunchedEffect(state.paymentSheetRequest?.orderId) {
+                LaunchedEffect(state.paymentSheetRequest?.orderId, state.paymentSheetRequest?.clientSecret) {
                     val req = state.paymentSheetRequest ?: return@LaunchedEffect
                     runCatching {
                         PaymentConfiguration.init(this@MainActivity, req.publishableKey)
