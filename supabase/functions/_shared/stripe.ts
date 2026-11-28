@@ -1,5 +1,4 @@
-import { encode } from "https://deno.land/std@0.168.0/encoding/hex.ts";
-import Stripe from "https://esm.sh/stripe@22.0.2";
+import Stripe from "https://esm.sh/stripe@17.7.0?target=deno";
 
 const getEnv = (key: string): string => {
   const value = Deno.env.get(key);
@@ -7,40 +6,40 @@ const getEnv = (key: string): string => {
   return value;
 };
 
-export type StripeEnv = 'sandbox' | 'live';
+export type StripeEnv = "sandbox" | "live";
+
+/** Stable Stripe API version used by PaymentSheet + ephemeral keys. */
+export const STRIPE_API_VERSION = "2024-11-20.acacia";
 
 export function getConnectionApiKey(env: StripeEnv): string {
-  return env === 'sandbox'
-    ? getEnv('STRIPE_SANDBOX_API_KEY')
-    : getEnv('STRIPE_LIVE_API_KEY');
+  return env === "sandbox"
+    ? getEnv("STRIPE_SANDBOX_API_KEY")
+    : getEnv("STRIPE_LIVE_API_KEY");
 }
 
 /**
- * Resolve which Stripe environment to use for a request. The client sends the
- * env it loaded its publishable key for, but we only proceed when the matching
- * SECRET key is actually configured server-side — so a client can never force
- * the server to charge through an account it isn't set up for (the old code
- * trusted the client-supplied `environment` body field outright).
+ * Resolve which Stripe environment to use. Client request is honored only when
+ * the matching secret is configured server-side.
  */
 export function resolveStripeEnv(requested: StripeEnv): StripeEnv {
-  const hasLive = Boolean(Deno.env.get('STRIPE_LIVE_API_KEY'));
-  const hasSandbox = Boolean(Deno.env.get('STRIPE_SANDBOX_API_KEY'));
+  const hasLive = Boolean(Deno.env.get("STRIPE_LIVE_API_KEY"));
+  const hasSandbox = Boolean(Deno.env.get("STRIPE_SANDBOX_API_KEY"));
   if (hasLive && hasSandbox) return requested;
   if (hasLive) {
-    if (requested !== 'live') throw new Error('Sandbox Stripe is not configured on the server');
-    return 'live';
+    if (requested !== "live") throw new Error("Sandbox Stripe is not configured on the server");
+    return "live";
   }
   if (hasSandbox) {
-    if (requested !== 'sandbox') throw new Error('Live Stripe is not configured on the server');
-    return 'sandbox';
+    if (requested !== "sandbox") throw new Error("Live Stripe is not configured on the server");
+    return "sandbox";
   }
-  throw new Error('No Stripe API key configured on the server');
+  throw new Error("No Stripe API key configured on the server");
 }
 
 /** Direct Stripe API — no third-party payment gateway. */
 export function createStripeClient(env: StripeEnv): Stripe {
   return new Stripe(getConnectionApiKey(env), {
-    apiVersion: '2026-03-25.dahlia',
+    apiVersion: STRIPE_API_VERSION as any,
     httpClient: Stripe.createFetchHttpClient(),
   });
 }
@@ -51,9 +50,9 @@ export async function verifyWebhook(
 ): Promise<{ type: string; data: { object: any } }> {
   const signature = req.headers.get("stripe-signature");
   const body = await req.text();
-  const secret = env === 'sandbox'
-    ? getEnv('PAYMENTS_SANDBOX_WEBHOOK_SECRET')
-    : getEnv('PAYMENTS_LIVE_WEBHOOK_SECRET');
+  const secret = env === "sandbox"
+    ? getEnv("PAYMENTS_SANDBOX_WEBHOOK_SECRET")
+    : getEnv("PAYMENTS_LIVE_WEBHOOK_SECRET");
 
   if (!signature || !body) throw new Error("Missing signature or body");
 
@@ -81,9 +80,17 @@ export async function verifyWebhook(
     key,
     new TextEncoder().encode(`${timestamp}.${body}`),
   );
-  const expected = new TextDecoder().decode(encode(new Uint8Array(signed)));
+  const expected = Array.from(new Uint8Array(signed))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 
-  if (!v1Signatures.includes(expected)) throw new Error("Invalid webhook signature");
+  const ok = v1Signatures.some((sig) => {
+    if (sig.length !== expected.length) return false;
+    let mismatch = 0;
+    for (let i = 0; i < sig.length; i++) mismatch |= sig.charCodeAt(i) ^ expected.charCodeAt(i);
+    return mismatch === 0;
+  });
+  if (!ok) throw new Error("Invalid webhook signature");
 
-  return JSON.parse(body);
+  return JSON.parse(body) as { type: string; data: { object: any } };
 }
